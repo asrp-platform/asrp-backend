@@ -50,6 +50,7 @@ services:
       - stripe_runtime:/run/stripe
       - ./app/:/app/app/
       - ./alembic/:/app/alembic
+      - ./logs/:/app/logs
     networks:
       - default
 
