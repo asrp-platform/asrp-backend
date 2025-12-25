@@ -22,17 +22,6 @@ services:
     networks:
       - default
 
-  stripe-listen:
-    container_name: stripe_listen
-    build:
-      context: .
-      dockerfile: compose/stripe/Dockerfile
-    env_file:
-      - .env
-    restart: unless-stopped
-    networks:
-      - default
-
   rsapa_backend:
     container_name: rsapa_backend
     build:

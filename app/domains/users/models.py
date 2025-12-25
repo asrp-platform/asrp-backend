@@ -9,12 +9,11 @@ from sqlalchemy import Boolean, DateTime, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.setup_db import Base
+from app.domains.memberships.models import UserMembership
 from app.domains.shared.types import Password
 
 if TYPE_CHECKING:
-    from app.domains.memberships.models import UserMembership
     from app.domains.news.models import News
-    from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 
 
@@ -41,7 +40,6 @@ class User(Base):
 
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
     memberships: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="user")
-    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
