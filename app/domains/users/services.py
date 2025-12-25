@@ -43,8 +43,12 @@ class UserService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise ValueError("There is no such user with provided id")
-            if user.avatar_path is not None:
+            try:
                 os.remove(BASE_DIR / user.avatar_path)
+            except Exception:
+                # TODO: Залогировать ошибку
+                pass
+
             await self.uow.user_repository.update(user_id, {"avatar_path": avatar_path})
 
     async def update_user(self, user_id: int, update_data: dict) -> User:

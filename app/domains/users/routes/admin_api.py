@@ -7,8 +7,6 @@ from fastapi_exception_responses import Responses
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
 from app.core.database.base_repository import InvalidOrderAttributeError
-from app.domains.memberships.models import ExtendedUserMembershipSchema
-from app.domains.memberships.services import MembershipServiceDep
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminUserDep, UserPermissionsDep
@@ -146,25 +144,3 @@ async def set_user_permissions(
         return await permissions_service.set_users_permissions(user_id, permissions_ids)
     except ValueError:
         raise ManagePermissionsResponses.USER_NOT_FOUND
-
-
-class ManageUserMembershipResponses(Responses):
-    CANT_MANAGE_USER_MEMBERSHIPS = 403, "Don't have enough permissions to manage user memberships"
-    MEMBERSHIP_NOT_FOUND = 404, "User membership with with provided user ID not found"
-
-
-@router.get("/{user_id}/user-membership")
-async def get_user_membership(
-    user_id: Annotated[int, Path()],
-    current_user_permissions: UserPermissionsDep,
-    membership_service: MembershipServiceDep,
-) -> ExtendedUserMembershipSchema:
-    if "user_memberships.read" not in current_user_permissions:
-        raise ManageUserMembershipResponses.CANT_MANAGE_USER_MEMBERSHIPS
-
-    user_membership = await membership_service.get_user_membership_by_kwargs(user_id=user_id)
-
-    if user_membership is None:
-        raise ManageUserMembershipResponses.MEMBERSHIP_NOT_FOUND
-
-    return user_membership

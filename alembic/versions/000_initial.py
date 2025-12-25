@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: 001
+Revision ID: 000
 Revises:
-Create Date: 2025-09-24 18:40:35.670031
+Create Date: 2025-12-25 22:58:13.469295
 
 """
 
@@ -17,7 +17,7 @@ from alembic import op
 # revision identifiers, used by Alembic.
 from app.core.config import DEV_MODE, settings
 
-revision: str = "001"
+revision: str = "000"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -51,9 +51,16 @@ def upgrade() -> None:
         sa.Column("duration", sa.Integer(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("is_purchasable", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.Column("stripe_price_id", sa.String(), server_default="price_1SAuXP9SPoTZMPaT50qdxlGo", nullable=False),
         sa.Column("_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_membership_types")),
+    )
+    permissions_table = op.create_table(
+        "permissions",
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("action", sa.String(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_permissions")),
     )
     op.create_table(
         "sponsorship_requests",
@@ -104,83 +111,16 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_news")),
     )
     op.create_table(
-        "payments",
-        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column(
-            "type",
-            sa.Enum("ONE_TIME", "SUBSCRIPTION_INITIAL", "SUBSCRIPTION_RENEWAL", "REFUND", name="payment_type_enum"),
-            nullable=False,
-        ),
-        sa.Column(
-            "status",
-            sa.Enum(
-                "SUCCEEDED", "PROCESSING", "FAILED", "CANCELED", "REQUIRES_PAYMENT_METHOD", name="payment_status_enum"
-            ),
-            nullable=False,
-        ),
-        sa.Column("amount_total", sa.Integer(), nullable=False),
-        sa.Column("currency", sa.String(), nullable=False),
-        sa.Column("payment_intent_id", sa.String(length=128), nullable=True),
-        sa.Column("charge_id", sa.String(length=128), nullable=True),
-        sa.Column("invoice_id", sa.String(length=128), nullable=False),
-        sa.Column("subscription_id", sa.String(length=128), nullable=False),
-        sa.Column("checkout_session_id", sa.String(length=128), nullable=True),
-        sa.Column("stripe_customer_id", sa.String(length=128), nullable=False),
-        sa.Column("price_id", sa.String(length=128), nullable=False),
-        sa.Column("product_id", sa.String(length=128), nullable=False),
-        sa.Column("billing_reason", sa.String(length=64), nullable=False),
-        sa.Column("receipt_url", sa.String(length=512), nullable=True),
-        sa.Column("livemode", sa.Boolean(), nullable=False),
-        sa.Column("description", sa.String(length=512), nullable=True),
-        sa.Column("failure_code", sa.String(length=128), nullable=True),
-        sa.Column("failure_message", sa.String(length=1024), nullable=True),
-        sa.Column("payment_method_type", sa.String(length=64), nullable=True),
-        sa.Column("pm_last4", sa.String(length=8), nullable=True),
-        sa.Column("stripe_created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("_metadata", sa.JSON(), nullable=True),
-        sa.Column("user_id", sa.Integer(), nullable=True),
-        sa.Column("_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_payments_user_id_users")),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_payments")),
-    )
-    op.create_index(op.f("ix_payments_charge_id"), "payments", ["charge_id"], unique=False)
-    op.create_index(op.f("ix_payments_checkout_session_id"), "payments", ["checkout_session_id"], unique=False)
-    op.create_index(op.f("ix_payments_invoice_id"), "payments", ["invoice_id"], unique=True)
-    op.create_index(op.f("ix_payments_payment_intent_id"), "payments", ["payment_intent_id"], unique=False)
-    op.create_index(op.f("ix_payments_stripe_customer_id"), "payments", ["stripe_customer_id"], unique=False)
-    op.create_index(op.f("ix_payments_subscription_id"), "payments", ["subscription_id"], unique=False)
-    op.create_table(
         "users_memberships",
-        sa.Column(
-            "status",
-            sa.Enum(
-                "INCOMPLETE",
-                "INCOMPLETE_EXPIRED",
-                "TRIALING",
-                "ACTIVE",
-                "PAST_DUE",
-                "CANCELED",
-                "UNPAID",
-                name="users_membership_enum",
-            ),
-            nullable=False,
-        ),
         sa.Column(
             "approval_status",
             sa.Enum("APPROVED", "PENDING", "REJECTED", name="approval_status_enum"),
             server_default=sa.text("'PENDING'"),
             nullable=False,
         ),
-        sa.Column("stripe_subscription_id", sa.String(), nullable=True),
-        sa.Column("stripe_customer_id", sa.String(), nullable=True),
-        sa.Column("latest_invoice_id", sa.String(), nullable=True),
         sa.Column("current_period_end", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("has_access", sa.Boolean(), nullable=False),
         sa.Column("cancel_at_period_end", sa.Boolean(), server_default=sa.text("false"), nullable=False),
-        sa.Column("checkout_session_expires_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("checkout_url", sa.String(), nullable=True),
+        sa.Column("has_access", sa.Boolean(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("membership_type_id", sa.Integer(), nullable=False),
         sa.Column("_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
@@ -194,9 +134,18 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_users_memberships_user_id_users")),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_users_memberships")),
-        sa.UniqueConstraint("latest_invoice_id", name=op.f("uq_users_memberships_latest_invoice_id")),
-        sa.UniqueConstraint("stripe_customer_id", name=op.f("uq_users_memberships_stripe_customer_id")),
         sa.UniqueConstraint("user_id", name=op.f("uq_users_memberships_user_id")),
+    )
+    op.create_table(
+        "users_permissions",
+        sa.Column("permission_id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["permission_id"], ["permissions.id"], name=op.f("fk_users_permissions_permission_id_permissions")
+        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_users_permissions_user_id_users")),
+        sa.PrimaryKeyConstraint("permission_id", "user_id", name=op.f("pk_users_permissions")),
     )
     # ### end Alembic commands ###
 
@@ -270,37 +219,42 @@ def upgrade() -> None:
         ],
     )
 
+    op.bulk_insert(
+        permissions_table,
+        [
+            # admin permissions
+            {"action": "admin.create", "name": "Assign admin role"},
+            {"action": "admin.read", "name": "View admin profile"},
+            {"action": "admin.delete", "name": "Remove admin role"},
+            {"action": "admin.update", "name": "Update admin profile"},
+            # permission permissions
+            {"action": "permissions.create", "name": "Create permissions"},
+            {"action": "permissions.read", "name": "Read permissions"},
+            {"action": "permissions.delete", "name": "Delete permissions"},
+            {"action": "permissions.update", "name": "Update permissions"},
+            # memberships permissions
+            {"action": "memberships.create", "name": "Create memberships"},
+            {"action": "memberships.read", "name": "Read memberships"},
+            {"action": "memberships.delete", "name": "Delete memberships"},
+            {"action": "memberships.update", "name": "Update memberships"},
+            # user memberships permissions
+            {"action": "user_memberships.create", "name": "Create users memberships"},
+            {"action": "user_memberships.read", "name": "Read users memberships"},
+            {"action": "user_memberships.delete", "name": "Delete users memberships"},
+            {"action": "user_memberships.update", "name": "Update users memberships"},
+        ],
+    )
+
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table("users_permissions")
     op.drop_table("users_memberships")
-    op.drop_index(op.f("ix_payments_subscription_id"), table_name="payments")
-    op.drop_index(op.f("ix_payments_stripe_customer_id"), table_name="payments")
-    op.drop_index(op.f("ix_payments_payment_intent_id"), table_name="payments")
-    op.drop_index(op.f("ix_payments_invoice_id"), table_name="payments")
-    op.drop_index(op.f("ix_payments_checkout_session_id"), table_name="payments")
-    op.drop_index(op.f("ix_payments_charge_id"), table_name="payments")
-    op.drop_table("payments")
     op.drop_table("news")
     op.drop_index(op.f("ix_users_email"), table_name="users")
     op.drop_table("users")
     op.drop_table("sponsorship_requests")
+    op.drop_table("permissions")
     op.drop_table("membership_types")
     op.drop_table("contact_messages")
     # ### end Alembic commands ###
-
-    if op.get_bind().dialect.name == "postgresql":
-        membership_type_enum = postgresql.ENUM(name="membership_type_enum")
-        membership_type_enum.drop(op.get_bind(), checkfirst=True)
-
-        users_memberships_enum = postgresql.ENUM(name="users_membership_enum")
-        users_memberships_enum.drop(op.get_bind(), checkfirst=True)
-
-        approval_status_enum = postgresql.ENUM(name="approval_status_enum")
-        approval_status_enum.drop(op.get_bind(), checkfirst=True)
-
-        payment_status_enum = postgresql.ENUM(name="payment_status_enum")
-        payment_status_enum.drop(op.get_bind(), checkfirst=True)
-
-        payment_type_enum = postgresql.ENUM(name="payment_type_enum")
-        payment_type_enum.drop(op.get_bind(), checkfirst=True)

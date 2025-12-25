@@ -13,10 +13,7 @@ from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_router import router as auth_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.feedback.routes.sponsorship_requests_api import router as sponsorship_router
-from app.domains.memberships.routes.admin_api import router as membership_admin_router
-from app.domains.memberships.routes.api import router as membership_router
 from app.domains.news.api import router as news_router
-from app.domains.payments.api import router as payments_router
 from app.domains.permissions.routes.permissions_router import router as permission_router
 from app.domains.users.routes.admin_api import router as users_admin_router
 from app.domains.users.routes.api import router as users_router
@@ -68,12 +65,10 @@ app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
 app.include_router(sponsorship_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
-app.include_router(membership_router, prefix="/api")
-app.include_router(payments_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/stuff")
-app.include_router(membership_admin_router, prefix="/api/stuff")
+
 
 if DEV_MODE:
     origins = [
