@@ -14,7 +14,7 @@ from app.domains.users.filters import UsersFilter
 from app.domains.users.models import UpdateUserByAdminSchema, UserSchema
 from app.domains.users.services import UserServiceDep
 
-router = APIRouter(tags=["Admin Users"], prefix="/users")
+router = APIRouter(tags=["Admin: Users"], prefix="/users")
 
 
 class UserListResponses(InvalidRequestParamsResponses):
