@@ -53,11 +53,6 @@ http://localhost:8000/api/users/1
 
 ### Database
 
-### Stripe
-
-Used for online payments. When starting the app from a docker container is needed to set
-
-
 
 ### Media files storage
 

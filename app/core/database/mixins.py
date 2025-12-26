@@ -1,5 +1,6 @@
-import datetime
+from datetime import datetime
 
+from pydantic import BaseModel
 from sqlalchemy import DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,3 +17,9 @@ class UCIMixin:
         server_default=func.now(),
         nullable=False,
     )
+
+
+class UCIMixinSchema(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime

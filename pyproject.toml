@@ -24,7 +24,6 @@ dependencies = [
     "phonenumbers (>=9.0.8,<10.0.0)",
     "fastapi-mail (>=1.5.0,<2.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
-    "stripe (>=12.4.0,<13.0.0)",
 ]
 
 [tool.poetry]

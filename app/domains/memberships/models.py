@@ -74,7 +74,6 @@ class UpdateMembershipTypeSchema(BaseModel):
     type: Optional[MembershipTypeEnum] = Field(None)
     description: Optional[str] = Field(None)
     is_purchasable: Optional[bool] = Field(None)
-    stripe_price_id: Optional[str] = Field(None)
     price_usd: Optional[float] = Field(None)
 
 

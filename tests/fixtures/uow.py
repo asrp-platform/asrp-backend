@@ -2,7 +2,6 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.infrastructure import AuthUnitOfWork
-from app.domains.memberships.infrastructure import MembershipUnitOfWork
 from app.domains.users.infrastructure import UserUnitOfWork
 
 pytestmark = pytest.mark.anyio
@@ -16,8 +15,3 @@ def auth_uow(test_session: AsyncSession) -> AuthUnitOfWork:
 @pytest.fixture()
 def user_uow(test_session: AsyncSession) -> UserUnitOfWork:
     return UserUnitOfWork(test_session)
-
-
-@pytest.fixture()
-def membership_uow(test_session: AsyncSession) -> MembershipUnitOfWork:
-    return MembershipUnitOfWork(test_session)

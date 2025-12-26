@@ -43,10 +43,6 @@ jobs:
           FERNET_KEY=${{ secrets.FERNET_KEY }}
           ALGORITHM=${{ secrets.ALGORITHM }}
 
-          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
-          STRIPE_EVENTS=checkout.session.completed,payment_intent.succeeded,invoice.payment_succeeded,invoice.payment_failed,payment_intent.payment_failed,customer.subscription.updated,customer.subscription.deleted,invoice.paid
-          STRIPE_WEBHOOK_SECRET_KEY=${{ secrets.STRIPE_WEBHOOK_SECRET_KEY }}
-          STRIPE_PRICE_ID_TEST=${{ secrets.STRIPE_PRICE_ID_TEST }}
 
           BACKEND_DOMAIN=rsapa_backend
           BACKEND_PORT=8000
@@ -69,9 +65,9 @@ jobs:
 
           echo ".env written (secrets hidden)"
 
-      - name: Start DB (+stripe-listen) with docker compose
+      - name: Start DB with docker compose
         run: |
-          docker compose -f local.yml up -d rsapa_database stripe-listen
+          docker compose -f local.yml up -d rsapa_database
           docker compose -f local.yml ps
           docker compose -f local.yml logs --no-color --tail=50 rsapa_database || true
 
@@ -117,11 +113,6 @@ jobs:
           SECRET_KEY=${{ secrets.SECRET_KEY }}
           FERNET_KEY=${{ secrets.FERNET_KEY }}
           ALGORITHM=${{ secrets.ALGORITHM }}
-
-          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
-          STRIPE_EVENTS=checkout.session.completed,payment_intent.succeeded,invoice.payment_succeeded,invoice.payment_failed,payment_intent.payment_failed,customer.subscription.updated,customer.subscription.deleted,invoice.paid
-          STRIPE_WEBHOOK_SECRET_KEY=${{ secrets.STRIPE_WEBHOOK_SECRET_KEY }}
-          STRIPE_PRICE_ID_TEST=${{ secrets.STRIPE_PRICE_ID_TEST }}
 
           BACKEND_DOMAIN=rsapa_backend
           BACKEND_PORT=8000

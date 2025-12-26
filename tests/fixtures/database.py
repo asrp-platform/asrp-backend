@@ -61,7 +61,6 @@ async def insert_test_data(
                     duration=365,
                     description="Any legally qualified Russian-speaking specialist (MD, DO, MBBS, PhD, or equivalent degree). practicing pathology in the united states",
                     is_purchasable=True,
-                    stripe_price_id="price_1RwRBa9SPoTZMPaT3g9B2kAQ",
                 ),
                 MembershipType(
                     name="Trainee Member",
@@ -70,7 +69,6 @@ async def insert_test_data(
                     duration=365,
                     description="Russian-speaking residents or fellows in pathology or related disciplines in the United States.",
                     is_purchasable=True,
-                    stripe_price_id="price_1RwRAs9SPoTZMPaTIykRWXFD",
                 ),
                 MembershipType(
                     name="Affiliate Member",
@@ -79,7 +77,6 @@ async def insert_test_data(
                     duration=365,
                     description="Russian-speaking pathologists, scientists, researchers, or allied professionals interested in the field of pathology whose involvement is relevant and contributes meaningfully to the Society (non-voting).",
                     is_purchasable=True,
-                    stripe_price_id="price_1RwRC99SPoTZMPaT6Q6Ux65U",
                 ),
                 MembershipType(
                     name="Honorary Member",
@@ -88,7 +85,6 @@ async def insert_test_data(
                     duration=365,
                     description="Individuals recognized fo exceptional service to the field of pathology or the Society (non-voting).",
                     is_purchasable=False,
-                    stripe_price_id="Not provided",
                 ),
                 MembershipType(
                     name="Pathway Member",
@@ -97,7 +93,6 @@ async def insert_test_data(
                     duration=365,
                     description="Russian-speaking individuals pursuing or transition into a medical career in the United States. This includes medical students and internationally trained medical graduates seeking mentorship and professional development as they prepare for pathology practice in the United States (non-voting).",
                     is_purchasable=True,
-                    stripe_price_id="price_1RwRCz9SPoTZMPaT16GFN9qz",
                 ),
             ]
         )

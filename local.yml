@@ -29,14 +29,12 @@ services:
       dockerfile: compose/backend/Dockerfile
     depends_on:
       - rsapa_database
-      - stripe-listen
     env_file:
       - .env
     ports:
       - "8000:8000"
     restart: unless-stopped
     volumes:
-      - stripe_runtime:/run/stripe
       - ./app/:/app/app/
       - ./alembic/:/app/alembic
       - ./logs/:/app/logs
@@ -60,7 +58,6 @@ services:
 
 volumes:
   postgres_data:
-  stripe_runtime:
 
 
 networks:

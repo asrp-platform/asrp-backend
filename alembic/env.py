@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.core.config import DB_URL
 from app.core.database.setup_db import Base
+from app.domains.directors_board.models import DirectorBoardMember  # noqa
 from app.domains.feedback.models import ContactMessage, SponsorshipRequest  # noqa
 from app.domains.memberships.models import MembershipType, UserMembership  # noqa
 from app.domains.news.models import News  # noqa

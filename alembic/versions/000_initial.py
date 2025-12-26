@@ -15,7 +15,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 # revision identifiers, used by Alembic.
-from app.core.config import DEV_MODE, settings
+from app.core.config import DEV_MODE
 
 revision: str = "000"
 down_revision: Union[str, None] = None
@@ -178,7 +178,6 @@ def upgrade() -> None:
                 "duration": 365,
                 "description": "Any legally qualified Russian-speaking specialist (MD, DO, MBBS, PhD, or equivalent degree). practicing pathology in the united states",
                 "is_purchasable": True,
-                "stripe_price_id": settings.STRIPE_PRICE_ID_TEST,
             },
             {
                 "name": "Trainee Member",
@@ -187,7 +186,6 @@ def upgrade() -> None:
                 "duration": 365,
                 "description": "Russian-speaking residents or fellows in pathology or related disciplines in the United States.",
                 "is_purchasable": True,
-                "stripe_price_id": settings.STRIPE_PRICE_ID_TEST,
             },
             {
                 "name": "Affiliate Member",
@@ -196,7 +194,6 @@ def upgrade() -> None:
                 "duration": 365,
                 "description": "Russian-speaking pathologists, scientists, researchers, or allied professionals interested in the field of pathology whose involvement is relevant and contributes meaningfully to the Society (non-voting).",
                 "is_purchasable": True,
-                "stripe_price_id": settings.STRIPE_PRICE_ID_TEST,
             },
             {
                 "name": "Honorary Member",
@@ -205,7 +202,6 @@ def upgrade() -> None:
                 "duration": 365,
                 "description": "Individuals recognized fo exceptional service to the field of pathology or the Society (non-voting).",
                 "is_purchasable": False,
-                "stripe_price_id": settings.STRIPE_PRICE_ID_TEST,
             },
             {
                 "name": "Pathway Member",
@@ -214,7 +210,6 @@ def upgrade() -> None:
                 "duration": 365,
                 "description": "Russian-speaking individuals pursuing or transition into a medical career in the United States. This includes medical students and internationally trained medical graduates seeking mentorship and professional development as they prepare for pathology practice in the United States (non-voting).",
                 "is_purchasable": True,
-                "stripe_price_id": settings.STRIPE_PRICE_ID_TEST,
             },
         ],
     )

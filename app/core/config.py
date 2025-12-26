@@ -50,10 +50,6 @@ class Settings(BaseSettings, GmailConfig):
     MEDIA_STORAGE_PATH: Path = Path("media")
     NEWS_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "news_uploads"
 
-    STRIPE_API_KEY: str
-    STRIPE_WEBHOOK_SECRET_KEY: str
-    STRIPE_PRICE_ID_TEST: str
-
     FRONTEND_DOMAIN_HTTP: str
     FRONTEND_DOMAIN: str
 
