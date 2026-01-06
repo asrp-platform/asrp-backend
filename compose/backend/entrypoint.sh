@@ -2,6 +2,7 @@
 
 mkdir media
 mkdir media/news_uploads
+mkdir media/directors_board_uploads
 
 export DB_HOST=rsapa_database
 

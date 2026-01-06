@@ -219,22 +219,22 @@ def upgrade() -> None:
         [
             # admin permissions
             {"action": "admin.create", "name": "Assign admin role"},
-            {"action": "admin.read", "name": "View admin profile"},
+            {"action": "admin.view", "name": "View admin profile"},
             {"action": "admin.delete", "name": "Remove admin role"},
             {"action": "admin.update", "name": "Update admin profile"},
             # permission permissions
             {"action": "permissions.create", "name": "Create permissions"},
-            {"action": "permissions.read", "name": "Read permissions"},
+            {"action": "permissions.view", "name": "Read permissions"},
             {"action": "permissions.delete", "name": "Delete permissions"},
             {"action": "permissions.update", "name": "Update permissions"},
             # memberships permissions
             {"action": "memberships.create", "name": "Create memberships"},
-            {"action": "memberships.read", "name": "Read memberships"},
+            {"action": "memberships.view", "name": "Read memberships"},
             {"action": "memberships.delete", "name": "Delete memberships"},
             {"action": "memberships.update", "name": "Update memberships"},
             # user memberships permissions
             {"action": "user_memberships.create", "name": "Create users memberships"},
-            {"action": "user_memberships.read", "name": "Read users memberships"},
+            {"action": "user_memberships.view", "name": "Read users memberships"},
             {"action": "user_memberships.delete", "name": "Delete users memberships"},
             {"action": "user_memberships.update", "name": "Update users memberships"},
         ],
@@ -253,3 +253,6 @@ def downgrade() -> None:
     op.drop_table("membership_types")
     op.drop_table("contact_messages")
     # ### end Alembic commands ###
+    # ### drop enums explicitly ###
+    op.execute("DROP TYPE IF EXISTS approval_status_enum")
+    op.execute("DROP TYPE IF EXISTS membership_type_enum")

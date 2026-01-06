@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from app.domains.directors_board.infrastructure import (
     DirectorBoardMemberUnitOfWork,
@@ -25,6 +25,20 @@ class DirectorBoardMemberService:
         insert_data = {**kwargs, "order": max_order + 1}
         async with self.uow:
             return await self.uow.director_board_member_repository.create(**insert_data)
+
+    async def update_order(self, items):
+        async with self.uow:
+            _, count = await self.uow.director_board_member_repository.list()
+
+        if len(items) != count:
+            raise ValueError(f"Reorder requires all board items. Expected {count}, received {len(items)}.")
+
+        # TODO: оптимизация с помощью case when
+        for item in items:
+            await self.uow._session.execute(
+                update(DirectorBoardMember).where(DirectorBoardMember.id == item.id).values(order=item.order)
+            )
+            await self.uow._session.commit()
 
 
 def get_director_board_member_service(

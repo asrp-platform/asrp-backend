@@ -10,15 +10,18 @@ from starlette.staticfiles import StaticFiles
 
 from app.core.config import DEV_MODE, settings
 from app.core.utils.open_api import get_custom_open_api
-from app.domains.auth.routes.auth_router import router as auth_router
-from app.domains.directors_board.routes.admin_router import router as directors_board_router
+
+# routers
+from app.domains.auth.routes.api import router as auth_router
+from app.domains.directors_board.routes.admin_api import router as directors_board_admin_router
+from app.domains.directors_board.routes.api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.feedback.routes.sponsorship_requests_api import router as sponsorship_router
 from app.domains.news.api import router as news_router
 
 # admin routers
-from app.domains.permissions.routes.admin_permissions_router import router as permissions_admin_router
-from app.domains.permissions.routes.permissions_router import router as permission_router
+from app.domains.permissions.routes.admin_api import router as permissions_admin_router
+from app.domains.permissions.routes.api import router as permission_router
 from app.domains.users.routes.admin_api import router as users_admin_router
 from app.domains.users.routes.api import router as users_router
 
@@ -69,10 +72,11 @@ app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
 app.include_router(sponsorship_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
+app.include_router(directors_board_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
-app.include_router(directors_board_router, prefix="/api/admin")
+app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 
 

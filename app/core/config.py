@@ -49,6 +49,7 @@ class Settings(BaseSettings, GmailConfig):
     MEDIA_API_PATH: str = "/api/media"
     MEDIA_STORAGE_PATH: Path = Path("media")
     NEWS_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "news_uploads"
+    DIRECTORS_BOARD_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "directors_board_uploads"
 
     FRONTEND_DOMAIN_HTTP: str
     FRONTEND_DOMAIN: str

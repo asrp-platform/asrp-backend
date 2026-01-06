@@ -50,7 +50,7 @@ def upgrade() -> None:
         permissions_table,
         [
             {"action": "director_board.create", "name": "Create director board members"},
-            {"action": "director_board.read", "name": "View director board members"},
+            {"action": "director_board.view", "name": "View director board members"},
             {"action": "director_board.delete", "name": "Remove director board members"},
             {"action": "director_board.update", "name": "Update director board members"},
         ],
@@ -65,7 +65,7 @@ def downgrade() -> None:
             DELETE FROM permissions
             WHERE action IN (
                 'director_board.create',
-                'director_board.read',
+                'director_board.view',
                 'director_board.delete',
                 'director_board.update'
             )
