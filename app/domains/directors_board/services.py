@@ -18,13 +18,17 @@ class DirectorBoardMemberService:
         async with self.uow:
             return await self.uow.director_board_member_repository.list()
 
-    async def create_director(self, **kwargs):
+    async def create_director_member(self, **kwargs):
         max_order = (
             await self.uow._session.execute(select(func.coalesce(func.max(DirectorBoardMember.order), 0)))
         ).scalar_one_or_none()
         insert_data = {**kwargs, "order": max_order + 1}
         async with self.uow:
             return await self.uow.director_board_member_repository.create(**insert_data)
+
+    async def update_director_member(self, director_member_id: int, data: dict):
+        async with self.uow:
+            return await self.uow.director_board_member_repository.update(director_member_id, data)
 
     async def update_order(self, items):
         async with self.uow:

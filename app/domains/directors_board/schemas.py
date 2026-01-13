@@ -38,9 +38,17 @@ class CreateBoardMemberSchema(BaseModel):
     name: str
     photo_url: str | None = None
 
-    content: ContentSchema
+    content: dict
     order: int | None = None
     is_visible: bool | None = None
+
+
+class UpdateBoardMemberSchema(BaseModel):
+    role: str | None = None
+    name: str | None = None
+    photo_url: str | None = None
+
+    content: dict | None = None
 
 
 class BoardMemberSchema(CreateBoardMemberSchema, UCIMixinSchema):

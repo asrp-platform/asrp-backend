@@ -1,11 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, Path, UploadFile
 from fastapi_exception_responses import Responses
 
 from app.core.config import settings
 from app.core.utils.save_file import save_file
-from app.domains.directors_board.schemas import BoardMemberSchema, CardOrderUpdate, CreateBoardMemberSchema
+from app.domains.directors_board.schemas import (
+    BoardMemberSchema,
+    CardOrderUpdate,
+    CreateBoardMemberSchema,
+    UpdateBoardMemberSchema,
+)
 from app.domains.directors_board.services import DirectorBoardMemberServiceDep
 from app.domains.shared.deps import AdminUserDep, UserPermissionsDep
 from app.domains.shared.exceptions import PermissionsResponses
@@ -40,14 +45,39 @@ class CreateDirectorResponses(PermissionsResponses):
 )
 async def create_director_member(
     data: CreateBoardMemberSchema,
-    admin: AdminUserDep,  # noqa Auth dep
+    admin: AdminUserDep,  # noqa auth dep
     permissions: UserPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
 ) -> BoardMemberSchema:
     if "director_board.create" not in permissions:
         raise CreateDirectorResponses.PERMISSION_ERROR
-    director = await director_service.create_director(**data.model_dump())
+    director = await director_service.create_director_member(**data.model_dump())
     return BoardMemberSchema.from_orm(director)
+
+
+class UpdateDirectorMemberResponses(PermissionsResponses):
+    DIRECTOR_MEMBER_NOT_FOUND = 404, "Director member with provided ID not found"
+
+
+@router.patch(
+    "/{director_member_id}",
+    responses=UpdateDirectorMemberResponses.responses,
+    summary="Update a director board member",
+)
+async def update_director_member(
+    director_member_id: Annotated[int, Path(...)],
+    admin: AdminUserDep,  # noqa auth dep
+    permissions: UserPermissionsDep,
+    director_service: DirectorBoardMemberServiceDep,
+    update_data: UpdateBoardMemberSchema,
+):
+    if "director_board.update" not in permissions:
+        raise UpdateDirectorMemberResponses.PERMISSION_ERROR
+    try:
+        update_data_dict = update_data.model_dump(exclude_unset=True)
+        return await director_service.update_director_member(director_member_id, update_data_dict)
+    except ValueError:
+        raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
 
 
 class UploadImageResponses(Responses):
