@@ -16,7 +16,6 @@ from app.domains.auth.routes.api import router as auth_router
 from app.domains.directors_board.routes.admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
-from app.domains.feedback.routes.sponsorship_requests_api import router as sponsorship_router
 from app.domains.news.api import router as news_router
 
 # admin routers
@@ -70,7 +69,6 @@ app.include_router(users_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
-app.include_router(sponsorship_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
 

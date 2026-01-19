@@ -5,7 +5,7 @@ from fastapi import Depends
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
-from app.domains.feedback.models import CreateContactMessageSchema, CreateSponsorshipRequestSchema
+from app.domains.feedback.models import CreateContactMessageSchema
 
 
 class FeedbackService:
@@ -38,16 +38,6 @@ class FeedbackService:
             subject=subject,
             body=answer_message,
         )
-
-    async def create_sponsorship_request(self, data: CreateSponsorshipRequestSchema):
-        async with self.uow:
-            return await self.uow.sponsorship_request_repository.create(**data.model_dump())
-
-    async def get_all_sponsorship_requests(
-        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
-    ):
-        async with self.uow:
-            return await self.uow.sponsorship_request_repository.list(limit, offset, order_by, filters)
 
 
 def get_feedback_service(

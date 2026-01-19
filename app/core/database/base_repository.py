@@ -120,3 +120,22 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
     async def remove(self, row_id: int) -> Result[int]:
         return await self.session.execute(delete(self.model).where(self.model.id == row_id).returning(self.model.id))
+
+    async def mark_as_deleted(self, row_id: int) -> Result[int]:
+        result = (
+            (
+                await self.session.execute(
+                    update(self.model)
+                    .where(self.model.id == row_id)
+                    .values({"_deleted": True})
+                    .returning(self.model.id)
+                )
+            )
+            .scalars()
+            .first()
+        )
+
+        if result is None:
+            raise ValueError("There is no such record with provided id")
+
+        return result  # noqa: Returns ID - integer value

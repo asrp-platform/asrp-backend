@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, File, Path, UploadFile
-from fastapi_exception_responses import Responses
 
 from app.core.config import settings
 from app.core.utils.save_file import save_file
@@ -70,17 +69,43 @@ async def update_director_member(
     permissions: UserPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
     update_data: UpdateBoardMemberSchema,
-):
+) -> BoardMemberSchema:
     if "director_board.update" not in permissions:
         raise UpdateDirectorMemberResponses.PERMISSION_ERROR
     try:
         update_data_dict = update_data.model_dump(exclude_unset=True)
-        return await director_service.update_director_member(director_member_id, update_data_dict)
+        updated_director_member = await director_service.update_director_member(director_member_id, update_data_dict)
+        return BoardMemberSchema.from_orm(updated_director_member)
+
     except ValueError:
         raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
 
 
-class UploadImageResponses(Responses):
+class DeleteDirectorMemberResponses(PermissionsResponses):
+    DIRECTOR_MEMBER_NOT_FOUND = 404, "Director member with provided ID not found"
+
+
+@router.delete(
+    "/{director_member_id}",
+    responses=DeleteDirectorMemberResponses.responses,
+    summary="Delete a director board member",
+)
+async def delete_director_member(
+    director_member_id: Annotated[int, Path(...)],
+    admin: AdminUserDep,  # noqa auth dep
+    permissions: UserPermissionsDep,
+    director_service: DirectorBoardMemberServiceDep,
+) -> int:
+    if "director_board.delete" not in permissions:
+        raise DeleteDirectorMemberResponses.PERMISSION_ERROR
+    try:
+        deleted_id = await director_service.delete_director_member(director_member_id)
+        return deleted_id
+    except ValueError:
+        raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+
+
+class UploadImageResponses(PermissionsResponses):
     INVALID_CONTENT_TYPE = 422, "Invalid image content type"
 
 
@@ -92,7 +117,10 @@ class UploadImageResponses(Responses):
 async def upload_director_member_photo(
     file: Annotated[UploadFile, File(...)],
     admin: AdminUserDep,  # noqa
+    permissions: UserPermissionsDep,
 ) -> dict:
+    if "director_board.update" not in permissions:
+        raise UploadImageResponses.PERMISSION_ERROR
     if not file.content_type.startswith("image/"):
         raise UploadImageResponses.INVALID_CONTENT_TYPE
 
@@ -101,7 +129,7 @@ async def upload_director_member_photo(
     return {"path": relative_filepath.as_posix()}
 
 
-class ReorderCardResponses(Responses):
+class ReorderCardResponses(PermissionsResponses):
     INVALID_REORDER_ITEMS_COUNT = 409, "Invalid reorder items count"
 
 
@@ -114,7 +142,10 @@ async def reorder_cards(
     items: list[CardOrderUpdate],
     director_service: DirectorBoardMemberServiceDep,
     admin: AdminUserDep,  # noqa
+    permissions: UserPermissionsDep,
 ):
+    if "director_board.update" not in permissions:
+        raise ReorderCardResponses.PERMISSION_ERROR
     try:
         await director_service.update_order(items)
     except ValueError:

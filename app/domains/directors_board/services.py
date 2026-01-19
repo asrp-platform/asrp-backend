@@ -30,6 +30,10 @@ class DirectorBoardMemberService:
         async with self.uow:
             return await self.uow.director_board_member_repository.update(director_member_id, data)
 
+    async def delete_director_member(self, director_member_id: int) -> int:
+        async with self.uow:
+            return await self.uow.director_board_member_repository.mark_as_deleted(director_member_id)
+
     async def update_order(self, items):
         async with self.uow:
             _, count = await self.uow.director_board_member_repository.list()

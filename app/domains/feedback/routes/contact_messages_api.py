@@ -8,7 +8,7 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.feedback.filters import ContactMessagesFilter
-from app.domains.feedback.models import ContactMessageSchema, CreateContactMessageSchema
+from app.domains.feedback.models import ContactMessageResponseSchema, CreateContactMessageSchema
 from app.domains.feedback.services import FeedbackServiceDep
 from app.domains.shared.deps import AdminUserDep
 
@@ -17,10 +17,11 @@ router = APIRouter(prefix="/contact-messages", tags=["Contact Messages"])
 
 @router.post("/")
 async def create_contact_message(
-    contact_message_service: FeedbackServiceDep, message_data: CreateContactMessageSchema
-) -> ContactMessageSchema:
+    contact_message_service: FeedbackServiceDep,
+    message_data: CreateContactMessageSchema,
+) -> ContactMessageResponseSchema:
     contact_message = await contact_message_service.create_contact_message(message_data)
-    return ContactMessageSchema.from_orm(contact_message)
+    return ContactMessageResponseSchema.from_orm(contact_message)
 
 
 @router.get("/", responses=InvalidRequestParamsResponses.responses)
@@ -30,7 +31,7 @@ async def get_contact_messages(
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[ContactMessagesFilter, Depends()] = None,
-) -> PaginatedResponse[ContactMessageSchema]:
+) -> PaginatedResponse[ContactMessageResponseSchema]:
     try:
         messages, messages_count = await contact_message_service.get_all_paginated_counted(
             order_by=ordering,
@@ -38,7 +39,7 @@ async def get_contact_messages(
             limit=params["limit"],
             offset=params["offset"],
         )
-        data = [ContactMessageSchema.from_orm(message) for message in messages]
+        data = [ContactMessageResponseSchema.from_orm(message) for message in messages]
         return PaginatedResponse(
             count=messages_count,
             data=data,

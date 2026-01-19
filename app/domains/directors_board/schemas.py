@@ -37,10 +37,9 @@ class CreateBoardMemberSchema(BaseModel):
     role: str
     name: str
     photo_url: str | None = None
-
-    content: dict
     order: int | None = None
     is_visible: bool | None = None
+    content: dict
 
 
 class UpdateBoardMemberSchema(BaseModel):
