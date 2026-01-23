@@ -13,7 +13,7 @@ async def test_logout(
     response = await client.post("api/auth/logout", headers=authorization_header, cookies=refresh_token_cookie)
 
     assert response.status_code == 200
-    assert "refresh_token" not in response.cookies.keys()
+    assert "refresh_token" not in response.cookies
 
 
 async def test_logout_not_authenticated(
