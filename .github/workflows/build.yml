@@ -165,7 +165,7 @@ jobs:
           pipx install poetry
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           poetry install --with dev
-          mkdir -p media
+          mkdir -p media/directors_board_uploads
 
       - name: Ensure schema up
         run: poetry run alembic upgrade head
