@@ -39,6 +39,7 @@ class CreateDirectorResponses(PermissionsResponses):
 
 @router.post(
     "",
+    status_code=201,
     responses=CreateDirectorResponses.responses,
     summary="Create a director board member",
 )
@@ -106,7 +107,7 @@ async def delete_director_member(
 
 
 class UploadImageResponses(PermissionsResponses):
-    INVALID_CONTENT_TYPE = 422, "Invalid image content type"
+    INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
 
 @router.post(

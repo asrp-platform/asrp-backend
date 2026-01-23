@@ -13,7 +13,7 @@ class DirectorBoardMemberRepository(SQLAlchemyRepository):
     model = DirectorBoardMember
 
 
-class DirectorBoardMemberUnitOfWork(SQLAlchemyUnitOfWork):
+class DirectorsBoardMemberUnitOfWork(SQLAlchemyUnitOfWork):
     def __init__(self, session=None):
         super().__init__(session)
         self.director_board_member_repository = DirectorBoardMemberRepository(self._session)
@@ -21,5 +21,5 @@ class DirectorBoardMemberUnitOfWork(SQLAlchemyUnitOfWork):
 
 def get_director_board_member_unit_of_work(
     session: Annotated[AsyncSession, Depends(session_getter)],
-) -> DirectorBoardMemberUnitOfWork:
-    return DirectorBoardMemberUnitOfWork(session)
+) -> DirectorsBoardMemberUnitOfWork:
+    return DirectorsBoardMemberUnitOfWork(session)

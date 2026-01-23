@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 import pytest
 from faker import Faker
@@ -8,6 +8,56 @@ from app.domains.users.infrastructure import UserUnitOfWork
 from app.domains.users.models import User
 
 pytestmark = pytest.mark.anyio
+
+
+AuthData = tuple[dict[str, str], dict[str, str], str]
+UserFactory = Callable[..., Awaitable[User]]
+AuthFactory = Callable[[User], AuthData]
+
+
+@pytest.fixture(scope="function")
+async def user_factory(
+    faker: Faker,
+    user_uow: UserUnitOfWork,
+) -> UserFactory:
+    async def _factory(**overrides) -> User:
+        user_data = {
+            "email": faker.email(),
+            "password": faker.password(),
+            "firstname": faker.first_name(),
+            "lastname": faker.last_name(),
+            "institution": faker.pystr(min_chars=2),
+            "role": faker.pystr(min_chars=2),
+            **overrides,
+        }
+        async with user_uow:
+            return await user_uow.user_repository.create(**user_data)
+
+    return _factory
+
+
+@pytest.fixture(scope="function")
+def authentication_data_factory() -> AuthFactory:
+    def _factory(user: User) -> AuthData:
+        access_token = create_access_token({"email": user.email})
+        refresh_token = create_refresh_token(
+            {"email": user.email},
+            remember_me=False,
+        )
+
+        return (
+            {"Authorization": f"Bearer {access_token}"},
+            {"refresh_token": refresh_token},
+            user.email,
+        )
+
+    return _factory
+
+
+@pytest.fixture(scope="function")
+async def user_authentication_data(user_factory: UserFactory, authentication_data_factory: AuthFactory) -> AuthData:
+    user = await user_factory()
+    return authentication_data_factory(user)
 
 
 @pytest.fixture(scope="function")
@@ -29,50 +79,3 @@ def user_data(register_user_data: dict[str, Any]) -> dict[str, Any]:
     user_data = register_user_data.copy()
     user_data.pop("repeat_password")
     return user_data
-
-
-@pytest.fixture(scope="function")
-async def test_user(
-    user_uow: UserUnitOfWork,
-    user_data: dict[str | Any],
-) -> User:
-    user_creation_data = user_data.copy()
-    user = await user_uow.user_repository.create(**user_creation_data)
-
-    return user
-
-
-@pytest.fixture(scope="function")
-def authentication_data(
-    test_user: User,
-) -> [dict[str, str], dict[str, str], str]:
-    user = test_user
-    access_token = create_access_token({"email": user.email})
-    refresh_token = create_refresh_token({"email": user.email}, remember_me=False)
-
-    return {"Authorization": f"Bearer {access_token}"}, {"refresh_token": refresh_token}, user.email
-
-
-@pytest.fixture
-def authentication_data_factory(user_uow: UserUnitOfWork, faker: Faker):
-    async def _factory():
-        from app.domains.shared.deps import create_access_token, create_refresh_token
-
-        user_data = {
-            "email": faker.email(),
-            "password": faker.password(),
-            "firstname": faker.first_name(),
-            "lastname": faker.last_name(),
-            "institution": faker.company(),
-            "role": faker.job(),
-        }
-
-        async with user_uow:
-            user = await user_uow.user_repository.create(**user_data)
-
-        access_token = create_access_token({"email": user.email})
-        refresh_token = create_refresh_token({"email": user.email}, remember_me=False)
-
-        return {"Authorization": f"Bearer {access_token}"}, {"refresh_token": refresh_token}, user.email
-
-    return _factory

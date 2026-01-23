@@ -10,9 +10,9 @@ pytestmark = pytest.mark.anyio
 
 async def test_refresh_access_token(
     client: AsyncClient,
-    authentication_data: [dict[str, str], dict[str, str], str],
+    user_authentication_data,
 ) -> None:
-    authorization_header, refresh_token_cookie, email = authentication_data
+    authorization_header, refresh_token_cookie, email = user_authentication_data
 
     response = await client.post(
         "api/auth/refresh",
@@ -37,9 +37,9 @@ async def test_refresh_access_token_not_authorized(
 async def test_refresh_access_token_invalid_token(
     client: AsyncClient,
     faker: Faker,
-    authentication_data: [dict[str, str], dict[str, str], str],
+    user_authentication_data,
 ) -> None:
-    authorization_header, _, email = authentication_data
+    authorization_header, _, email = user_authentication_data
     response = await client.post(
         "api/auth/refresh",
         headers=authorization_header,
@@ -52,9 +52,9 @@ async def test_refresh_access_token_invalid_token(
 async def test_refresh_access_token_invalid_token_payload(
     client: AsyncClient,
     faker: Faker,
-    authentication_data: [dict[str, str], dict[str, str], str],
+    user_authentication_data,
 ) -> None:
-    authorization_header, _, _ = authentication_data
+    authorization_header, _, _ = user_authentication_data
     refresh_token = create_refresh_token({"email": faker.pystr()})
     response = await client.post(
         "api/auth/refresh",

@@ -3,6 +3,8 @@ from tests.fixtures.faker import *  # noqa
 from tests.fixtures.database import *  # noqa
 from tests.fixtures.uow import *  # noqa
 from tests.fixtures.auth import *  # noqa
+from tests.fixtures.permissions import *  # noqa
+from tests.fixtures.context import *  # noqa
 
 pytest_plugins = ("anyio",)
 

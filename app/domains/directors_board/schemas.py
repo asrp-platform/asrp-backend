@@ -46,6 +46,7 @@ class UpdateBoardMemberSchema(BaseModel):
     role: str | None = None
     name: str | None = None
     photo_url: str | None = None
+    is_visible: bool | None = None
 
     content: dict | None = None
 

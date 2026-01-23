@@ -6,9 +6,9 @@ pytestmark = pytest.mark.anyio
 
 async def test_logout(
     client: AsyncClient,
-    authentication_data: [dict[str, str], dict[str, str], str],
+    user_authentication_data,
 ):
-    authorization_header, refresh_token_cookie, _ = authentication_data
+    authorization_header, refresh_token_cookie, _ = user_authentication_data
 
     response = await client.post("api/auth/logout", headers=authorization_header, cookies=refresh_token_cookie)
 
