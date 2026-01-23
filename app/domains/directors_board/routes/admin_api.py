@@ -112,6 +112,7 @@ class UploadImageResponses(PermissionsResponses):
 
 @router.post(
     "/images",
+    status_code=201,
     responses=UploadImageResponses.responses,
     summary="Upload image for a director member",
 )

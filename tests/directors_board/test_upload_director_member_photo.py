@@ -28,7 +28,7 @@ async def test_upload_director_member_photo(
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert "path" in response.json()
     assert response.json()["path"].endswith(".png")
 
