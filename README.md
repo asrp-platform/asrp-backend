@@ -1,5 +1,8 @@
 # ASRP Backend
 
+
+
+
 ## Backend Setup Guide
 
 This guide explains how to run the **PostgreSQL database** and the **FastAPI backend** for the ASRP project in two common scenarios:
@@ -10,7 +13,10 @@ This guide explains how to run the **PostgreSQL database** and the **FastAPI bac
 
 
 
+
+
 ## Setup development environment using Docker
+
 
 ### Environment Configuration
 
@@ -18,12 +24,11 @@ Create a `.env` file in the project root using `.env-template` configuration fil
 
 Necessary envs:
 
-
 - `DB_HOST=localhost` - localhost if starting backend via IDE, container name is using Docker,
 - `DB_PORT=5432`
 - `DB_PASSWORD=asrp_test`
 - `DB_USER=asrp_test`
-- `DB_NAME=asrp_test`_test
+- `DB_NAME=asrp_test`
 
 
 - `DEV_MODE=true`
@@ -33,6 +38,21 @@ Necessary envs:
 - `ALGORITHM=HS256`
 
 `SECRET_KEY` and `FERNET_KEY` must be generated manually
+
+#### DB_HOST
+
+When running backend inside Docker:
+DB_HOST=asrp_database
+
+When running backend locally from IDE:
+DB_HOST=localhost
+
+#### DEV_MODE
+
+DEV_MODE enables:
+- mocked email sending
+- relaxed security checks
+- development logging
 
 
 #### Fernet Key generation
@@ -46,7 +66,7 @@ print(Fernet.generate_key().decode())
 #### Secret Key generation
 
 
-```shell
+```python
 import secrets
 
 print(secrets.token_urlsafe(64))
@@ -55,10 +75,10 @@ print(secrets.token_urlsafe(64))
 ### Start and build containers
 
 ```shell
-docker compose -f ./local.yml --build -d
+docker compose -f ./local.yml up --build -d
 ```
 
-Database migrations are applied automatically
+Database migrations are applied automatically using `alembic upgrade head` command in *compose/backend/entrypoint.sh*
 
 For deployment the `DB_HOST` environment variable should match the database service name specified in `local.yml`.
 For local development set `DB_HOST` to `localhost`.
@@ -90,16 +110,28 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+
+
+
 ## Naming
 
 ### Branch naming
 
+All feature, bugfix, and release branches must be created from the develop branch.
+
 The following branch types are used according to the GitFlow development workflow:
 
-1. `feature/*` - for features
+1. `feature/*`
 2. `release/*`
 3. `hotfix/*`
 4. `bugfix/*`
+
+### Pull requests naming
+
+1. `Feature: *`
+2. `Release: *`
+3. `Hotfix: *`
+4. `Bugfix: *`
 
 ### Commits naming
 
@@ -132,10 +164,16 @@ the storage is accessible via `MEDIA_PATH_NAME/file_name`. For example:
 http://localhost:8000/api/media/photo.jpeg
 ```
 
+Media storage is *media/* director
+
 ### Tests
 
-Run tests
+All tests are run using a dedicated test database.
 
 ```shell
 pytest -v tests
 ```
+
+
+
+## Troubleshooting
