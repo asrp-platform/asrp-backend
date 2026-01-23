@@ -10,7 +10,7 @@ load_dotenv()
 
 DEV_MODE: bool = getenv("DEV_MODE", "true").strip().lower() in {"true", "1", "yes"}
 
-# ~\Desktop\rsapa-backend
+# ~\Desktop\asrp-backend
 BASE_DIR = Path(__file__).parent.parent.parent
 
 CONVENTION = {
@@ -23,11 +23,11 @@ CONVENTION = {
 
 
 class GmailConfig(BaseModel):
-    GMAIL_USERNAME: str
-    GMAIL_PASSWORD: str
-    GMAIL_FROM: str
-    GMAIL_PORT: int
-    GMAIL_SERVER: str
+    GMAIL_USERNAME: str | None = None
+    GMAIL_PASSWORD: str | None = None
+    GMAIL_FROM: str | None = None
+    GMAIL_PORT: int | None = None
+    GMAIL_SERVER: str | None = None
 
 
 class Settings(BaseSettings, GmailConfig):

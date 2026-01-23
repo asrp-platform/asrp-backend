@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Sequence, TypeVar
+from typing import Any, Generic, Iterable, Sequence, TypeVar
 
 from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
@@ -101,6 +101,12 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
         instance = self.model(**kwargs)
         self.session.add(instance)
         return instance
+
+    async def bulk_create(self, items: Iterable[dict[str, Any]]) -> Sequence[T]:
+        instances = [self.model(**item) for item in items]
+        self.session.add_all(instances)
+        await self.session.flush()
+        return instances
 
     async def update(self, object_id: int, update_data: dict[str | Any]) -> T:
         result = (

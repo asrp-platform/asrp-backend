@@ -2,10 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
 from app.core.config import DEV_MODE, settings
@@ -34,7 +34,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    default_response_class=ORJSONResponse,
 )
 logger.add("logs/request_logs.log", rotation="10 days")
 
@@ -56,7 +55,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     custom_errors = [
         {"field": ".".join(str(loc) for loc in error["loc"][1:]), "message": error["msg"]} for error in exc.errors()
     ]
-    return ORJSONResponse(
+    return JSONResponse(
         status_code=422,
         content={"detail": {"errors": custom_errors}},
     )

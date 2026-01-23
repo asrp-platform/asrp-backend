@@ -38,8 +38,3 @@ class GmailPlugin(EmailPlugin):
             await self.fast_mail.send_message(message)
         except Exception as e:
             raise EmailDeliveryError(str(e))
-
-
-"http://127.0.0.1:8000/api/membership/user-memberships/current-user-membership"
-
-"http://127.0.0.1:8000/api/membership/user-memberships/current-user-membership"
