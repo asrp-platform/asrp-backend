@@ -38,7 +38,7 @@ async def directors_board_member_db(
                 }
             ],
         },
-        "order": faker.unique.random_int(min=1, max=100),
+        "order": faker.unique.random_int(min=1, max=10_000),
         "is_visible": faker.boolean(),
     }
 

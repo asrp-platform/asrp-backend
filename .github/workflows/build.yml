@@ -44,7 +44,7 @@ jobs:
           ALGORITHM=${{ secrets.ALGORITHM }}
 
 
-          BACKEND_DOMAIN=rsapa_backend
+          BACKEND_DOMAIN=asrp_backend
           BACKEND_PORT=8000
 
           FRONTEND_DOMAIN=http://localhost:3000
@@ -67,22 +67,22 @@ jobs:
 
       - name: Start DB with docker compose
         run: |
-          docker compose -f local.yml up -d rsapa_database
+          docker compose -f local.yml up -d asrp_database
           docker compose -f local.yml ps
-          docker compose -f local.yml logs --no-color --tail=50 rsapa_database || true
+          docker compose -f local.yml logs --no-color --tail=50 asrp_database || true
 
       - name: Wait for Postgres
         shell: bash
         run: |
           for i in {1..12}; do
-            if docker compose -f local.yml exec -T rsapa_database pg_isready -U test; then
+            if docker compose -f local.yml exec -T asrp_database pg_isready -U test; then
               echo "PostgreSQL is ready"; exit 0
             fi
             echo "Waiting for PostgreSQL... ($i/12)"
             sleep 5
           done
           echo "PostgreSQL failed to start"
-          docker compose -f local.yml logs rsapa_database || true
+          docker compose -f local.yml logs asrp_database || true
           exit 1
 
       - uses: actions/setup-python@v5
@@ -114,7 +114,7 @@ jobs:
           FERNET_KEY=${{ secrets.FERNET_KEY }}
           ALGORITHM=${{ secrets.ALGORITHM }}
 
-          BACKEND_DOMAIN=rsapa_backend
+          BACKEND_DOMAIN=asrp_backend
           BACKEND_PORT=8000
 
           FRONTEND_DOMAIN=http://localhost:3000
@@ -135,22 +135,22 @@ jobs:
 
       - name: Start DB with docker compose
         run: |
-          docker compose -f local.yml up -d rsapa_database
+          docker compose -f local.yml up -d asrp_database
           docker compose -f local.yml ps
-          docker compose -f local.yml logs --no-color --tail=50 rsapa_database || true
+          docker compose -f local.yml logs --no-color --tail=50 asrp_database || true
 
       - name: Wait for Postgres
         shell: bash
         run: |
           for i in {1..12}; do
-            if docker compose -f local.yml exec -T rsapa_database pg_isready -U test; then
+            if docker compose -f local.yml exec -T asrp_database pg_isready -U test; then
               echo "PostgreSQL is ready"; exit 0
             fi
             echo "Waiting for PostgreSQL... ($i/12)"
             sleep 5
           done
           echo "PostgreSQL failed to start"
-          docker compose -f local.yml logs rsapa_database || true
+          docker compose -f local.yml logs asrp_database || true
           exit 1
 
       - uses: actions/setup-python@v5
