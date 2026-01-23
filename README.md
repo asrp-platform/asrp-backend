@@ -7,13 +7,52 @@ This guide explains how to run the **PostgreSQL database** and the **FastAPI bac
 1. Running **Database + Backend via Docker**
 2. Running **only the Database via Docker** and starting the backend locally from an IDE
 
-### Setup development environment using Docker
 
-## Environment Configuration
 
-Create a `.env` file in the project root.
 
-#### Start and build containers
+## Setup development environment using Docker
+
+### Environment Configuration
+
+Create a `.env` file in the project root using `.env-template` configuration file.
+
+Necessary envs:
+
+
+- `DB_HOST=localhost` - localhost if starting backend via IDE, container name is using Docker,
+- `DB_PORT=5432`
+- `DB_PASSWORD=asrp_test`
+- `DB_USER=asrp_test`
+- `DB_NAME=asrp_test`_test
+
+
+- `DEV_MODE=true`
+
+- `SECRET_KEY`
+- `FERNET_KEY`
+- `ALGORITHM=HS256`
+
+`SECRET_KEY` and `FERNET_KEY` must be generated manually
+
+
+#### Fernet Key generation
+
+```python
+from cryptography.fernet import Fernet
+
+print(Fernet.generate_key().decode())
+```
+
+#### Secret Key generation
+
+
+```shell
+import secrets
+
+print(secrets.token_urlsafe(64))
+```
+
+### Start and build containers
 
 ```shell
 docker compose -f ./local.yml --build -d
