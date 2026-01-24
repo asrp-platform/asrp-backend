@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Depends
+from loguru import logger
 
 from app.core.config import BASE_DIR
 from app.domains.users.exceptions import InvalidPasswordError
@@ -45,9 +46,11 @@ class UserService:
                 raise ValueError("There is no such user with provided id")
             try:
                 os.remove(BASE_DIR / user.avatar_path)
-            except Exception:
-                # TODO: Залогировать ошибку
-                pass
+            except FileNotFoundError as e:
+                logger.error(f"Avatar deletion error\nTarget path: {BASE_DIR / user.avatar_path}\n Error: {e}")
+
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}")
 
             await self.uow.user_repository.update(user_id, {"avatar_path": avatar_path})
 
