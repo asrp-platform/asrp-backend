@@ -8,7 +8,7 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.feedback.filters import ContactMessagesFilter
-from app.domains.feedback.models import ContactMessageResponseSchema, CreateContactMessageSchema
+from app.domains.feedback.schemas import ContactMessageResponseSchema, CreateContactMessageSchema
 from app.domains.feedback.services import FeedbackServiceDep
 from app.domains.shared.deps import AdminUserDep
 
