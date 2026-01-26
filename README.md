@@ -1,47 +1,149 @@
-# RSAPA Backend
+# ASRP Backend
 
 
-## Setup local development environment
 
-In the `local.yml` env-variables are set up so the project runs out of docker container.
-For deployment is needed to set up the list of env-variables below:
 
-- DB_HOST=rsapa_database
-- BACKEND_DOMAIN=${app_domain}
-- BACKEND_PORT=${app_port}
+## Backend Setup Guide
+
+This guide explains how to run the **PostgreSQL database** and the **FastAPI backend** for the ASRP project in two common scenarios:
+
+1. Running **Database + Backend via Docker**
+2. Running **only the Database via Docker** and starting the backend locally from an IDE
+
+
+
+
+
+
+## Setup development environment using Docker
+
+
+### Environment Configuration
+
+Create a `.env` file in the project root using `.env-template` configuration file.
+
+Necessary envs:
+
+- `DB_HOST=localhost` - localhost if starting backend via IDE, container name is using Docker,
+- `DB_PORT=5432`
+- `DB_PASSWORD=asrp_test`
+- `DB_USER=asrp_test`
+- `DB_NAME=asrp_test`
+
+
+- `DEV_MODE=true`
+
+- `SECRET_KEY`
+- `FERNET_KEY`
+- `ALGORITHM=HS256`
+
+`SECRET_KEY` and `FERNET_KEY` must be generated manually
+
+#### DB_HOST
+
+When running backend inside Docker:
+DB_HOST=asrp_database
+
+When running backend locally from IDE:
+DB_HOST=localhost
+
+#### DEV_MODE
+
+DEV_MODE enables:
+- mocked email sending
+- relaxed security checks
+- development logging
+
+
+#### Fernet Key generation
+
+```python
+from cryptography.fernet import Fernet
+
+print(Fernet.generate_key().decode())
+```
+
+#### Secret Key generation
+
+
+```python
+import secrets
+
+print(secrets.token_urlsafe(64))
+```
 
 ### Start and build containers
 
 ```shell
-docker compose -f ./local.yml --build -d
+docker compose -f ./local.yml up --build -d
 ```
 
-For deployment the `HOST` environment variable should match the database service name ызусшашув шт `local.yml`.
-For local development set `HOST` to `localhost`.
+Database migrations are applied automatically using `alembic upgrade head` command in *compose/backend/entrypoint.sh*
+
+For deployment the `DB_HOST` environment variable should match the database service name specified in `local.yml`.
+For local development set `DB_HOST` to `localhost`.
+
+
+### Setup development environment using IDE
+
+#### Start and build database container
+
+```shell
+docker compose up -d asrp_database
+```
+
+#### Install dependencies
+
+```shell
+poetry install
+```
+
+#### Apply database migrations
+
+```shell
+alembic upgrade head
+```
+
+#### Run the app
+
+```shell
+uvicorn app.main:app --reload
+```
+
+
 
 
 ## Naming
 
 ### Branch naming
 
-There are four name options for branches due to the GitFlow development:
-1. `feature` - for features
-2. `release`
-3. `hotfix`
-4. `bugfix`
+All feature, bugfix, and release branches must be created from the develop branch.
+
+The following branch types are used according to the GitFlow development workflow:
+
+1. `feature/*`
+2. `release/*`
+3. `hotfix/*`
+4. `bugfix/*`
+
+### Pull requests naming
+
+1. `Feature: *`
+2. `Release: *`
+3. `Hotfix: *`
+4. `Bugfix: *`
 
 ### Commits naming
 
 We use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) to name our commits using the following special words:
 
-- feat: (msg) - for new features
-- fix: (msg) - for fixing bugs
-- BREAKING CHANGE: (msg) - for
-- ci: (msg)
+- docs: (msg) — for documentation changes
+- refactor: (msg) — for code refactoring without changing behavior
+- test: (msg) — for adding or updating tests
+- chore: (msg) — for maintenance tasks
 
 
 ## Main services
-
 
 ### App
 
@@ -61,3 +163,17 @@ the storage is accessible via `MEDIA_PATH_NAME/file_name`. For example:
 ```
 http://localhost:8000/api/media/photo.jpeg
 ```
+
+Media storage is *media/* director
+
+### Tests
+
+All tests are run using a dedicated test database.
+
+```shell
+pytest -v tests
+```
+
+
+
+## Troubleshooting

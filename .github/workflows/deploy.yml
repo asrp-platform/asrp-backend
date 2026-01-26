@@ -31,7 +31,7 @@ jobs:
       - name: Deploy
         run: |
           ssh -i ~/.ssh/id_ed25519 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-              cd rsapa-backend/
+              cd asrp-backend/
               git pull origin main
               docker compose -f ./local.yml up --build -d
           EOF

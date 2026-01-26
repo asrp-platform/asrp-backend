@@ -1,7 +1,7 @@
 services:
-  rsapa_database:
-    container_name: rsapa_database
-    image: postgres:alpine
+  asrp_database:
+    container_name: asrp_database
+    image: postgres:16
     env_file:
       - .env
     environment:
@@ -22,13 +22,14 @@ services:
     networks:
       - default
 
-  rsapa_backend:
-    container_name: rsapa_backend
+  asrp_backend:
+    container_name: asrp_backend
     build:
       context: .
       dockerfile: compose/backend/Dockerfile
     depends_on:
-      - rsapa_database
+      asrp_database:
+        condition: service_healthy
     env_file:
       - .env
     ports:
@@ -48,9 +49,9 @@ services:
       - 80:80
     volumes:
       - ./compose/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - /var/www/rsapa-frontend:/var/www/rsapa-frontend:ro
+      - /var/www/asrp-frontend:/var/www/asrp-frontend:ro
     depends_on:
-      - rsapa_backend
+      - asrp_backend
     restart: unless-stopped
     networks:
       - default

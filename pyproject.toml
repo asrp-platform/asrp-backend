@@ -1,5 +1,5 @@
 [project]
-name = "rsapa-backend"
+name = "asrp-backend"
 version = "0.1.0"
 description = ""
 authors = [
@@ -53,6 +53,7 @@ select = [
     "B",  # flake8-bugbear потентциальные баги
     "C90", #  ьссфиу - сложность кода
     "T201", # search for prints
+    "SIM", # flake8-simplify
 ]
 ignore = [
     "E501", # PEP8 length > 79
