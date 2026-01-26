@@ -9,7 +9,7 @@ from app.core.common.responses import InvalidRequestParamsResponses, PaginatedRe
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
-from app.domains.shared.deps import AdminUserDep, UserPermissionsDep
+from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 from app.domains.users.filters import UsersFilter
 from app.domains.users.models import UpdateUserByAdminSchema, UserSchema
 from app.domains.users.services import UserServiceDep
@@ -62,7 +62,7 @@ async def update_user_by_admin(
     user_id: Annotated[int, Path()],
     user_service: UserServiceDep,
     admin: AdminUserDep,  # noqa Admin auth argument
-    permissions: UserPermissionsDep,
+    permissions: AdminPermissionsDep,
     update_data: UpdateUserByAdminSchema,
 ):
     if update_data.stuff is True and "admin.create" not in permissions:
@@ -82,7 +82,7 @@ async def update_user_by_admin(
 async def get_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
-    current_user_permissions: UserPermissionsDep,
+    current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
 ) -> list[PermissionSchema]:
     permissions = await permissions_service.get_user_permissions(user_id)
@@ -101,7 +101,7 @@ class ManagePermissionsResponses(Responses):
 async def assign_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
-    current_user_permissions: UserPermissionsDep,
+    current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
     permissions_ids: list[int],
 ):
@@ -118,7 +118,7 @@ async def assign_permissions(
 async def remove_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
-    current_user_permissions: UserPermissionsDep,
+    current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
     permissions_ids: list[int],
 ):
@@ -134,7 +134,7 @@ async def remove_user_permissions(
 async def set_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
-    current_user_permissions: UserPermissionsDep,
+    current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
     permissions_ids: list[int],
 ):
