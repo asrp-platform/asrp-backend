@@ -51,20 +51,27 @@ class AuthService:
             await self.uow.user_repository.update(user.id, {"last_password_change": datetime.now(tz=timezone.utc)})
 
     async def reset_password(self, email: str):
-        token = self.cryptographer.create_token(email)
-        link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
-        message = f"""
-        Hello,
+        async with self.uow:
 
-        We received a request to reset the password for your account (user@example.com).
-        Please click the link below to set a new password:
+            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
 
-        {link}
+            if user is None:
+                return
 
-        This link is valid for 1 hour. If you did not request a password reset, please ignore this message.
+            token = self.cryptographer.create_token(email)
+            link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
+            message = f"""
+            Hello,
 
-        """
-        await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
+            We received a request to reset the password for your account ({email}).
+            Please click the link below to set a new password:
+
+            {link}
+
+            This link is valid for 1 hour. If you did not request a password reset, please ignore this message.
+
+            """
+            await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
