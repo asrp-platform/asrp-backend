@@ -78,14 +78,29 @@ async def update_user_by_admin(
         raise UpdateUserByAdminResponses.USER_NOT_FOUND
 
 
-@router.get("/{user_id}/permissions")
+class GetPermissionsResponses(Responses):
+    CANT_READ_PERMISSIONS = 403, "Don't have enough permissions to read user permissions"
+    USER_NOT_FOUND = 404, "User with provided ID not found"
+
+
+@router.get(
+    "/{user_id}/permissions",
+    responses=GetPermissionsResponses.responses,
+    summary="Get user permissions",
+)
 async def get_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
     current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
 ) -> list[PermissionSchema]:
-    permissions = await permissions_service.get_user_permissions(user_id)
+    if "permissions.read" not in current_user_permissions:
+        raise GetPermissionsResponses.CANT_READ_PERMISSIONS
+
+    try:
+        permissions = await permissions_service.get_user_permissions(user_id)
+    except ValueError:
+        raise GetPermissionsResponses.USER_NOT_FOUND
 
     return [PermissionSchema.from_orm(permission) for permission in permissions]
 
