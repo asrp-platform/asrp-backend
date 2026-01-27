@@ -55,23 +55,23 @@ class AuthService:
 
             user = await self.uow.user_repository.get_first_by_kwargs(email=email)
 
-            if user is None:
-                return
+        if user is None:
+            return
 
-            token = self.cryptographer.create_token(email)
-            link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
-            message = f"""
-            Hello,
+        token = self.cryptographer.create_token(email)
+        link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
+        message = f"""
+        Hello,
 
-            We received a request to reset the password for your account ({email}).
-            Please click the link below to set a new password:
+        We received a request to reset the password for your account ({email}).
+        Please click the link below to set a new password:
 
-            {link}
+        {link}
 
-            This link is valid for 1 hour. If you did not request a password reset, please ignore this message.
+        This link is valid for 1 hour. If you did not request a password reset, please ignore this message.
 
-            """
-            await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
+        """
+        await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
