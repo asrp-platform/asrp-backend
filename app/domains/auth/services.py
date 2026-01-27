@@ -51,12 +51,19 @@ class AuthService:
             await self.uow.user_repository.update(user.id, {"last_password_change": datetime.now(tz=timezone.utc)})
 
     async def reset_password(self, email: str):
+        async with self.uow:
+
+            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+
+        if user is None:
+            return
+
         token = self.cryptographer.create_token(email)
         link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
         message = f"""
         Hello,
 
-        We received a request to reset the password for your account (user@example.com).
+        We received a request to reset the password for your account ({email}).
         Please click the link below to set a new password:
 
         {link}
