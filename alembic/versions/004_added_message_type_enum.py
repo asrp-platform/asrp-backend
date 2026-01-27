@@ -24,7 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # При создании Enum'а в уже существующей таблице, его надо создавать отдельно
     contact_message_type_enum = postgresql.ENUM(
-        "CONTACT_MESSAGE", "GET_INVOLVED_MESSAGE", name="contact_message_type_enum"
+        "CONTACT", "GET_INVOLVED", "GET_INVOLVED_COMMITTEES", name="contact_message_type_enum"
     )
     contact_message_type_enum.create(op.get_bind(), checkfirst=True)
 

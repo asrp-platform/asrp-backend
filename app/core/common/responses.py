@@ -16,3 +16,7 @@ class PaginatedResponse(BaseModel, Generic[DataModel]):
 class InvalidRequestParamsResponses(Responses):
     INVALID_FILTER_FIELD = 400, "Invalid filter field"
     INVALID_SORTER_FIELD = 400, "Invalid sorter field"
+
+
+class PermissionsResponses(Responses):
+    PERMISSION_ERROR = 403, "Not enough permissions to perform this action"

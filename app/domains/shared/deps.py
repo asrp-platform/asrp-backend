@@ -106,4 +106,4 @@ async def get_users_permissions(
 RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 AdminUserDep = Annotated[User, Depends(get_admin_user)]
-UserPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]
+AdminPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]

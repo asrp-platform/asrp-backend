@@ -5,7 +5,7 @@ from fastapi import Depends
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
-from app.domains.feedback.models import CreateContactMessageSchema
+from app.domains.feedback.schemas import CreateContactMessageSchema
 
 
 class FeedbackService:
