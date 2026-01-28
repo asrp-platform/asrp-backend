@@ -5,7 +5,7 @@ from fastapi.params import Path
 from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
-from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
+from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
@@ -78,8 +78,8 @@ async def update_user_by_admin(
         raise UpdateUserByAdminResponses.USER_NOT_FOUND
 
 
-class GetPermissionsResponses(Responses):
-    CANT_READ_PERMISSIONS = 403, "Don't have enough permissions to read user permissions"
+class GetPermissionsResponses(PermissionsResponses):
+    PERMISSION_ERROR = 403, "Don't have enough permissions to read user permissions"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -95,7 +95,7 @@ async def get_user_permissions(
     admin: AdminUserDep,
 ) -> list[PermissionSchema]:
     if "permissions.read" not in current_user_permissions:
-        raise GetPermissionsResponses.CANT_READ_PERMISSIONS
+        raise GetPermissionsResponses.PERMISSION_ERROR
 
     try:
         permissions = await permissions_service.get_user_permissions(user_id)
@@ -105,8 +105,8 @@ async def get_user_permissions(
     return [PermissionSchema.from_orm(permission) for permission in permissions]
 
 
-class ManagePermissionsResponses(Responses):
-    CANT_MANAGE_PERMISSIONS = 403, "Don't have enough permissions to manage user permissions"
+class ManagePermissionsResponses(PermissionsResponses):
+    PERMISSION_ERROR = 403, "Don't have enough permissions to manage user permissions"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -121,7 +121,7 @@ async def assign_permissions(
     permissions_ids: list[int],
 ):
     if "permissions.create" not in current_user_permissions:
-        raise ManagePermissionsResponses.CANT_MANAGE_PERMISSIONS
+        raise ManagePermissionsResponses.PERMISSION_ERROR
 
     try:
         await permissions_service.assign_permissions_to_user(user_id, permissions_ids)
@@ -138,7 +138,7 @@ async def remove_user_permissions(
     permissions_ids: list[int],
 ):
     if "permissions.delete" not in current_user_permissions:
-        raise ManagePermissionsResponses.CANT_MANAGE_PERMISSIONS
+        raise ManagePermissionsResponses.PERMISSION_ERROR
     try:
         await permissions_service.remove_permissions_from_user(user_id, permissions_ids)
     except ValueError:
@@ -154,7 +154,7 @@ async def set_user_permissions(
     permissions_ids: list[int],
 ):
     if "permissions.update" not in current_user_permissions:
-        raise ManagePermissionsResponses.CANT_MANAGE_PERMISSIONS
+        raise ManagePermissionsResponses.PERMISSION_ERROR
     try:
         return await permissions_service.set_users_permissions(user_id, permissions_ids)
     except ValueError:
