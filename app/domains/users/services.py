@@ -67,7 +67,14 @@ class UserService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise ValueError("There is no such user with provided id")
-            os.remove(BASE_DIR / user.avatar_path)
+            try:
+                os.remove(BASE_DIR / user.avatar_path)
+            except FileNotFoundError as e:
+                logger.error(f"Avatar deletion error\nTarget path: {BASE_DIR / user.avatar_path}\n Error: {e}")
+
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}")
+
             await self.uow.user_repository.update(user_id, {"avatar_path": None})
 
     async def change_password(self, user_id, old_password, new_password):
