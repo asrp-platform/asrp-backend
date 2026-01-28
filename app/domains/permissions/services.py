@@ -36,7 +36,7 @@ class PermissionsService:
                 .options(selectinload(User.permissions))  # сразу подгружаем
                 .where(User.id == user_id)
             )
-            user: User = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
+            user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
 
             if user is None:
                 raise ValueError("User with provided ID not found")
@@ -50,7 +50,7 @@ class PermissionsService:
                 .options(selectinload(User.permissions))  # сразу подгружаем
                 .where(User.id == user_id)
             )
-            user: User = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
+            user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
 
             if user is None:
                 raise ValueError("User with provided ID not found")
@@ -71,7 +71,7 @@ class PermissionsService:
                 .options(selectinload(User.permissions))  # сразу подгружаем
                 .where(User.id == user_id)
             )
-            user: User = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
+            user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
 
             if user is None:
                 raise ValueError("User with provided ID not found")
@@ -89,7 +89,7 @@ class PermissionsService:
     async def set_users_permissions(self, user_id: int, permissions_ids):
         async with self.uow:
             user_stmt = select(User).options(selectinload(User.permissions)).where(User.id == user_id)
-            user: User = (await self.uow._session.execute(user_stmt)).scalar_one_or_none()
+            user: User | None = (await self.uow._session.execute(user_stmt)).scalar_one_or_none()
 
             if user is None:
                 raise ValueError("User with provided ID not found")
