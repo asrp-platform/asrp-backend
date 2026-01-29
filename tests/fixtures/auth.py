@@ -9,7 +9,6 @@ from app.domains.shared.deps import create_access_token, create_refresh_token
 from app.domains.users.infrastructure import UserUnitOfWork
 from app.domains.users.models import User
 
-
 pytestmark = pytest.mark.anyio
 
 

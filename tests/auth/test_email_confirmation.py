@@ -5,7 +5,6 @@ from httpx import AsyncClient
 from app.core.common.cryptographer import Cryptographer
 from app.domains.users.models import User
 
-
 pytestmark = pytest.mark.anyio
 
 
