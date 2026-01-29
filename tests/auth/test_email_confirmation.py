@@ -2,8 +2,8 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
-from app.domains.users.models import User
 from app.core.common.cryptographer import Cryptographer
+from app.domains.users.models import User
 
 
 pytestmark = pytest.mark.anyio

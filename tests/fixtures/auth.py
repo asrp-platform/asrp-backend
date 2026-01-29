@@ -3,11 +3,12 @@ from typing import Any, Awaitable, Callable
 import pytest
 from faker import Faker
 
+from app.core.common.cryptographer import Cryptographer
+from app.core.config import fernet
 from app.domains.shared.deps import create_access_token, create_refresh_token
 from app.domains.users.infrastructure import UserUnitOfWork
 from app.domains.users.models import User
-from app.core.config import fernet
-from app.core.common.cryptographer import Cryptographer
+
 
 pytestmark = pytest.mark.anyio
 
