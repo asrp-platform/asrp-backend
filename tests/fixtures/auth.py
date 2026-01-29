@@ -6,6 +6,8 @@ from faker import Faker
 from app.domains.shared.deps import create_access_token, create_refresh_token
 from app.domains.users.infrastructure import UserUnitOfWork
 from app.domains.users.models import User
+from app.core.config import fernet
+from app.core.common.cryptographer import Cryptographer
 
 pytestmark = pytest.mark.anyio
 
@@ -79,3 +81,8 @@ def user_data(register_user_data: dict[str, Any]) -> dict[str, Any]:
     user_data = register_user_data.copy()
     user_data.pop("repeat_password")
     return user_data
+
+
+@pytest.fixture(scope="function")
+def cryptographer() -> Cryptographer:
+    return Cryptographer(fernet)
