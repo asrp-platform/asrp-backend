@@ -145,3 +145,27 @@ async def confirm_password_reset(
         await auth_service.change_password(email, data.password)
     except ValueError:
         raise ConfirmPasswordResetResponses.INVALID_TOKEN
+
+
+class EmailConfirmResponses(Responses):
+    INVALID_TOKEN = 400, "Invalid token"
+
+
+@router.get("/email-confirm/send")
+async def email_confirm_send_link(
+    email: Annotated[str, Query(...)],
+    auth_service: AuthServiceDep,
+):
+    await auth_service.email_confirm_send_link(email)
+
+
+@router.get("/email-confirm/confirm")
+async def email_confirm_verify_token(
+    token: Annotated[str, Query(...)],
+    auth_service: AuthServiceDep,
+):
+    try:
+        email = auth_service.verify_email_confirm_token(token.encode())
+        await auth_service.email_confirm(email)
+    except ValueError:
+        raise EmailConfirmResponses.INVALID_TOKEN

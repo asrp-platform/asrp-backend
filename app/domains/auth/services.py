@@ -15,6 +15,7 @@ from app.domains.emails.services import get_email_service
 class RegisterResponses(Responses):
     PASSWORDS_DONT_MATCH = 400, "Passwords don't match"
     EMAIL_ALREADY_IN_USE = 409, "Provided email is already in use"
+    EMAIL_ALREADY_CONFIRMED = 409, "Provided email is already confirmed"
 
 
 class AuthService:
@@ -73,8 +74,50 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
+    async def email_confirm_send_link(self, email: str):
+        async with self.uow:
+
+            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+
+        if user is None:
+            raise ValueError("user with provided email not found")
+
+        if user.email_confirmed:
+            raise RegisterResponses.EMAIL_ALREADY_CONFIRMED
+
+        token = self.cryptographer.create_token(email)
+        link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirm/confirm/?token={token.decode()}"
+        message = f"""
+        Hello,
+
+        Thank you for registering! To complete your account setup and verify your email address, please click the link below:
+
+        {link}
+
+        This link is valid for 1 day. If you did not request a password reset, please ignore this message.
+        """
+        await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
+
+    async def email_confirm(self, email: str):
+        async with self.uow:
+
+            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+
+            if user is None:
+                raise ValueError("user with provided email not found")
+
+            if user.email_confirmed:
+                raise RegisterResponses.EMAIL_ALREADY_CONFIRMED
+
+            user.email_confirmed = True
+            await self.uow._session.flush()
+
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
+        return self.cryptographer.verify_token(token, lifetime_seconds)
+
+    def verify_email_confirm_token(self, token: bytes) -> str:
+        lifetime_seconds = 86400  # 1 day
         return self.cryptographer.verify_token(token, lifetime_seconds)
 
 
