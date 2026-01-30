@@ -22,11 +22,20 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
     firstname: Mapped[str] = mapped_column(nullable=False)
+    middlename: Mapped[str] = mapped_column(nullable=True)
     lastname: Mapped[str] = mapped_column(nullable=False)
+    suffix: Mapped[str] = mapped_column(nullable=True)
+    credentials: Mapped[str] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=True, unique=True)
     stuff: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
     description: Mapped[str] = mapped_column(String(512), nullable=True)
+    country: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=True)
+    city: Mapped[str] = mapped_column(nullable=False)
+    languages_spoken: Mapped[str] = mapped_column(nullable=True)
+    professional_interests: Mapped[str] = mapped_column(nullable=True)
+    telegram_username: Mapped[str] = mapped_column(nullable=True, unique=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=func.now(), server_default=func.now(), nullable=False
@@ -62,10 +71,19 @@ class User(Base):
 class UserSchema(BaseModel):
     id: int
     firstname: str
+    middlename: str | None
     lastname: str
+    suffix: str | None
+    credentials: str | None
     email: str
     stuff: bool
     description: str | None
+    country: str
+    state: str | None
+    city: str
+    languages_spoken: str | None
+    professional_interests: str | None
+    telegram_username: str | None
     created_at: datetime
     institution: str
     role: str
@@ -86,8 +104,17 @@ class UpdateUserByAdminSchema(BaseModel):
 
 class UpdateUserSchema(BaseModel):
     firstname: Annotated[str | None, Field(min_length=2)] = None
+    middlename: str | None = None
     lastname: Annotated[str | None, Field(min_length=2)] = None
+    suffix: str | None = None
+    credentials: str | None = None
     description: str | None = None
+    country: str | None = Field(None, min_length=2)
+    state: str | None = None
+    city: str | None = Field(None, min_length=2)
+    languages_spoken: str | None = None
+    professional_interests: str | None = None
+    telegram_username: str | None = None
     institution: Annotated[str | None, Field(min_length=2)] = None
     role: str | None = None
     phone_number: Annotated[str | None, Field()] = None
