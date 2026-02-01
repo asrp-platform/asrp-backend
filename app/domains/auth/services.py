@@ -74,7 +74,7 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
-    async def email_confirm_send_link(self, email: str):
+    async def confirm_email_send_link(self, email: str):
         async with self.uow:
 
             user = await self.uow.user_repository.get_first_by_kwargs(email=email)
@@ -98,7 +98,7 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
 
-    async def email_confirm(self, email: str):
+    async def confirm_email(self, email: str):
         async with self.uow:
 
             user = await self.uow.user_repository.get_first_by_kwargs(email=email)

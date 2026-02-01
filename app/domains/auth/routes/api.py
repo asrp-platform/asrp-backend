@@ -151,21 +151,27 @@ class EmailConfirmResponses(Responses):
     INVALID_TOKEN = 400, "Invalid token"
 
 
-@router.get("/email-confirm/send")
-async def email_confirm_send_link(
+@router.post(
+    "/email-confirm",
+    status_code=201
+)
+async def confirm_email_send_link(
     email: Annotated[str, Query(...)],
     auth_service: AuthServiceDep,
 ):
-    await auth_service.email_confirm_send_link(email)
+    await auth_service.confirm_email_send_link(email)
 
 
-@router.get("/email-confirm/confirm")
-async def email_confirm_verify_token(
+@router.patch(
+    "/email-confirm/confirm",
+    status_code=204
+)
+async def confirm_email(
     token: Annotated[str, Query(...)],
     auth_service: AuthServiceDep,
 ):
     try:
         email = auth_service.verify_email_confirm_token(token.encode())
-        await auth_service.email_confirm(email)
+        await auth_service.confirm_email(email)
     except ValueError:
         raise EmailConfirmResponses.INVALID_TOKEN
