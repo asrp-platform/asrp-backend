@@ -79,7 +79,7 @@ class AuthService:
             raise ValueError("Provided email is already confirmed")
 
         token = self.cryptographer.create_token(email)
-        link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirm/confirm/?token={token.decode()}"
+        link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirmations/?token={token.decode()}"
         message = f"""
         Hello,
 
