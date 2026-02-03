@@ -149,6 +149,7 @@ async def confirm_password_reset(
 
 class EmailConfirmResponses(Responses):
     INVALID_TOKEN = 400, "Invalid token"
+    EMAIL_ALREADY_CONFIRMED = 409, "Provided email is already confirmed"
 
 
 @router.post(
@@ -156,10 +157,15 @@ class EmailConfirmResponses(Responses):
     status_code=201
 )
 async def confirm_email_send_link(
-    email: Annotated[str, Query(...)],
     auth_service: AuthServiceDep,
+    current_user: CurrentUserDep
 ):
-    await auth_service.confirm_email_send_link(email)
+    try:
+        email = current_user.email
+        email_confirmed = current_user.email_confirmed
+        await auth_service.confirm_email_send_link(email, email_confirmed)
+    except ValueError:
+        raise EmailConfirmResponses.EMAIL_ALREADY_CONFIRMED
 
 
 @router.patch(
@@ -169,9 +175,10 @@ async def confirm_email_send_link(
 async def confirm_email(
     token: Annotated[str, Query(...)],
     auth_service: AuthServiceDep,
+    current_user: CurrentUserDep
 ):
     try:
-        email = auth_service.verify_email_confirm_token(token.encode())
-        await auth_service.confirm_email(email)
+        token_email = auth_service.verify_email_confirm_token(token.encode())
+        await auth_service.confirm_email(current_user.id, token_email, current_user.email)
     except ValueError:
         raise EmailConfirmResponses.INVALID_TOKEN

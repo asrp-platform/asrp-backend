@@ -74,16 +74,9 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
-    async def confirm_email_send_link(self, email: str):
-        async with self.uow:
-
-            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
-
-        if user is None:
-            raise ValueError("user with provided email not found")
-
-        if user.email_confirmed:
-            raise RegisterResponses.EMAIL_ALREADY_CONFIRMED
+    async def confirm_email_send_link(self, email: str, email_confirmed: bool):
+        if email_confirmed:
+            raise ValueError("Provided email is already confirmed")
 
         token = self.cryptographer.create_token(email)
         link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirm/confirm/?token={token.decode()}"
@@ -98,19 +91,13 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
 
-    async def confirm_email(self, email: str):
+    async def confirm_email(self, current_user_id: int, token_email: str, current_user_email: str):
         async with self.uow:
 
-            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+            if current_user_email != token_email:
+                raise ValueError("email of the confirmation token does not match email of the authorized user")
 
-            if user is None:
-                raise ValueError("user with provided email not found")
-
-            if user.email_confirmed:
-                raise RegisterResponses.EMAIL_ALREADY_CONFIRMED
-
-            user.email_confirmed = True
-            await self.uow._session.flush()
+            await self.uow.user_repository.update(current_user_id, {"email_confirmed": True})
 
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
