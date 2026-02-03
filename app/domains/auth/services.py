@@ -74,7 +74,7 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
-    async def confirm_email_send_link(self, email: str, email_confirmed: bool):
+    async def send_email_confirm_link(self, email: str, email_confirmed: bool):
         if email_confirmed:
             raise ValueError("Provided email is already confirmed")
 

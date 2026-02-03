@@ -15,7 +15,7 @@ async def test_send_link_for_confirm_email(
     authorization_header, _, _ = user_authentication_data
 
     response = await client.post(
-        "api/auth/email-confirm",
+        "api/auth/email-confirmation-requests",
         headers=authorization_header
     )
 
@@ -30,8 +30,8 @@ async def test_confirm_email(
     authorization_header, _, email = user_authentication_data
     token = cryptographer.create_token(email).decode()
 
-    response = await client.patch(
-        "api/auth/email-confirm/confirm",
+    response = await client.post(
+        "api/auth/email-confirmations",
         headers=authorization_header,
         params={"token": token}
     )
@@ -47,8 +47,8 @@ async def test_confirm_email_invalid_token(
     authorization_header, _, _ = user_authentication_data
     fake_token = faker.pystr()
 
-    response = await client.patch(
-        "api/auth/email-confirm/confirm",
+    response = await client.post(
+        "api/auth/email-confirmations",
         headers=authorization_header,
         params={"token": fake_token}
     )
@@ -61,7 +61,7 @@ async def test_send_link_for_confirm_email_not_authenticated(
 ) -> None:
 
     response = await client.post(
-        "api/auth/email-confirm",
+        "api/auth/email-confirmation-requests",
     )
 
     assert response.status_code == 401
@@ -75,8 +75,8 @@ async def test_confirm_email_not_authenticated(
     _, user_data = test_user_with_data
     token = cryptographer.create_token(user_data["email"]).decode()
 
-    response = await client.patch(
-        "api/auth/email-confirm/confirm",
+    response = await client.post(
+        "api/auth/email-confirmations",
         params={"token": token}
     )
 
@@ -94,8 +94,8 @@ async def test_confirm_email_with_different_emails_in_tokens(
     email = faker.email()
     token = cryptographer.create_token(email).decode()
 
-    response = await client.patch(
-        "api/auth/email-confirm/confirm",
+    response = await client.post(
+        "api/auth/email-confirmations",
         headers=authorization_header,
         params={"token": token}
     )
