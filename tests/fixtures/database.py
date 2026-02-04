@@ -78,6 +78,10 @@ async def insert_test_data(
                 Permission(action="feedback.view", name="View admin feedback"),
                 Permission(action="feedback.delete", name="Remove admin feedback"),
                 Permission(action="feedback.update", name="Update admin feedback"),
+                Permission(action="legal_documents.create", name="Create legal documents"),
+                Permission(action="legal_documents.view", name="View legal documents"),
+                Permission(action="legal_documents.update", name="Update legal documents"),
+                Permission(action="legal_documents.delete", name="Delete legal documents"),
             ]
         )
         await session.commit()
