@@ -1,10 +1,14 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from passlib.hash import bcrypt
+from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text
 from sqlalchemy import Boolean, DateTime, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.memberships.models import UserMembership
 
@@ -48,6 +52,11 @@ class User(Base):
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
+    professional_information: Mapped["ProfessionalInformation"] = relationship(
+        "ProfessionalInformation", back_populates="user"
+    )
+    fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
+    residency: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -62,3 +71,120 @@ class User(Base):
 
     def verify_password(self, plain_password: str) -> bool:
         return bcrypt.verify(plain_password, self._password)
+
+
+class ProfessionalInformation(Base, UCIMixin):
+    __tablename__ = "users_professional_information"
+
+    medical_school: Mapped[str] = mapped_column(nullable=False)
+    medical_school_country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    is_board_certified_pathologist: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+    is_us_pathology_trainee: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+    is_us_lab_professional: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="user_professional_information")
+
+
+class Residency(Base, UCIMixin):
+    __tablename__ = "users_residency"
+
+    institution: Mapped[str] = mapped_column(nullable=False)
+    speciality: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=False)
+    country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="user_residency")
+
+
+class Fellowship(Base, UCIMixin):
+    __tablename__ = "users_fellowship"
+
+    institution: Mapped[str] = mapped_column(nullable=False)
+    speciality: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=False)
+    country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="user_fellowship")
+
+
+class UserSchema(BaseModel):
+    id: int
+    firstname: str
+    lastname: str
+    email: str
+    stuff: bool
+    description: str | None
+    created_at: datetime
+    institution: str
+    role: str
+    avatar_path: str | None
+    phone_number: str | None
+    pending: bool
+    last_password_change: datetime | None
+    email_confirmed: bool
+    languages_spoken: str | None
+    professional_interests: str | None
+    telegram_username: str | None
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class UpdateUserByAdminSchema(BaseModel):
+    stuff: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
+
+
+class UpdateUserSchema(BaseModel):
+    # использовать с model_dump(exclude_none=True)
+    firstname: str | None = None
+    lastname: str | None = None
+    description: str | None = None
+    institution: str | None = None
+    role: str | None = None
+    phone_number: str | None = None
+    languages_spoken: str | None = None
+    professional_interests: str | None = None
+    telegram_username: str | None = None
+
+    @field_validator("phone_number")
+    def validate_phone_number(cls, value):
+        if value is None or value.strip() == "":
+            return None
+        try:
+            parsed = phonenumbers.parse(value, None)
+            if not phonenumbers.is_valid_number(parsed):
+                raise PydanticCustomError("phone_number.invalid", "Invalid phone number format")
+        except phonenumbers.NumberParseException:
+            raise PydanticCustomError("phone_number.unparsable", "Invalid phone number format")
+        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+
+
+class ChangePasswordSchema(BaseModel):
+    old_password: str
+    new_password: Password
+    confirm_new_password: Password
+
+    @model_validator(mode="after")
+    def check_passwords_match(self):
+        if self.new_password != self.confirm_new_password:
+            raise PydanticCustomError(
+                "password_mismatch",  # internal code
+                "Passwords do not match",  # user-facing message
+            )
+        return self
+
+    @field_validator("new_password", "confirm_new_password")
+    def validate_password(cls, v):
+        if len(v) < 4:
+            raise PydanticCustomError("password_too_short", "Password should have at least 4 characters")
+        return v
