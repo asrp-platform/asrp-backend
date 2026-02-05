@@ -10,6 +10,8 @@ class RegisterFormData(BaseModel):
     repeat_password: Password
     firstname: str = Field(min_length=2)
     lastname: str = Field(min_length=2)
+    country: str = Field(min_length=2)
+    city: str = Field(min_length=2)
     institution: str = Field(min_length=2)
     role: str = Field(min_length=2)
 
