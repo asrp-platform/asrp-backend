@@ -11,7 +11,7 @@ from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 from app.domains.users.filters import UsersFilter
-from app.domains.users.models import UpdateUserByAdminSchema, UserSchema
+from app.domains.users.schemas import UpdateUserByAdminSchema, UserSchema
 from app.domains.users.services import UserServiceDep
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users")
