@@ -160,12 +160,14 @@ async def send_email_confirm_link(
     auth_service: AuthServiceDep,
     current_user: CurrentUserDep
 ):
-    try:
-        email = current_user.email
-        email_confirmed = current_user.email_confirmed
-        await auth_service.send_email_confirm_link(email, email_confirmed)
-    except ValueError:
+
+    email = current_user.email
+    email_confirmed = current_user.email_confirmed
+
+    if email_confirmed:
         raise EmailConfirmResponses.EMAIL_ALREADY_CONFIRMED
+
+    await auth_service.send_email_confirm_link(email)
 
 
 @router.post(
@@ -178,7 +180,7 @@ async def confirm_email(
     current_user: CurrentUserDep
 ):
     try:
-        token_email = auth_service.verify_email_confirm_token(token.encode())
-        await auth_service.confirm_email(current_user.id, token_email, current_user.email)
+        email_from_confirmation_token = auth_service.verify_email_confirmation_token(token.encode())
+        await auth_service.confirm_email(current_user.id, email_from_confirmation_token, current_user.email)
     except ValueError:
         raise EmailConfirmResponses.INVALID_TOKEN

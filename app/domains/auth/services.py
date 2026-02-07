@@ -74,10 +74,7 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
-    async def send_email_confirm_link(self, email: str, email_confirmed: bool):
-        if email_confirmed:
-            raise ValueError("Provided email is already confirmed")
-
+    async def send_email_confirm_link(self, email: str):
         token = self.cryptographer.create_token(email)
         link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirmations/?token={token.decode()}"
         message = f"""
@@ -91,10 +88,10 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
 
-    async def confirm_email(self, current_user_id: int, token_email: str, current_user_email: str):
+    async def confirm_email(self, current_user_id: int, email_from_confirmation_token: str, current_user_email: str):
         async with self.uow:
 
-            if current_user_email != token_email:
+            if current_user_email != email_from_confirmation_token:
                 raise ValueError("email of the confirmation token does not match email of the authorized user")
 
             await self.uow.user_repository.update(current_user_id, {"email_confirmed": True})
@@ -103,7 +100,7 @@ class AuthService:
         lifetime_seconds = 3600  # 1 hour
         return self.cryptographer.verify_token(token, lifetime_seconds)
 
-    def verify_email_confirm_token(self, token: bytes) -> str:
+    def verify_email_confirmation_token(self, token: bytes) -> str:
         lifetime_seconds = 86400  # 1 day
         return self.cryptographer.verify_token(token, lifetime_seconds)
 

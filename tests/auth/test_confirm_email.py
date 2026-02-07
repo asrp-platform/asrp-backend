@@ -8,7 +8,7 @@ from app.domains.users.models import User
 pytestmark = pytest.mark.anyio
 
 
-async def test_send_link_for_confirm_email(
+async def test_send_email_confirmation_link(
     client: AsyncClient,
     user_authentication_data
 ) -> None:
