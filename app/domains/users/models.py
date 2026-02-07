@@ -53,10 +53,10 @@ class User(Base):
         "Permission", back_populates="users", secondary="users_permissions"
     )
     professional_information: Mapped["ProfessionalInformation"] = relationship(
-        "ProfessionalInformation", back_populates="user"
+        "ProfessionalInformation", back_populates="user", uselist=False
     )
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
-    residency: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
+    residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -84,8 +84,8 @@ class ProfessionalInformation(Base, UCIMixin):
     is_us_pathology_trainee: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
     is_us_lab_professional: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    user: Mapped["User"] = relationship("User", back_populates="user_professional_information")
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="professional_information")
 
 
 class Residency(Base, UCIMixin):
@@ -99,7 +99,7 @@ class Residency(Base, UCIMixin):
     years_from_to: Mapped[str] = mapped_column(nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    user: Mapped["User"] = relationship("User", back_populates="user_residency")
+    user: Mapped["User"] = relationship("User", back_populates="residencies")
 
 
 class Fellowship(Base, UCIMixin):
@@ -113,7 +113,7 @@ class Fellowship(Base, UCIMixin):
     years_from_to: Mapped[str] = mapped_column(nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    user: Mapped["User"] = relationship("User", back_populates="user_fellowship")
+    user: Mapped["User"] = relationship("User", back_populates="fellowships")
 
 
 class UserSchema(BaseModel):
@@ -131,9 +131,6 @@ class UserSchema(BaseModel):
     pending: bool
     last_password_change: datetime | None
     email_confirmed: bool
-    languages_spoken: str | None
-    professional_interests: str | None
-    telegram_username: str | None
 
     model_config = {
         "from_attributes": True,
@@ -152,9 +149,6 @@ class UpdateUserSchema(BaseModel):
     institution: str | None = None
     role: str | None = None
     phone_number: str | None = None
-    languages_spoken: str | None = None
-    professional_interests: str | None = None
-    telegram_username: str | None = None
 
     @field_validator("phone_number")
     def validate_phone_number(cls, value):
