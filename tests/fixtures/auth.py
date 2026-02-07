@@ -30,6 +30,8 @@ async def user_factory(
             "lastname": faker.last_name(),
             "institution": faker.pystr(min_chars=2),
             "role": faker.pystr(min_chars=2),
+            "country": faker.country(),
+            "city": faker.city(),
             **overrides,
         }
         async with user_uow:
@@ -73,6 +75,8 @@ def register_user_data(faker: Faker) -> dict[str, Any]:
         "lastname": faker.last_name(),
         "institution": faker.pystr(min_chars=2),
         "role": faker.pystr(min_chars=2),
+        "country": faker.country(),
+        "city": faker.city(),
     }
 
 
