@@ -12,7 +12,7 @@ from app.core.utils.save_file import save_file
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import InvalidPasswordError
 from app.domains.users.filters import UsersFilter
-from app.domains.users.models import ChangePasswordSchema, UpdateUserSchema, UserSchema
+from app.domains.users.schemas import ChangePasswordSchema, UpdateUserSchema, UserSchema
 from app.domains.users.services import UserServiceDep
 
 router = APIRouter(tags=["users"], prefix="/users")
