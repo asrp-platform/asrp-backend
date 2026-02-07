@@ -12,4 +12,4 @@ class Cryptographer:
         try:
             return self.fernet.decrypt(token, ttl=ttl).decode()
         except InvalidToken:
-            raise ValueError("Provided password reset token is invalid")
+            raise ValueError("Provided token is invalid")
