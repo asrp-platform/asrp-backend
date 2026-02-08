@@ -5,6 +5,7 @@ import phonenumbers
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
+from app.core.database.mixins import UCIMixinSchema
 from app.domains.shared.types import Password
 
 
@@ -91,3 +92,49 @@ class ChangePasswordSchema(BaseModel):
         if len(v) < 4:
             raise PydanticCustomError("password_too_short", "Password should have at least 4 characters")
         return v
+
+
+class ProfessionalInformationCreateOrUpdateSchema(BaseModel):
+    medical_school: str
+    medical_school_country: str
+    years_from_to: str
+
+    is_board_certified_pathologist: bool = False
+    is_us_pathology_trainee: bool = False
+    is_us_lab_professional: bool = False
+
+
+class ProfessionalInformationViewSchema(UCIMixinSchema, ProfessionalInformationCreateOrUpdateSchema):
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class ResidencyCreateSchema(BaseModel):
+    institution: str
+    speciality: str
+    city: str
+    state: str
+    country: str
+    years_from_to: str
+
+
+class ResidencyViewSchema(UCIMixinSchema, ResidencyCreateSchema):
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class FellowshipCreateSchema(BaseModel):
+    institution: str
+    speciality: str
+    city: str
+    state: str
+    country: str
+    years_from_to: str
+
+
+class FellowshipViewSchema(UCIMixinSchema, FellowshipCreateSchema):
+    model_config = {
+        "from_attributes": True,
+    }

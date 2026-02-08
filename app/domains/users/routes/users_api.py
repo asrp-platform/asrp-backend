@@ -15,7 +15,7 @@ from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import ChangePasswordSchema, UpdateUserSchema, UserSchema
 from app.domains.users.services import UserServiceDep
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["Users"], prefix="/users")
 
 
 class UserListResponses(InvalidRequestParamsResponses):

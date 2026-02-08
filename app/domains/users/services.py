@@ -6,6 +6,7 @@ from typing import Annotated, Any
 from fastapi import Depends
 from loguru import logger
 
+from app.core.common.exceptions import NotFoundError
 from app.core.config import BASE_DIR
 from app.domains.users.exceptions import InvalidPasswordError
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
@@ -92,8 +93,46 @@ class UserService:
             await self.uow.user_repository.update(user.id, {"last_password_change": datetime.now(tz=timezone.utc)})
 
 
+class ProfessionalInformationService:
+    def __init__(self, uow):
+        self.uow = uow
+
+    async def get_by_user_id(self, user_id: int):
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
+            return await self.uow.professional_information_repository.get_first_by_kwargs(user_id=user_id)
+
+    async def create_or_update(self, user_id: int, **kwargs):
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
+
+            professional_information = await self.uow.professional_information_repository.get_first_by_kwargs(
+                user_id=user_id
+            )
+            data = {**kwargs, "user_id": user.id}
+
+            if professional_information is not None:
+                return await self.uow.professional_information_repository.update(professional_information.id, data)
+            else:
+                return await self.uow.professional_information_repository.create(**data)
+
+
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
     return UserService(uow)
 
 
+def get_professional_information_service(
+    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+) -> ProfessionalInformationService:
+    return ProfessionalInformationService(uow)
+
+
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+
+ProfessionalInformationServiceDep = Annotated[
+    ProfessionalInformationService, Depends(get_professional_information_service)
+]

@@ -23,8 +23,9 @@ from app.domains.legal_documents.routes.api import router as legal_documents_rou
 from app.domains.news.api import router as news_router
 from app.domains.permissions.routes.admin_api import router as permissions_admin_router
 from app.domains.permissions.routes.api import router as permission_router
-from app.domains.users.routes.admin_api import router as users_admin_router
-from app.domains.users.routes.api import router as users_router
+from app.domains.users.routes.admin_users_api import router as users_admin_router
+from app.domains.users.routes.professional_info_api import router as professional_info_router
+from app.domains.users.routes.users_api import router as users_router
 
 
 @asynccontextmanager
@@ -67,12 +68,14 @@ app.openapi = get_custom_open_api(app)
 
 
 app.include_router(users_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
 app.include_router(legal_documents_router, prefix="/api")
+app.include_router(professional_info_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
