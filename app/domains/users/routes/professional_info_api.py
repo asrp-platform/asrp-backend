@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.schemas import ProfessionalInformationCreateOrUpdateSchema, ProfessionalInformationViewSchema
 from app.domains.users.services import ProfessionalInformationServiceDep
@@ -30,7 +30,7 @@ async def get_user_professional_information(
 
 
 class CreateOrUpdateUserProfessionalInformationResponses(GetUserProfessionalInformationResponses):
-    pass
+    NOT_RESOURCE_OWNER = 403, "Not resource owner"
 
 
 @router.put(
@@ -51,3 +51,5 @@ async def create_or_update_user_professional_information(
         return ProfessionalInformationViewSchema.from_orm(updated_user_professional_information)
     except NotFoundError:
         raise CreateOrUpdateUserProfessionalInformationResponses.USER_NOT_FOUND
+    except NotResourceOwnerError:
+        raise CreateOrUpdateUserProfessionalInformationResponses.NOT_RESOURCE_OWNER
