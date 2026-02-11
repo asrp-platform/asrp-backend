@@ -106,7 +106,7 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("")
 async def root():
     return {"message": f"Hello World DEV_MODE: {DEV_MODE}"}
 

@@ -14,7 +14,7 @@ class GetUserProfessionalInformationResponses(Responses):
 
 
 @router.get(
-    "/",
+    "",
     responses=GetUserProfessionalInformationResponses.responses,
     summary="Get user professional information by user ID",
 )
@@ -34,7 +34,7 @@ class CreateOrUpdateUserProfessionalInformationResponses(GetUserProfessionalInfo
 
 
 @router.put(
-    "/",
+    "",
     responses=CreateOrUpdateUserProfessionalInformationResponses.responses,
     summary="Create new or update existing user professional information",
 )

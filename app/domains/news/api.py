@@ -16,7 +16,7 @@ from app.domains.shared.deps import AdminUserDep
 router = APIRouter(prefix="/news", tags=["News"])
 
 
-@router.post("/", summary="Create news")
+@router.post("", summary="Create news")
 async def create_news(
     body: CreateNewsSchema,
     admin: AdminUserDep,
@@ -65,7 +65,7 @@ async def update_news(
 
 
 @router.get(
-    "/",
+    "",
     summary="Paginated, ordered, filtered list of news",
     responses=InvalidRequestParamsResponses.responses,
 )
