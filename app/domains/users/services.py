@@ -8,9 +8,9 @@ from loguru import logger
 
 from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
 from app.core.config import BASE_DIR
-from app.domains.users.exceptions import InvalidPasswordError
+from app.domains.users.exceptions import InvalidPasswordError, ResidencyNotFoundError, UserNotFoundError
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
-from app.domains.users.models import User
+from app.domains.users.models import Residency, User
 
 """
 Не использую HTTPExceptions в сервисах, так как
@@ -109,7 +109,7 @@ class ProfessionalInformationService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
-                raise NotFoundError("User with provided ID not found")
+                raise UserNotFoundError("User with provided ID not found")
             elif user_id != user.id:
                 raise NotResourceOwnerError("Not resource owner")
 
@@ -124,6 +124,29 @@ class ProfessionalInformationService:
                 return await self.uow.professional_information_repository.create(**data)
 
 
+class ResidencyService:
+    def __init__(self, uow):
+        self.uow = uow
+
+    async def get_by_user_id(self, user_id: int) -> list[Residency]:
+        async with self.uow:
+            if (await self.uow.user_repository.get_first_by_kwargs(id=user_id)) is None:
+                raise UserNotFoundError("User with provided ID not found")
+
+            return await self.uow.residency_repository.get_all_by_kwargs(user_id=user_id)
+
+    async def get_user_residency_by_id(self, user_id: int, residency_id: int) -> Residency:
+        async with self.uow:
+            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+
+            if (await self.uow.user_repository.get_first_by_kwargs(id=user_id)) is None:
+                raise UserNotFoundError("User with provided ID not found")
+
+        if residency is None:
+            raise ResidencyNotFoundError("Residency with provided ID not found")
+        return residency
+
+
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
     return UserService(uow)
 
@@ -134,8 +157,12 @@ def get_professional_information_service(
     return ProfessionalInformationService(uow)
 
 
-UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+def get_residency_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> ResidencyService:
+    return ResidencyService(uow)
 
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 ProfessionalInformationServiceDep = Annotated[
     ProfessionalInformationService, Depends(get_professional_information_service)
 ]
+ResidencyServiceDep = Annotated[ResidencyService, Depends(get_residency_service)]

@@ -1,6 +1,6 @@
-class NotFoundError(BaseException):
+class NotFoundError(Exception):
     pass
 
 
-class NotResourceOwnerError(BaseException):
+class NotResourceOwnerError(Exception):
     pass
