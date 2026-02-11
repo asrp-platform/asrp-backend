@@ -105,6 +105,7 @@ class ProfessionalInformationCreateOrUpdateSchema(BaseModel):
 
 
 class ProfessionalInformationViewSchema(UCIMixinSchema, ProfessionalInformationCreateOrUpdateSchema):
+    user_id: int
     model_config = {
         "from_attributes": True,
     }

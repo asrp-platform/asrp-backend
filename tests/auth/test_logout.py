@@ -6,11 +6,10 @@ pytestmark = pytest.mark.anyio
 
 async def test_logout(
     client: AsyncClient,
-    user_authentication_data,
+    auth_headers,
+    refresh_token,
 ):
-    authorization_header, refresh_token_cookie, _ = user_authentication_data
-
-    response = await client.post("api/auth/logout", headers=authorization_header, cookies=refresh_token_cookie)
+    response = await client.post("api/auth/logout", headers=auth_headers, cookies=refresh_token)
 
     assert response.status_code == 200
     assert "refresh_token" not in response.cookies
