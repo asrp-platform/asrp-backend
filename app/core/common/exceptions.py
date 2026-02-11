@@ -4,3 +4,7 @@ class NotFoundError(Exception):
 
 class NotResourceOwnerError(Exception):
     pass
+
+
+class NotResourceOwnerError(BaseException):
+    pass
