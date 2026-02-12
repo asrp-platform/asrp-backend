@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 from app.core.config import settings
 from app.domains.legal_documents.routes.api import BylawsResponses
-from tests.fixtures.context import UserContext
+from tests.fixtures.auth import AuthHeaders
 
 pytestmark = pytest.mark.anyio
 
@@ -54,16 +54,15 @@ async def test_get_bylaws_not_found(
 async def test_upsert_bylaws_success(
     client: AsyncClient,
     mock_service: AsyncMock,
-    admin_all_permissions_context: UserContext,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     faker: Faker,
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
-
     expected_path = (settings.BYLAWS_PATH / "bylaws.pdf").as_posix()
     files = {"file": ("bylaws.pdf", faker.binary(length=12), "application/pdf")}
     mock_service.upsert.return_value = expected_path
 
-    response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=headers)
+    response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=admin_auth_headers)
 
     assert response.status_code == 200
     assert response.json() == {"url": expected_path}
@@ -72,14 +71,12 @@ async def test_upsert_bylaws_success(
 async def test_upsert_bylaws_forbidden(
     client: AsyncClient,
     mock_service: AsyncMock,
-    admin_no_permissions_context: UserContext,
+    admin_auth_headers: AuthHeaders,
     faker: Faker,
 ) -> None:
-    headers, _, _ = admin_no_permissions_context.auth
-
     files = {"file": ("bylaws.pdf", faker.binary(length=12), "application/pdf")}
 
-    response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=headers)
+    response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=admin_auth_headers)
 
     assert response.status_code == 403
 
@@ -87,14 +84,13 @@ async def test_upsert_bylaws_forbidden(
 async def test_upsert_bylaws_invalid_type(
     client: AsyncClient,
     mock_service: AsyncMock,
-    admin_all_permissions_context: UserContext,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     faker: Faker,
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
-
     files = {"file": ("bylaws.txt", faker.binary(length=12), "text/plain")}
 
-    response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=headers)
+    response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=admin_auth_headers)
 
     assert response.status_code == 415
 
@@ -102,11 +98,10 @@ async def test_upsert_bylaws_invalid_type(
 async def test_delete_bylaws_success(
     client: AsyncClient,
     mock_service: AsyncMock,
-    admin_all_permissions_context: UserContext,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
-
-    response = await client.delete("/api/admin/legal-documents/bylaws", headers=headers)
+    response = await client.delete("/api/admin/legal-documents/bylaws", headers=admin_auth_headers)
 
     assert response.status_code == 204
     mock_service.delete.assert_called_once()

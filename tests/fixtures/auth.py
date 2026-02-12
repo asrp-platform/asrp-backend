@@ -16,6 +16,8 @@ AuthData = tuple[dict[str, str], dict[str, str], User]
 UserFactory = Callable[..., Awaitable[User]]
 AuthFactory = Callable[[User], AuthData]
 
+AuthHeaders = dict[str, str]
+
 
 @pytest.fixture(scope="function")
 async def user_factory(
@@ -40,24 +42,6 @@ async def user_factory(
     return _factory
 
 
-@pytest.fixture(scope="function")
-def authentication_data_factory() -> AuthFactory:
-    def _factory(user: User) -> AuthData:
-        access_token = create_access_token({"email": user.email})
-        refresh_token = create_refresh_token(
-            {"email": user.email},
-            remember_me=False,
-        )
-
-        return (
-            {"Authorization": f"Bearer {access_token}"},
-            {"refresh_token": refresh_token},
-            user,
-        )
-
-    return _factory
-
-
 # Existing user
 # Три фикстуры снизу в при использовании одном тесте консистентны - относятся к одному юзеру
 # Предназначены для аутентификации пользователя в эндпоинтах, требующих аутентификацию
@@ -67,7 +51,7 @@ async def test_user(user_factory: UserFactory) -> User:
 
 
 @pytest.fixture
-def auth_headers(test_user: User):
+def auth_headers(test_user: User) -> AuthHeaders:
     access_token = create_access_token({"email": test_user.email})
     return {"Authorization": f"Bearer {access_token}"}
 
@@ -79,6 +63,17 @@ def refresh_token(test_user: User):
         remember_me=False,
     )
     return {"refresh_token": refresh_token}
+
+
+@pytest.fixture
+async def admin_user(user_factory: UserFactory) -> User:
+    return await user_factory(stuff=True)
+
+
+@pytest.fixture
+def admin_auth_headers(admin_user: User):
+    access_token = create_access_token({"email": admin_user.email})
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 # User registration
