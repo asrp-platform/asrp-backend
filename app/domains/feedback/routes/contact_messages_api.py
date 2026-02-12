@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi_exception_responses import Responses
 from pydantic import BaseModel
 
@@ -82,9 +82,16 @@ async def answer_contact_message(
     admin: AdminUserDep,  # noqa Admin auth argument
     permissions: AdminPermissionsDep,
     contact_message_service: FeedbackServiceDep,
-) -> str:
+) -> ContactMessageResponseSchema:
+
+    if 'feedback.update' not in permissions:
+        raise PermissionsResponses.PERMISSION_ERROR
+
     try:
-        await contact_message_service.answer_contact_message(message_id, **body.model_dump())
+        reply = await contact_message_service.answer_contact_message(
+            message_id, **body.model_dump()
+        )
     except ValueError:
         raise AnswerContactMessageResponses.CONTACT_MESSAGE_NOT_FOUND
-    return "Answered"
+
+    return ContactMessageResponseSchema.from_orm(reply)

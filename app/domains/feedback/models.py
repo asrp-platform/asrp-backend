@@ -1,8 +1,9 @@
 from enum import Enum
+from xmlrpc.client import DateTime
 
-from sqlalchemy import Enum as SQLAEnum, String, text
+from sqlalchemy import Enum as SQLAEnum, String, text, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
@@ -28,3 +29,21 @@ class ContactMessage(Base, UCIMixin):
     answered: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     message_content: Mapped[dict] = mapped_column(JSONB(), nullable=False)
+    replies: Mapped[list['ContactMessageReply']] = relationship(
+        'ContactMessageReply', back_populates='contact_message',
+        cascade='all, delete-orphan'
+    )
+
+
+class ContactMessageReply(Base, UCIMixin):
+    __tablename__ = 'contact_messages_relies'
+
+    contact_message_id: Mapped[int] = mapped_column(
+        ForeignKey('contact_message.id', ondelete='CASCADE'),
+        nullable=False, index=True
+    )
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    contact_message: Mapped['ContactMessage'] = relationship(
+        'ContactMessage', back_populates='replies'
+    )
+    # created_at syncs with UCIMixin

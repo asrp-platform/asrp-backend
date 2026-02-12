@@ -42,3 +42,16 @@ class ContactMessageResponseSchema(CreateContactMessageSchema):
     model_config = {
         "from_attributes": True,
     }
+
+
+class ContactMessageReplyCreate(BaseModel):
+    answer: str = Field(min_length=1)
+
+
+class ContactMessageReplyResponseSchema(BaseModel):
+    id: int
+    contact_message_id: int
+    answer: str
+    created_at: datetime
+
+    model_config = {'from_attributes': True}
