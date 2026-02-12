@@ -6,7 +6,7 @@ from typing import Annotated, Any
 from fastapi import Depends
 from loguru import logger
 
-from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
+from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import BASE_DIR
 from app.domains.users.exceptions import InvalidPasswordError, ResidencyNotFoundError, UserNotFoundError
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
@@ -101,16 +101,16 @@ class ProfessionalInformationService:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise NotFoundError("User with provided ID not found")
+                raise UserNotFoundError("User with provided ID not found")
             return await self.uow.professional_information_repository.get_first_by_kwargs(user_id=user_id)
 
-    async def create_or_update(self, user_id: int, **kwargs):
+    async def create_or_update(self, user_id: int, current_user_id: int, **kwargs):
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            elif user_id != user.id:
+            elif user_id != current_user_id:
                 raise NotResourceOwnerError("Not resource owner")
 
             professional_information = await self.uow.professional_information_repository.get_first_by_kwargs(

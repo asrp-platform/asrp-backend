@@ -1,13 +1,17 @@
 import pytest
+from faker import Faker
+from httpx import AsyncClient
 
+from app.domains.shared.deps import create_access_token
 from app.domains.users.models import ProfessionalInformation, User
+from tests.fixtures.auth import AuthHeaders, UserFactory
 
 pytestmark = pytest.mark.anyio
 
 
 @pytest.mark.asyncio
 async def test_get_professional_information_success(
-    client,
+    client: AsyncClient,
     test_user: User,
     professional_information: ProfessionalInformation,
 ):
@@ -19,86 +23,64 @@ async def test_get_professional_information_success(
     assert data["user_id"] == test_user.id
 
 
-# @pytest.mark.asyncio
-# async def test_get_professional_information_user_not_found(
-#     client,
-# ):
-#     response = await client.get(
-#         "/users/999999/professional-information"
-#     )
-#
-#     assert response.status_code == 404
-#
-#
-# @pytest.mark.asyncio
-# async def test_put_professional_information_create_success(
-#     async_client,
-#     test_user,
-#     override_current_user,
-# ):
-#     payload = {
-#         "medical_school": "Mayo Clinic",
-#         "medical_school_country": "USA",
-#         "years_from_to": "2015–2019",
-#         "is_board_certified_pathologist": False,
-#         "is_us_pathology_trainee": True,
-#         "is_us_lab_professional": False,
-#     }
-#
-#     response = await async_client.put(
-#         f"/users/{test_user.id}/professional-information",
-#         json=payload,
-#     )
-#
-#     assert response.status_code == HTTPStatus.OK
-#     data = response.json()
-#     assert data["medical_school"] == payload["medical_school"]
-#     assert data["is_us_pathology_trainee"] is True
-#
-#
-# @pytest.mark.asyncio
-# async def test_put_professional_information_forbidden(
-#     async_client,
-#     test_user,
-#     user_uow,
-#     faker_instance,
-# ):
-#     # создаем другого пользователя
-#     another_user = await user_uow.user_repository.create(
-#         firstname=faker_instance.first_name(),
-#         lastname=faker_instance.last_name(),
-#         email=faker_instance.email(),
-#         password="1234",
-#         stuff=False,
-#         country="USA",
-#         city="NY",
-#         institution="Test",
-#         role="doctor",
-#     )
-#
-#     # override current_user = другой пользователь
-#     async def override():
-#         return another_user
-#
-#     from app.domains.shared.deps import get_current_user
-#     from app.main import app
-#
-#     app.dependency_overrides[get_current_user] = override
-#
-#     payload = {
-#         "medical_school": "Stanford",
-#         "medical_school_country": "USA",
-#         "years_from_to": "2010–2014",
-#         "is_board_certified_pathologist": False,
-#         "is_us_pathology_trainee": False,
-#         "is_us_lab_professional": True,
-#     }
-#
-#     response = await async_client.put(
-#         f"/users/{test_user.id}/professional-information",
-#         json=payload,
-#     )
-#
-#     assert response.status_code == HTTPStatus.FORBIDDEN
-#
-#     app.dependency_overrides.clear()
+@pytest.mark.asyncio
+async def test_get_professional_information_user_not_found(
+    client: AsyncClient,
+):
+    response = await client.get("api/users/999999/professional-information")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_put_professional_information_create_success(
+    client: AsyncClient,
+    test_user: User,
+    auth_headers: AuthHeaders,
+    faker: Faker,
+):
+    payload = {
+        "medical_school": faker.pystr(max_chars=10),
+        "medical_school_country": faker.country(),
+        "years_from_to": f"{faker.year()}-{faker.year()}",
+        "is_board_certified_pathologist": faker.pybool(),
+        "is_us_pathology_trainee": faker.pybool(),
+        "is_us_lab_professional": faker.pybool(),
+    }
+
+    response = await client.put(
+        f"api/users/{test_user.id}/professional-information",
+        headers=auth_headers,
+        json=payload,
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_put_professional_information_forbidden(
+    client: AsyncClient,
+    test_user: User,
+    user_factory: UserFactory,
+    faker: Faker,
+):
+    # создаем другого пользователя
+    another_user = await user_factory()
+    access_token = create_access_token({"email": another_user.email})
+
+    payload = {
+        "medical_school": faker.pystr(max_chars=10),
+        "medical_school_country": faker.country(),
+        "years_from_to": f"{faker.year()}-{faker.year()}",
+        "is_board_certified_pathologist": faker.pybool(),
+        "is_us_pathology_trainee": faker.pybool(),
+        "is_us_lab_professional": faker.pybool(),
+    }
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/professional-information",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == 403

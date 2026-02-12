@@ -47,7 +47,7 @@ async def create_or_update_user_professional_information(
 ) -> ProfessionalInformationViewSchema:
     try:
         updated_user_professional_information = await professional_information_service.create_or_update(
-            user_id, **data.model_dump()
+            user_id, current_user.id, **data.model_dump()
         )
         return ProfessionalInformationViewSchema.from_orm(updated_user_professional_information)
     except UserNotFoundError:
