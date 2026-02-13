@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -111,52 +112,26 @@ class ManagePermissionsResponses(PermissionsResponses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
-@router.post(
-    "/{user_id}/permissions", responses=ManagePermissionsResponses.responses, summary="Assign permissions to user"
-)
-async def assign_permissions(
-    user_id: Annotated[int, Path()],
-    permissions_service: PermissionServiceDep,
-    current_user_permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
-    permissions_ids: list[int],
-):
-    if "permissions.create" not in current_user_permissions:
-        raise ManagePermissionsResponses.PERMISSION_ERROR
-
-    try:
-        await permissions_service.assign_permissions_to_user(user_id, permissions_ids)
-    except ValueError:
-        raise ManagePermissionsResponses.USER_NOT_FOUND
-
-
-@router.delete("/{user_id}/permissions")
-async def remove_user_permissions(
-    user_id: Annotated[int, Path()],
-    permissions_service: PermissionServiceDep,
-    current_user_permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
-    permissions_ids: list[int],
-):
-    if "permissions.delete" not in current_user_permissions:
-        raise ManagePermissionsResponses.PERMISSION_ERROR
-    try:
-        await permissions_service.remove_permissions_from_user(user_id, permissions_ids)
-    except ValueError:
-        raise ManagePermissionsResponses.USER_NOT_FOUND
-
-
-@router.put("/{user_id}/permissions")
+@router.put("/{user_id}/permissions", responses=ManagePermissionsResponses.responses, summary="Set user permissions")
 async def set_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
+    user_service: UserServiceDep,
     current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
     permissions_ids: list[int],
 ):
     if "permissions.update" not in current_user_permissions:
         raise ManagePermissionsResponses.PERMISSION_ERROR
+
+    user = await user_service.get_user_by_kwargs(id=user_id)
+    if not user:
+        raise ManagePermissionsResponses.USER_NOT_FOUND
+
     try:
-        return await permissions_service.set_users_permissions(user_id, permissions_ids)
+        request_time_utc = datetime.now(timezone.utc).isoformat()
+        return await permissions_service.set_users_permissions(
+            user_id, permissions_ids, admin, request_time_utc=request_time_utc
+        )
     except ValueError:
         raise ManagePermissionsResponses.USER_NOT_FOUND

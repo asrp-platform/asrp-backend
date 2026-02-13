@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 from fastapi_exception_responses import Responses
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -43,50 +44,28 @@ class PermissionsService:
 
             return user.permissions
 
-    async def assign_permissions_to_user(self, user_id: int, permissions_ids: list[int]):
-        async with self.uow:
-            select_user_stmt = (
-                select(User)
-                .options(selectinload(User.permissions))  # сразу подгружаем
-                .where(User.id == user_id)
-            )
-            user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
+    async def set_users_permissions(self, user_id: int, permissions_ids: list[int], actor: User, request_time_utc: str):
+        """
+        Set permissions for a user.
 
-            if user is None:
-                raise ValueError("User with provided ID not found")
+        Args:
+            user_id (int): ID of the target user whose permissions will be updated.
+            permissions_ids (list[int]): List of permission IDs to assign to the user.
+            actor (User): The admin `User` performing the change (used for audit logging).
 
-            select_permissions_stmt = select(Permission).where(Permission.id.in_(permissions_ids))
-            permissions = (await self.uow._session.execute(select_permissions_stmt)).scalars().all()
+        Behavior:
+            - Loads the target user and requested Permission objects.
+            - Replaces the user's `permissions` collection with the permissions matching
+              the provided `permissions_ids`.
+            - Commits the transaction and writes an audit log entry.
 
-            existing_ids = {p.id for p in user.permissions}
-            new_permissions = [p for p in permissions if p.id not in existing_ids]
+        Returns:
+            list[Permission]: The updated list of `Permission` objects assigned to the user.
 
-            user.permissions.extend(new_permissions)
-            await self.uow._session.commit()
+        Raises:
+            ValueError: If the target user is not found.
+        """
 
-    async def remove_permissions_from_user(self, user_id: int, permissions_ids: list[int]):
-        async with self.uow:
-            select_user_stmt = (
-                select(User)
-                .options(selectinload(User.permissions))  # сразу подгружаем
-                .where(User.id == user_id)
-            )
-            user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
-
-            if user is None:
-                raise ValueError("User with provided ID not found")
-
-            select_permissions_stmt = select(Permission).where(Permission.id.in_(permissions_ids))
-            permissions = (await self.uow._session.execute(select_permissions_stmt)).scalars().all()
-
-            existing_ids = {p.id for p in user.permissions}
-            permissions_to_delete = [p for p in permissions if p.id in existing_ids]
-
-            for p in permissions_to_delete:
-                if p in user.permissions:
-                    user.permissions.remove(p)
-
-    async def set_users_permissions(self, user_id: int, permissions_ids):
         async with self.uow:
             user_stmt = select(User).options(selectinload(User.permissions)).where(User.id == user_id)
             user: User | None = (await self.uow._session.execute(user_stmt)).scalar_one_or_none()
@@ -99,6 +78,12 @@ class PermissionsService:
             user.permissions = permissions
 
             await self.uow._session.commit()
+
+            bound_logger = logger.bind(name="privileges", request_time_utc=request_time_utc)
+            bound_logger.info(
+                f"Admin: {actor.id} ({actor.email}) | Target: {user.id} ({user.email}) | New Permissions: {[p.action for p in permissions]}"
+            )
+
             return user.permissions
 
 

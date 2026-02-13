@@ -41,6 +41,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 logger.add("logs/request_logs.log", rotation="10 days")
+logger.add(
+    "logs/privileges.log",
+    filter=lambda record: record["extra"].get("name") == "privileges",
+    rotation="10 days",
+)
 
 
 app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME), name=settings.MEDIA_DIR_NAME)
