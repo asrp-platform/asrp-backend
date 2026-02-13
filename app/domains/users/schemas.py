@@ -120,7 +120,12 @@ class ResidencyCreateSchema(BaseModel):
     years_from_to: str
 
 
+class ResidencyUpdateSchema(ResidencyCreateSchema):
+    pass
+
+
 class ResidencyViewSchema(UCIMixinSchema, ResidencyCreateSchema):
+    user_id: int
     model_config = {
         "from_attributes": True,
     }

@@ -44,7 +44,7 @@ class UserService:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise ValueError("There is no such user with provided id")
+                raise UserNotFoundError("User with provided ID not found")
             try:
                 os.remove(BASE_DIR / user.avatar_path)
             except FileNotFoundError as e:
@@ -59,7 +59,7 @@ class UserService:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise ValueError("There is no such user with provided id")
+                raise UserNotFoundError("User with provided ID not found")
             await self.uow.user_repository.update(user_id, update_data)
         return user
 
@@ -67,7 +67,7 @@ class UserService:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise ValueError("There is no such user with provided id")
+                raise UserNotFoundError("User with provided ID not found")
             try:
                 os.remove(BASE_DIR / user.avatar_path)
             except FileNotFoundError as e:
@@ -83,7 +83,7 @@ class UserService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
-                raise ValueError("user with provided email not found")
+                raise UserNotFoundError("user with provided email not found")
 
             if not user.verify_password(old_password):
                 raise InvalidPasswordError("Invalid password")
@@ -105,13 +105,14 @@ class ProfessionalInformationService:
             return await self.uow.professional_information_repository.get_first_by_kwargs(user_id=user_id)
 
     async def create_or_update(self, user_id: int, current_user_id: int, **kwargs):
+        if user_id != current_user_id:
+            raise NotResourceOwnerError("Not resource owner")
+
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            elif user_id != current_user_id:
-                raise NotResourceOwnerError("Not resource owner")
 
             professional_information = await self.uow.professional_information_repository.get_first_by_kwargs(
                 user_id=user_id
@@ -137,14 +138,41 @@ class ResidencyService:
 
     async def get_user_residency_by_id(self, user_id: int, residency_id: int) -> Residency:
         async with self.uow:
-            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
-            if (await self.uow.user_repository.get_first_by_kwargs(id=user_id)) is None:
+            if user is None:
                 raise UserNotFoundError("User with provided ID not found")
+
+            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
 
         if residency is None:
             raise ResidencyNotFoundError("Residency with provided ID not found")
         return residency
+
+    async def create_user_residency(self, user_id: int, current_user_id: int, **kwargs) -> Residency:
+        if user_id != current_user_id:
+            raise NotResourceOwnerError("Not resource owner")
+
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
+            return await self.uow.residency_repository.create(user_id=user_id, **kwargs)
+
+    async def update_user_residency(self, user_id: int, current_user_id: int, residency_id: int, update_data: dict):
+        if user_id != current_user_id:
+            raise NotResourceOwnerError("Not resource owner")
+
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
+
+            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+            if residency is None:
+                raise ResidencyNotFoundError("Residency with provided ID not found")
+
+            return await self.uow.residency_repository.update(residency_id, update_data)
 
 
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
