@@ -158,7 +158,7 @@ class FellowshipCreateSchema(PostgraduateTrainingMixin):
     pass
 
 
-class FellowshipUpdateSchema(BaseModel):
+class FellowshipUpdateSchema(FellowshipCreateSchema):
     pass
 
 
