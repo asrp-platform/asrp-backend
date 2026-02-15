@@ -94,7 +94,7 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
         return (await self.session.execute(stmt)).scalars().first()
 
     async def get_all_by_kwargs(self, **kwargs) -> Sequence[T]:
-        stmt = select(self.model).filter_by(**kwargs)
+        stmt = select(self.model).filter_by(_deleted=False, **kwargs)
         return (await self.session.execute(stmt)).scalars().all()
 
     async def create(self, **kwargs) -> T:

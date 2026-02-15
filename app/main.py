@@ -69,7 +69,6 @@ app.openapi = get_custom_open_api(app)
 
 
 app.include_router(users_router, prefix="/api")
-app.include_router(users_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")

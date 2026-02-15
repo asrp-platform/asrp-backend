@@ -106,3 +106,28 @@ async def update_user_residency(
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
     except UserNotFoundError:
         raise CreateUserResidencyResponses.USER_NOT_FOUND
+
+
+class DeleteResidencyResponses(CreateUserResidencyResponses, GetSingleUserResidency):
+    pass
+
+
+@router.delete(
+    "/{residency_id}",
+    responses=DeleteResidencyResponses.responses,
+    summary="Delete user residency",
+)
+async def delete_user_residency(
+    user_id: int,
+    residency_id: int,
+    current_user: CurrentUserDep,
+    service: ResidencyServiceDep,
+) -> int:
+    try:
+        return await service.delete_user_residency(user_id, current_user.id, residency_id)
+    except NotResourceOwnerError:
+        raise DeleteResidencyResponses.NOT_RESOURCE_OWNER
+    except UserNotFoundError:
+        raise DeleteResidencyResponses.USER_NOT_FOUND
+    except ResidencyNotFoundError:
+        raise DeleteResidencyResponses.RESIDENCY_NOT_FOUND

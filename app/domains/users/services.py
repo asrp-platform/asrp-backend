@@ -129,50 +129,59 @@ class ResidencyService:
     def __init__(self, uow):
         self.uow = uow
 
-    async def get_by_user_id(self, user_id: int) -> list[Residency]:
+    async def check_resource_owner(self, user_id: int, *, current_user_id: int = None, residency_id: int = None):
+        """
+        Ensures:
+        - user exists
+        - residency exists (optional)
+        - current user is a resource owner (optional)
+        """
         async with self.uow:
-            if (await self.uow.user_repository.get_first_by_kwargs(id=user_id)) is None:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+
+            if user is None:
                 raise UserNotFoundError("User with provided ID not found")
 
+            if current_user_id is not None and user_id != current_user_id:
+                raise NotResourceOwnerError("Not resource owner")
+
+            if residency_id is not None:
+                residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+
+                if residency is None:
+                    raise ResidencyNotFoundError("Residency with provided ID not found")
+
+    async def get_by_user_id(self, user_id: int) -> list[Residency]:
+        await self.check_resource_owner(user_id)
+        async with self.uow:
             return await self.uow.residency_repository.get_all_by_kwargs(user_id=user_id)
 
     async def get_user_residency_by_id(self, user_id: int, residency_id: int) -> Residency:
+        await self.check_resource_owner(user_id, residency_id=residency_id)
         async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
-
             residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
-
-        if residency is None:
-            raise ResidencyNotFoundError("Residency with provided ID not found")
-        return residency
+            return residency
 
     async def create_user_residency(self, user_id: int, current_user_id: int, **kwargs) -> Residency:
-        if user_id != current_user_id:
-            raise NotResourceOwnerError("Not resource owner")
-
+        await self.check_resource_owner(user_id, current_user_id=current_user_id)
         async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
             return await self.uow.residency_repository.create(user_id=user_id, **kwargs)
 
-    async def update_user_residency(self, user_id: int, current_user_id: int, residency_id: int, update_data: dict):
-        if user_id != current_user_id:
-            raise NotResourceOwnerError("Not resource owner")
-
+    async def update_user_residency(
+        self,
+        user_id: int,
+        current_user_id: int,
+        residency_id: int,
+        update_data: dict,
+    ) -> Residency:
+        await self.check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
         async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
-
-            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
-            if residency is None:
-                raise ResidencyNotFoundError("Residency with provided ID not found")
-
             return await self.uow.residency_repository.update(residency_id, update_data)
+
+    async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
+        await self.check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
+        async with self.uow:
+            return await self.uow.residency_repository.mark_as_deleted(residency_id)
 
 
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
