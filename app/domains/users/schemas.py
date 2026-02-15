@@ -117,7 +117,7 @@ class ResidencyCreateSchema(BaseModel):
     city: str
     state: str
     country: str
-    years_from_to: str
+    years_from_to: str = Field(min_length=9)
 
 
 class ResidencyUpdateSchema(ResidencyCreateSchema):
@@ -137,7 +137,7 @@ class FellowshipCreateSchema(BaseModel):
     city: str
     state: str
     country: str
-    years_from_to: str
+    years_from_to: str = Field(min_length=9)
 
 
 class FellowshipUpdateSchema(BaseModel):
