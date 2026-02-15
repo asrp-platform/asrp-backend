@@ -140,7 +140,12 @@ class FellowshipCreateSchema(BaseModel):
     years_from_to: str
 
 
+class FellowshipUpdateSchema(BaseModel):
+    pass
+
+
 class FellowshipViewSchema(UCIMixinSchema, FellowshipCreateSchema):
+    user_id: int
     model_config = {
         "from_attributes": True,
     }

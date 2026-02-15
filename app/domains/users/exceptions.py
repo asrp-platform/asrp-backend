@@ -11,3 +11,7 @@ class ResidencyNotFoundError(NotFoundError):
 
 class UserNotFoundError(NotFoundError):
     pass
+
+
+class FellowshipNotFoundError(NotFoundError):
+    pass
