@@ -94,7 +94,7 @@ async def get_user_permissions(
     current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
 ) -> list[PermissionSchema]:
-    if "permissions.read" not in current_user_permissions:
+    if "permissions.view" not in current_user_permissions:
         raise GetPermissionsResponses.PERMISSION_ERROR
 
     try:
