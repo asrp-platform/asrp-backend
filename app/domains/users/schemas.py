@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Annotated, Optional
 
@@ -94,6 +95,35 @@ class ChangePasswordSchema(BaseModel):
         return v
 
 
+class PostgraduateTrainingMixin(BaseModel):
+    institution: str = Field(min_length=2)
+    speciality: str = Field(min_length=2)
+    city: str = Field(min_length=2)
+    state: str = Field(min_length=2)
+    country: str = Field(min_length=2)
+    years_from_to: str = Field(min_length=9, max_length=9)
+
+    @field_validator("years_from_to")
+    def validate_year_range(cls, value: str) -> str:
+        YEAR_RANGE_REGEX = re.compile(r"^\d{4}-\d{4}$")
+        if not YEAR_RANGE_REGEX.match(value):
+            raise PydanticCustomError("year_range_error", "Format must be YYYY-YYYY")
+
+        start, end = map(int, value.split("-"))
+
+        if start > end:
+            raise PydanticCustomError("year_range_error", "Start year cannot be greater than end year")
+
+        if start < 1900 or end > 2100:
+            raise PydanticCustomError("year_range_error", "Year out of valid range")
+
+        return value
+
+
+class ViewMixin(UCIMixinSchema):
+    user_id: int
+
+
 class ProfessionalInformationCreateOrUpdateSchema(BaseModel):
     medical_school: str
     medical_school_country: str
@@ -104,48 +134,35 @@ class ProfessionalInformationCreateOrUpdateSchema(BaseModel):
     is_us_lab_professional: bool = False
 
 
-class ProfessionalInformationViewSchema(UCIMixinSchema, ProfessionalInformationCreateOrUpdateSchema):
-    user_id: int
+class ProfessionalInformationViewSchema(ViewMixin, ProfessionalInformationCreateOrUpdateSchema):
     model_config = {
         "from_attributes": True,
     }
 
 
-class ResidencyCreateSchema(BaseModel):
-    institution: str
-    speciality: str
-    city: str
-    state: str
-    country: str
-    years_from_to: str = Field(min_length=9)
+class ResidencyCreateSchema(PostgraduateTrainingMixin):
+    pass
 
 
 class ResidencyUpdateSchema(ResidencyCreateSchema):
     pass
 
 
-class ResidencyViewSchema(UCIMixinSchema, ResidencyCreateSchema):
-    user_id: int
+class ResidencyViewSchema(ViewMixin, ResidencyCreateSchema):
     model_config = {
         "from_attributes": True,
     }
 
 
-class FellowshipCreateSchema(BaseModel):
-    institution: str
-    speciality: str
-    city: str
-    state: str
-    country: str
-    years_from_to: str = Field(min_length=9)
+class FellowshipCreateSchema(PostgraduateTrainingMixin):
+    pass
 
 
 class FellowshipUpdateSchema(BaseModel):
     pass
 
 
-class FellowshipViewSchema(UCIMixinSchema, FellowshipCreateSchema):
-    user_id: int
+class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
     model_config = {
         "from_attributes": True,
     }
