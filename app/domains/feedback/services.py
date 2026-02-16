@@ -36,8 +36,7 @@ class FeedbackService:
                 answer=answer_message
             )
 
-            if contact_message.answered:
-                await self.uow.contact_message_repository.update(contact_message_id, {"answered": True})
+            await self.uow.contact_message_repository.update(contact_message_id, {"answered": True})
 
         await self.email_provider.send_email(
             to=contact_message.email,
@@ -46,6 +45,7 @@ class FeedbackService:
         )
 
         return reply
+
 
 def get_feedback_service(
     uow: Annotated[FeedbackUnitOfWork, Depends(get_feedback_unit_of_work)],

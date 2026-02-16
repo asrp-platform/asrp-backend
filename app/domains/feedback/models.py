@@ -1,5 +1,4 @@
 from enum import Enum
-from xmlrpc.client import DateTime
 
 from sqlalchemy import Enum as SQLAEnum, String, text, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -36,10 +35,10 @@ class ContactMessage(Base, UCIMixin):
 
 
 class ContactMessageReply(Base, UCIMixin):
-    __tablename__ = 'contact_messages_relies'
+    __tablename__ = 'contact_message_replies'
 
     contact_message_id: Mapped[int] = mapped_column(
-        ForeignKey('contact_message.id', ondelete='CASCADE'),
+        ForeignKey('contact_messages.id', ondelete='CASCADE'),
         nullable=False, index=True
     )
     answer: Mapped[str] = mapped_column(Text, nullable=False)

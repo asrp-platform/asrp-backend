@@ -53,5 +53,6 @@ class ContactMessageReplyResponseSchema(BaseModel):
     contact_message_id: int
     answer: str
     created_at: datetime
+    updated_at: datetime
 
     model_config = {'from_attributes': True}

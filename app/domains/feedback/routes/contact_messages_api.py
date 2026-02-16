@@ -8,7 +8,7 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.feedback.filters import ContactMessagesFilter
-from app.domains.feedback.schemas import ContactMessageResponseSchema, CreateContactMessageSchema
+from app.domains.feedback.schemas import ContactMessageResponseSchema, CreateContactMessageSchema, ContactMessageReplyResponseSchema
 from app.domains.feedback.services import FeedbackServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 
@@ -79,19 +79,21 @@ class AnswerContactMessageBody(BaseModel):
 async def answer_contact_message(
     message_id: int,
     body: AnswerContactMessageBody,
-    admin: AdminUserDep,  # noqa Admin auth argument
+    admin: AdminUserDep,  # noqa Admin authargument
     permissions: AdminPermissionsDep,
     contact_message_service: FeedbackServiceDep,
-) -> ContactMessageResponseSchema:
+) -> ContactMessageReplyResponseSchema:
 
     if 'feedback.update' not in permissions:
         raise PermissionsResponses.PERMISSION_ERROR
 
     try:
         reply = await contact_message_service.answer_contact_message(
-            message_id, **body.model_dump()
+            contact_message_id=message_id,
+            subject=body.subject,
+            answer_message=body.answer_message
         )
     except ValueError:
         raise AnswerContactMessageResponses.CONTACT_MESSAGE_NOT_FOUND
 
-    return ContactMessageResponseSchema.from_orm(reply)
+    return ContactMessageReplyResponseSchema.from_orm(reply)
