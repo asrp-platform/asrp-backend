@@ -10,13 +10,13 @@ from app.domains.users.services import ResidencyServiceDep
 router = APIRouter(prefix="/users/{user_id}/residencies", tags=["Residency"])
 
 
-class GetUserResidencies(Responses):
+class GetUserResidenciesResponses(Responses):
     USER_NOT_FOUND = 404, "User with proved ID not found"
 
 
 @router.get(
     "",
-    responses=GetUserResidencies.responses,
+    responses=GetUserResidenciesResponses.responses,
     summary="Get user residencies",
 )
 async def get_user_residencies(
@@ -27,16 +27,15 @@ async def get_user_residencies(
         user_residencies = await service.get_by_user_id(user_id)
         return [ResidencyViewSchema.model_validate(residency) for residency in user_residencies]
     except UserNotFoundError:
-        raise GetUserResidencies.USER_NOT_FOUND
+        raise GetUserResidenciesResponses.USER_NOT_FOUND
 
 
-class GetSingleUserResidency(GetUserResidencies):
+class GetSingleUserResidencyResponses(GetUserResidenciesResponses):
     RESIDENCY_NOT_FOUND = 404, "Residency with proved ID not found"
 
 
 @router.get(
-    "/{residency_id}",
-    summary="Get user residency by residency ID",
+    "/{residency_id}", summary="Get user residency by residency ID", responses=GetSingleUserResidencyResponses.responses
 )
 async def get_single_user_residency(
     user_id: int,
@@ -48,13 +47,13 @@ async def get_single_user_residency(
         return ResidencyViewSchema.model_validate(user_residency)
 
     except UserNotFoundError:
-        raise GetSingleUserResidency.USER_NOT_FOUND
+        raise GetSingleUserResidencyResponses.USER_NOT_FOUND
 
     except ResidencyNotFoundError:
-        raise GetSingleUserResidency.RESIDENCY_NOT_FOUND
+        raise GetSingleUserResidencyResponses.RESIDENCY_NOT_FOUND
 
 
-class CreateUserResidencyResponses(GetUserResidencies):
+class CreateUserResidencyResponses(GetUserResidenciesResponses):
     NOT_RESOURCE_OWNER = 403, "Not resource owner"
 
 
@@ -74,7 +73,7 @@ async def create_residency_for_user(
         user_residency = await service.create_user_residency(
             user_id, current_user.id, **residency_creation_data.model_dump()
         )
-        return ResidencyViewSchema.from_orm(user_residency)
+        return ResidencyViewSchema.model_validate(user_residency)
     except NotResourceOwnerError:
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
     except UserNotFoundError:
@@ -101,14 +100,14 @@ async def update_user_residency(
         user_residency = await service.update_user_residency(
             user_id, current_user.id, residency_id, residency_update_data.model_dump()
         )
-        return ResidencyViewSchema.from_orm(user_residency)
+        return ResidencyViewSchema.model_validate(user_residency)
     except NotResourceOwnerError:
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
     except UserNotFoundError:
         raise CreateUserResidencyResponses.USER_NOT_FOUND
 
 
-class DeleteResidencyResponses(CreateUserResidencyResponses, GetSingleUserResidency):
+class DeleteResidencyResponses(CreateUserResidencyResponses, GetSingleUserResidencyResponses):
     pass
 
 

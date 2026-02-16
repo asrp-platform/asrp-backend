@@ -15,7 +15,7 @@ from app.domains.users.exceptions import (
     UserNotFoundError,
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
-from app.domains.users.models import Fellowship, Residency, User
+from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User
 
 """
 Не использую HTTPExceptions в сервисах, так как
@@ -102,14 +102,14 @@ class ProfessionalInformationService:
     def __init__(self, uow):
         self.uow = uow
 
-    async def get_by_user_id(self, user_id: int):
+    async def get_by_user_id(self, user_id: int) -> ProfessionalInformation | None:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
             return await self.uow.professional_information_repository.get_first_by_kwargs(user_id=user_id)
 
-    async def create_or_update(self, user_id: int, current_user_id: int, **kwargs):
+    async def create_or_update(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalInformation:
         if user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 

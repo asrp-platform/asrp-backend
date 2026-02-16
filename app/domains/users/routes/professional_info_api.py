@@ -22,10 +22,12 @@ class GetUserProfessionalInformationResponses(Responses):
 async def get_user_professional_information(
     user_id: int,
     professional_information_service: ProfessionalInformationServiceDep,
-) -> ProfessionalInformationViewSchema:
+) -> ProfessionalInformationViewSchema | None:
     try:
         user_professional_information = await professional_information_service.get_by_user_id(user_id)
-        return ProfessionalInformationViewSchema.from_orm(user_professional_information)
+        if user_professional_information is None:
+            return None
+        return ProfessionalInformationViewSchema.model_validate(user_professional_information)
     except UserNotFoundError:
         raise GetUserProfessionalInformationResponses.USER_NOT_FOUND
 
@@ -49,7 +51,7 @@ async def create_or_update_user_professional_information(
         updated_user_professional_information = await professional_information_service.create_or_update(
             user_id, current_user.id, **data.model_dump()
         )
-        return ProfessionalInformationViewSchema.from_orm(updated_user_professional_information)
+        return ProfessionalInformationViewSchema.model_validate(updated_user_professional_information)
     except UserNotFoundError:
         raise CreateOrUpdateUserProfessionalInformationResponses.USER_NOT_FOUND
     except NotResourceOwnerError:

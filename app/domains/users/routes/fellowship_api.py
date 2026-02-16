@@ -20,13 +20,13 @@ router = APIRouter(
 )
 
 
-class GetUserFellowships(Responses):
+class GetUserFellowshipsResponses(Responses):
     USER_NOT_FOUND = 404, "User with proved ID not found"
 
 
 @router.get(
     "",
-    responses=GetUserFellowships.responses,
+    responses=GetUserFellowshipsResponses.responses,
     summary="Get user fellowships",
 )
 async def get_user_fellowships(
@@ -37,15 +37,16 @@ async def get_user_fellowships(
         user_fellowships = await service.get_by_user_id(user_id)
         return [FellowshipViewSchema.model_validate(fellowship) for fellowship in user_fellowships]
     except UserNotFoundError:
-        raise GetUserFellowships.USER_NOT_FOUND
+        raise GetUserFellowshipsResponses.USER_NOT_FOUND
 
 
-class GetSingleUserFellowship(GetUserFellowships):
+class GetSingleUserFellowshipResponses(GetUserFellowshipsResponses):
     FELLOWSHIP_NOT_FOUND = 404, "Fellowship with proved ID not found"
 
 
 @router.get(
     "/{fellowship_id}",
+    responses=GetSingleUserFellowshipResponses.responses,
     summary="Get user fellowship by fellowship ID",
 )
 async def get_single_user_fellowship(
@@ -61,13 +62,13 @@ async def get_single_user_fellowship(
         return FellowshipViewSchema.model_validate(user_fellowship)
 
     except UserNotFoundError:
-        raise GetSingleUserFellowship.USER_NOT_FOUND
+        raise GetSingleUserFellowshipResponses.USER_NOT_FOUND
 
     except FellowshipNotFoundError:
-        raise GetSingleUserFellowship.FELLOWSHIP_NOT_FOUND
+        raise GetSingleUserFellowshipResponses.FELLOWSHIP_NOT_FOUND
 
 
-class CreateUserFellowshipResponses(GetUserFellowships):
+class CreateUserFellowshipResponses(GetUserFellowshipsResponses):
     NOT_RESOURCE_OWNER = 403, "Not resource owner"
 
 
@@ -89,7 +90,7 @@ async def create_fellowship_for_user(
             current_user.id,
             **fellowship_creation_data.model_dump(),
         )
-        return FellowshipViewSchema.from_orm(user_fellowship)
+        return FellowshipViewSchema.model_validate(user_fellowship)
 
     except NotResourceOwnerError:
         raise CreateUserFellowshipResponses.NOT_RESOURCE_OWNER
@@ -121,7 +122,7 @@ async def update_user_fellowship(
             fellowship_id,
             fellowship_update_data.model_dump(),
         )
-        return FellowshipViewSchema.from_orm(user_fellowship)
+        return FellowshipViewSchema.model_validate(user_fellowship)
 
     except NotResourceOwnerError:
         raise UpdateFellowshipResponses.NOT_RESOURCE_OWNER
@@ -132,7 +133,7 @@ async def update_user_fellowship(
 
 class DeleteFellowshipResponses(
     CreateUserFellowshipResponses,
-    GetSingleUserFellowship,
+    GetSingleUserFellowshipResponses,
 ):
     pass
 

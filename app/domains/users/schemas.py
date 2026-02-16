@@ -3,11 +3,30 @@ from datetime import datetime
 from typing import Annotated, Optional
 
 import phonenumbers
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.shared.types import Password
+
+
+def validate_year_range(value: str) -> str:
+    YEAR_RANGE_REGEX = re.compile(r"^\d{4}-\d{4}$")
+    if not YEAR_RANGE_REGEX.match(value):
+        raise PydanticCustomError("year_range_error", "Format must be YYYY-YYYY")
+
+    start, end = map(int, value.split("-"))
+
+    if start > end:
+        raise PydanticCustomError("year_range_error", "Start year cannot be greater than end year")
+
+    if start < 1900 or end > 2100:
+        raise PydanticCustomError("year_range_error", "Year out of valid range")
+
+    return value
+
+
+YearRange = Annotated[str, AfterValidator(validate_year_range)]
 
 
 class UserSchema(BaseModel):
@@ -101,23 +120,7 @@ class PostgraduateTrainingMixin(BaseModel):
     city: str = Field(min_length=2)
     state: str = Field(min_length=2)
     country: str = Field(min_length=2)
-    years_from_to: str = Field(min_length=9, max_length=9)
-
-    @field_validator("years_from_to")
-    def validate_year_range(cls, value: str) -> str:
-        YEAR_RANGE_REGEX = re.compile(r"^\d{4}-\d{4}$")
-        if not YEAR_RANGE_REGEX.match(value):
-            raise PydanticCustomError("year_range_error", "Format must be YYYY-YYYY")
-
-        start, end = map(int, value.split("-"))
-
-        if start > end:
-            raise PydanticCustomError("year_range_error", "Start year cannot be greater than end year")
-
-        if start < 1900 or end > 2100:
-            raise PydanticCustomError("year_range_error", "Year out of valid range")
-
-        return value
+    years_from_to: YearRange
 
 
 class ViewMixin(UCIMixinSchema):
@@ -127,7 +130,7 @@ class ViewMixin(UCIMixinSchema):
 class ProfessionalInformationCreateOrUpdateSchema(BaseModel):
     medical_school: str
     medical_school_country: str
-    years_from_to: str
+    years_from_to: YearRange
 
     is_board_certified_pathologist: bool = False
     is_us_pathology_trainee: bool = False

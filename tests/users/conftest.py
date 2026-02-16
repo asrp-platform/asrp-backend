@@ -6,20 +6,40 @@ from app.domains.users.models import Fellowship, ProfessionalInformation, Reside
 
 
 @pytest.fixture(scope="function")
+def year_range(faker: Faker) -> str:
+    start = int(faker.year())
+    end = int(faker.year())
+    if start > end:
+        return f"{end}-{start}"
+    return f"{start}-{end}"
+
+
+@pytest.fixture(scope="function")
 async def professional_information(
-    user_uow: UserUnitOfWork,
-    test_user: User,
+    user_uow: UserUnitOfWork, test_user: User, faker: Faker, year_range: str
 ) -> ProfessionalInformation:
     prof_info = await user_uow.professional_information_repository.create(
         user_id=test_user.id,
-        medical_school="Harvard Medical School",
-        medical_school_country="USA",
-        years_from_to="2010–2014",
+        medical_school=faker.pystr(min_chars=2),
+        medical_school_country=faker.country(),
+        years_from_to=year_range,
         is_board_certified_pathologist=True,
         is_us_pathology_trainee=False,
         is_us_lab_professional=False,
     )
     return prof_info
+
+
+@pytest.fixture(scope="function")
+def professional_information_data(faker: Faker) -> dict:
+    return {
+        "medical_school": faker.pystr(min_chars=2),
+        "medical_school_country": faker.country(),
+        "years_from_to": f"{faker.year()}-{faker.year()}",
+        "is_board_certified_pathologist": faker.pybool(),
+        "is_us_pathology_trainee": faker.pybool(),
+        "is_us_lab_professional": faker.pybool(),
+    }
 
 
 @pytest.fixture(scope="function")
@@ -71,12 +91,15 @@ async def residency(
 
 
 @pytest.fixture(scope="function")
-def residency_data(faker: Faker) -> dict:
+def residency_data(
+    faker: Faker,
+    year_range: str,
+) -> dict:
     return {
         "institution": faker.company(),
         "speciality": faker.job(),
         "city": faker.city(),
         "state": faker.state(),
         "country": faker.country(),
-        "years_from_to": "2010-2014",
+        "years_from_to": year_range,
     }
