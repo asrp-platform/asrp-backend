@@ -19,6 +19,7 @@ class FeedbackUnitOfWork(SQLAlchemyUnitOfWork):
         self.contact_message_repository = ContactMessageRepository(self._session)
         self.contact_message_reply_repository = ContactMessageReplyRepository(self._session)
 
+
 def get_feedback_unit_of_work(
     session: Annotated[AsyncSession, Depends(session_getter)],
 ) -> FeedbackUnitOfWork:

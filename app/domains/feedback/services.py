@@ -32,8 +32,7 @@ class FeedbackService:
                 raise ValueError("There is no contact message with provided id")
 
             reply = await self.uow.contact_message_reply_repository.create(
-                contact_message_id=contact_message.id,
-                answer=answer_message
+                contact_message_id=contact_message.id, answer=answer_message
             )
 
             await self.uow.contact_message_repository.update(contact_message_id, {"answered": True})
