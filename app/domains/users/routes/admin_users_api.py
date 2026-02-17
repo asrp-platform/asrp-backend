@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -129,9 +128,6 @@ async def set_user_permissions(
         raise ManagePermissionsResponses.USER_NOT_FOUND
 
     try:
-        request_time_utc = datetime.now(timezone.utc).isoformat()
-        return await permissions_service.set_users_permissions(
-            user_id, permissions_ids, admin, request_time_utc=request_time_utc
-        )
+        return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
     except ValueError:
         raise ManagePermissionsResponses.USER_NOT_FOUND

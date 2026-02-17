@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import Depends
@@ -46,7 +47,7 @@ class PermissionsService:
 
             return user.permissions
 
-    async def set_users_permissions(self, user_id: int, permissions_ids: list[int], actor: User, request_time_utc: str):
+    async def set_users_permissions(self, user_id: int, permissions_ids: list[int], actor: User):
         """
         Set permissions for a user.
 
@@ -69,6 +70,8 @@ class PermissionsService:
         """
 
         async with self.uow:
+            request_time_utc = datetime.now(timezone.utc).isoformat()
+
             user_stmt = select(User).options(selectinload(User.permissions)).where(User.id == user_id)
             user: User | None = (await self.uow._session.execute(user_stmt)).scalar_one_or_none()
 
