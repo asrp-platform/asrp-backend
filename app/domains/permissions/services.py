@@ -10,6 +10,8 @@ from app.domains.permissions.infrastructure import PermissionsUnitOfWork, get_pe
 from app.domains.permissions.models import Permission
 from app.domains.users.models import User
 
+privileges_logger = logger.bind(name="privileges")
+
 
 class RegisterResponses(Responses):
     PASSWORDS_DONT_MATCH = 400, "Passwords don't match"
@@ -79,9 +81,8 @@ class PermissionsService:
 
             await self.uow._session.commit()
 
-            bound_logger = logger.bind(name="privileges", request_time_utc=request_time_utc)
-            bound_logger.info(
-                f"Admin: {actor.id} ({actor.email}) | Target: {user.id} ({user.email}) | New Permissions: {[p.action for p in permissions]}"
+            privileges_logger.info(
+                f"Admin: {actor.id} ({actor.email}) | Target: {user.id} ({user.email}) | New Permissions: {[p.action for p in permissions]} | Time: {request_time_utc}"
             )
 
             return user.permissions
