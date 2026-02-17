@@ -44,7 +44,7 @@ logger.add("logs/request_logs.log", rotation="10 days")
 logger.add(
     "logs/privileges.log",
     filter=lambda record: record["extra"].get("name") == "privileges",
-    rotation="10 days",
+    rotation="30 days",
 )
 
 
