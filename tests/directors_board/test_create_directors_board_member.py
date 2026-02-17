@@ -4,19 +4,20 @@ import pytest
 from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
 
-from tests.fixtures.context import UserContext
+from tests.fixtures.auth import AuthHeaders
 
 pytestmark = pytest.mark.anyio
 
 
 async def test_create_directors_board_member(
-    client: AsyncClient, directors_board_member_data: dict[str, Any], admin_all_permissions_context: UserContext
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+    directors_board_member_data: dict[str, Any],
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
-
     response = await client.post(
         "/api/admin/directors-board",
-        headers=headers,
+        headers=admin_auth_headers,
         json=jsonable_encoder(directors_board_member_data),
     )
 
@@ -24,13 +25,13 @@ async def test_create_directors_board_member(
 
 
 async def test_create_directors_board_member_no_permissions(
-    client: AsyncClient, directors_board_member_data: dict[str, Any], admin_no_permissions_context: UserContext
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    directors_board_member_data: dict[str, Any],
 ) -> None:
-    headers, _, _ = admin_no_permissions_context.auth
-
     response = await client.post(
         "/api/admin/directors-board",
-        headers=headers,
+        headers=admin_auth_headers,
         json=jsonable_encoder(directors_board_member_data),
     )
 
@@ -38,29 +39,13 @@ async def test_create_directors_board_member_no_permissions(
 
 
 async def test_create_directors_board_member_not_authorized(
-    client: AsyncClient, directors_board_member_data: dict[str, Any], admin_no_permissions_context: UserContext
-) -> None:
-    headers, _, _ = admin_no_permissions_context.auth
-
-    response = await client.post(
-        "/api/admin/directors-board",
-        headers=headers,
-        json=jsonable_encoder(directors_board_member_data),
-    )
-
-    assert response.status_code == 403
-
-
-async def test_create_directors_board_member_by_user(
     client: AsyncClient,
     directors_board_member_data: dict[str, Any],
-    user_context: UserContext,
+    auth_headers: AuthHeaders,
 ) -> None:
-    headers, _, _ = user_context.auth
-
     response = await client.post(
         "/api/admin/directors-board",
-        headers=headers,
+        headers=auth_headers,
         json=jsonable_encoder(directors_board_member_data),
     )
 

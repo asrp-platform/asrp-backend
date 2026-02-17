@@ -10,6 +10,7 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
+from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import UpdateUserByAdminSchema, UserSchema
 from app.domains.users.services import UserServiceDep
@@ -74,7 +75,7 @@ async def update_user_by_admin(
 
     try:
         return await user_service.update_user(user_id, update_data.model_dump())
-    except ValueError:
+    except UserNotFoundError:
         raise UpdateUserByAdminResponses.USER_NOT_FOUND
 
 

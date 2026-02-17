@@ -7,7 +7,7 @@ from app.domains.shared.deps import AdminUserDep
 router = APIRouter(prefix="/permissions", tags=["Admin: Permissions"])
 
 
-@router.get("/")
+@router.get("")
 async def get_all_permissions(
     admin: AdminUserDep,  # noqa
     permission_service: PermissionServiceDep,

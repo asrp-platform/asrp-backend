@@ -3,7 +3,7 @@ from faker import Faker
 from httpx import AsyncClient
 
 from app.domains.feedback.models import ContactMessage
-from tests.fixtures.context import UserContext
+from tests.fixtures.auth import AuthHeaders
 
 pytestmark = pytest.mark.anyio
 
@@ -34,13 +34,14 @@ async def test_create_directors_board_member(
 
 
 async def test_retrieve_contact_message(
-    client: AsyncClient, admin_all_permissions_context: UserContext, contact_message_db: ContactMessage
+    client: AsyncClient,
+    contact_message_db: ContactMessage,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
-
     response = await client.get(
         "/api/contact-messages",
-        headers=headers,
+        headers=admin_auth_headers,
     )
     response_data = response.json()["data"]
 
@@ -58,15 +59,10 @@ async def test_retrieve_contact_message_not_authorized(
     assert response.status_code == 401
 
 
-async def test_retrieve_contact_message_by_user(
-    client: AsyncClient,
-    user_context: UserContext,
-) -> None:
-    headers, _, _ = user_context.auth
-
+async def test_retrieve_contact_message_by_user(client: AsyncClient, auth_headers: AuthHeaders) -> None:
     response = await client.get(
         "/api/contact-messages",
-        headers=headers,
+        headers=auth_headers,
     )
 
     assert response.status_code == 403
@@ -74,13 +70,11 @@ async def test_retrieve_contact_message_by_user(
 
 async def test_retrieve_contact_message_no_permissions(
     client: AsyncClient,
-    admin_no_permissions_context: UserContext,
+    admin_auth_headers: AuthHeaders,
 ) -> None:
-    headers, _, _ = admin_no_permissions_context.auth
-
     response = await client.get(
         "/api/contact-messages",
-        headers=headers,
+        headers=admin_auth_headers,
     )
 
     assert response.status_code == 403

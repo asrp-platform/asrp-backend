@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from passlib.hash import bcrypt
-from sqlalchemy import Boolean, DateTime, String, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.memberships.models import UserMembership
 
@@ -48,6 +49,11 @@ class User(Base):
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
+    professional_information: Mapped["ProfessionalInformation"] = relationship(
+        "ProfessionalInformation", back_populates="user", uselist=False
+    )
+    fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
+    residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -62,3 +68,46 @@ class User(Base):
 
     def verify_password(self, plain_password: str) -> bool:
         return bcrypt.verify(plain_password, self._password)
+
+
+class ProfessionalInformation(Base, UCIMixin):
+    __tablename__ = "users_professional_information"
+
+    medical_school: Mapped[str] = mapped_column(nullable=False)
+    medical_school_country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    is_board_certified_pathologist: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+    is_us_pathology_trainee: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+    is_us_lab_professional: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="professional_information")
+
+
+class Residency(Base, UCIMixin):
+    __tablename__ = "users_residency"
+
+    institution: Mapped[str] = mapped_column(nullable=False)
+    speciality: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=False)
+    country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="residencies")
+
+
+class Fellowship(Base, UCIMixin):
+    __tablename__ = "users_fellowship"
+
+    institution: Mapped[str] = mapped_column(nullable=False)
+    speciality: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=False)
+    country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="fellowships")
