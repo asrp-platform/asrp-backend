@@ -115,17 +115,12 @@ class ManagePermissionsResponses(PermissionsResponses):
 async def set_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
-    user_service: UserServiceDep,
     current_user_permissions: AdminPermissionsDep,
     admin: AdminUserDep,
     permissions_ids: list[int],
 ):
     if "permissions.update" not in current_user_permissions:
         raise ManagePermissionsResponses.PERMISSION_ERROR
-
-    user = await user_service.get_user_by_kwargs(id=user_id)
-    if not user:
-        raise ManagePermissionsResponses.USER_NOT_FOUND
 
     try:
         return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
