@@ -31,7 +31,7 @@ class FeedbackService:
             if contact_message is None:
                 raise ValueError("There is no contact message with provided id")
 
-            reply = await self.uow.contact_message_reply_repository.create(
+            message_reply = await self.uow.contact_message_reply_repository.create(
                 contact_message_id=contact_message.id, answer=answer_message
             )
 
@@ -43,7 +43,7 @@ class FeedbackService:
             body=answer_message,
         )
 
-        return reply
+        return message_reply
 
 
 def get_feedback_service(

@@ -37,8 +37,7 @@ class ContactMessageReply(Base, UCIMixin):
     __tablename__ = "contact_message_replies"
 
     contact_message_id: Mapped[int] = mapped_column(
-        ForeignKey("contact_messages.id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("contact_messages.id", ondelete="CASCADE"), nullable=False
     )
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     contact_message: Mapped["ContactMessage"] = relationship("ContactMessage", back_populates="replies")
-    # created_at syncs with UCIMixin
