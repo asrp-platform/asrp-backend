@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from passlib.hash import bcrypt
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text, Enum as SQLAEnum
+from sqlalchemy import Boolean, DateTime, Enum as SQLAEnum, ForeignKey, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin

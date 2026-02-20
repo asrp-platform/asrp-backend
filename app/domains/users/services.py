@@ -9,13 +9,13 @@ from loguru import logger
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import BASE_DIR, settings
 from app.domains.users.exceptions import (
+    ActiveUsernameChangeAlreadyExistsError,
     FellowshipNotFoundError,
     InvalidPasswordError,
     ResidencyNotFoundError,
-    UserNotFoundError,
+    UsernameChangeCooldownNotExpiredError,
     UsernameChangeNotFoundError,
-    ActiveUsernameChangeAlreadyExistsError,
-    UsernameChangeCooldownNotExpiredError
+    UserNotFoundError,
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
 from app.domains.users.models import (
@@ -24,7 +24,7 @@ from app.domains.users.models import (
     Residency,
     User,
     UsernameChange,
-    UsernameChangeStatusEnum
+    UsernameChangeStatusEnum,
 )
 
 """

@@ -10,15 +10,15 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
-from app.domains.users.exceptions import UserNotFoundError, UsernameChangeNotFoundError
+from app.domains.users.exceptions import UsernameChangeNotFoundError, UserNotFoundError
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     UpdateUserByAdminSchema,
-    UserSchema,
+    UsernameChangeRejectByAdminSchema,
     UsernameChangeViewSchema,
-    UsernameChangeRejectByAdminSchema
+    UserSchema,
 )
-from app.domains.users.services import UserServiceDep, UsernameChangeServiceDep
+from app.domains.users.services import UsernameChangeServiceDep, UserServiceDep
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users")
 

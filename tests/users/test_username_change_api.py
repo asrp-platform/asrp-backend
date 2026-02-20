@@ -1,5 +1,6 @@
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 from httpx import AsyncClient
 
 from app.domains.users.infrastructure import UserUnitOfWork
