@@ -43,7 +43,7 @@ class CreateOrUpdateUserProfessionalInformationResponses(GetUserProfessionalInfo
 )
 async def create_or_update_user_professional_information(
     user_id: int,
-    current_user: CurrentUserDep,  # noqa: Auth dependency
+    current_user: CurrentUserDep,  # noqa: F401, F501
     professional_information_service: ProfessionalInformationServiceDep,
     data: ProfessionalInformationCreateOrUpdateSchema,
 ) -> ProfessionalInformationViewSchema:
