@@ -6,5 +6,9 @@ class NotResourceOwnerError(Exception):
     pass
 
 
-class NotResourceOwnerError(BaseException):
+class AlreadyExistsResourceError(Exception):
+    pass
+
+
+class TimeCooldownError(Exception):
     pass

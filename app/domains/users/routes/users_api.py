@@ -4,16 +4,28 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi_exception_responses import Responses
 
+from app.core.common.exceptions import NotResourceOwnerError
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
 from app.core.config import BASE_DIR, settings
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.save_file import save_file
 from app.domains.shared.deps import CurrentUserDep
-from app.domains.users.exceptions import InvalidPasswordError, UserNotFoundError
+from app.domains.users.exceptions import (
+    InvalidPasswordError,
+    UserNotFoundError,
+    UsernameChangeCooldownNotExpiredError,
+    ActiveUsernameChangeAlreadyExistsError
+)
 from app.domains.users.filters import UsersFilter
-from app.domains.users.schemas import ChangePasswordSchema, UpdateUserSchema, UserSchema
-from app.domains.users.services import UserServiceDep
+from app.domains.users.schemas import (
+    ChangePasswordSchema,
+    UpdateUserSchema,
+    UserSchema,
+    UsernameChangeCreateSchema,
+    UsernameChangeViewSchema
+)
+from app.domains.users.services import UserServiceDep, UsernameChangeServiceDep
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
@@ -161,3 +173,38 @@ async def change_user_password(
         raise ChangePasswordResponses.USER_NOT_FOUND
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD
+
+
+class UsernameChangeResponses(Responses):
+    NOT_RESOURCE_OWNER = 403, "Not resource owner"
+    ACTIVE_USERNAME_CHANGE_ALREADY_EXISTS = 409, "Active username change already exists"
+    USERNAME_CHANGE_COOLDOWN_NOT_EXPIRED = 429, "Username change cooldown not expired"
+
+
+@router.post(
+    "/{user_id}/username-changes",
+    status_code=201,
+    responses=UsernameChangeResponses.responses,
+    summary="Create request to change user firstname and lastname"
+)
+async def create_username_change(
+    user_id: Annotated[int, Path()],
+    service: UsernameChangeServiceDep,
+    current_user: CurrentUserDep,
+    username_change_data: UsernameChangeCreateSchema
+) -> UsernameChangeViewSchema:
+    try:
+        username_change = await service.create_username_change(
+            user_id,
+            **username_change_data.model_dump()
+        )
+        return UsernameChangeViewSchema.model_validate(username_change)
+
+    except NotResourceOwnerError:
+        raise UsernameChangeResponses.NOT_RESOURCE_OWNER
+
+    except ActiveUsernameChangeAlreadyExistsError:
+        raise UsernameChangeResponses.ACTIVE_USERNAME_CHANGE_ALREADY_EXISTS
+
+    except UsernameChangeCooldownNotExpiredError:
+        raise UsernameChangeResponses.USERNAME_CHANGE_COOLDOWN_NOT_EXPIRED

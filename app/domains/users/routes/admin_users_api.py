@@ -10,10 +10,15 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
-from app.domains.users.exceptions import UserNotFoundError
+from app.domains.users.exceptions import UserNotFoundError, UsernameChangeNotFoundError
 from app.domains.users.filters import UsersFilter
-from app.domains.users.schemas import UpdateUserByAdminSchema, UserSchema
-from app.domains.users.services import UserServiceDep
+from app.domains.users.schemas import (
+    UpdateUserByAdminSchema,
+    UserSchema,
+    UsernameChangeViewSchema,
+    UsernameChangeRejectByAdminSchema
+)
+from app.domains.users.services import UserServiceDep, UsernameChangeServiceDep
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users")
 
@@ -46,6 +51,33 @@ async def get_users(
         )
     except InvalidOrderAttributeError:
         raise UserListResponses.INVALID_SORTER_FIELD
+
+
+class UsernameChangeResponses(Responses):
+    PERMISSION_ERROR = 403, "Don't have enough permissions to view username change requests"
+    USER_NOT_FOUND = 404, "User with provided ID not found"
+    USERNAME_CHANGE_NOT_FOUND = 404, "Username change request with provided ID not found"
+    ACTIVE_USERNAME_CHANGE_ALREADY_EXISTS = 409, "Active username change already exists"
+    USERNAME_CHANGE_COOLDOWN_NOT_EXPIRED = 429, "Username change cooldown not expired"
+
+
+@router.get(
+    "/username-changes",
+    status_code=200,
+    responses=UsernameChangeResponses.responses,
+    summary="Get all requests for a firstname and lastname change"
+)
+async def get_all_active_username_changes(
+    permissions: AdminPermissionsDep,
+    admin: AdminUserDep,
+    service: UsernameChangeServiceDep,
+) -> list[UsernameChangeViewSchema]:
+
+    if "username_change.view" not in permissions:
+        raise UsernameChangeResponses.PERMISSION_ERROR
+
+    requests_to_change_username = await service.get_all_active_username_changes()
+    return [UsernameChangeViewSchema.model_validate(request) for request in requests_to_change_username]
 
 
 class UpdateUserByAdminResponses(Responses):
@@ -126,3 +158,93 @@ async def set_user_permissions(
         return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
     except ValueError:
         raise ManagePermissionsResponses.USER_NOT_FOUND
+
+
+@router.get(
+    "/{user_id}/username-changes/{username_change_id}",
+    status_code=200,
+    responses=UsernameChangeResponses.responses,
+    summary="Get request for a firstname and lastname change"
+)
+async def get_active_username_change(
+    user_id: Annotated[int, Path()],
+    username_change_id: Annotated[int, Path()],
+    permissions: AdminPermissionsDep,
+    admin: AdminUserDep,
+    service: UsernameChangeServiceDep,
+) -> UsernameChangeViewSchema:
+
+    if "username_change.view" not in permissions:
+        raise UsernameChangeResponses.PERMISSION_ERROR
+
+    try:
+        username_change_request = await service.get_active_username_change(user_id, username_change_id)
+        return UsernameChangeViewSchema.model_validate(username_change_request)
+
+    except UserNotFoundError:
+        raise UsernameChangeResponses.USER_NOT_FOUND
+
+    except UsernameChangeNotFoundError:
+        raise UsernameChangeResponses.USERNAME_CHANGE_NOT_FOUND
+
+
+@router.patch(
+    "/{user_id}/username-changes/{username_change_id}/approve",
+    status_code=200,
+    responses=UsernameChangeResponses.responses,
+    summary="Approve a firstname and lastname change request"
+)
+async def approve_username_change(
+    user_id: Annotated[int, Path()],
+    username_change_id: Annotated[int, Path()],
+    permissions: AdminPermissionsDep,
+    admin: AdminUserDep,
+    service: UsernameChangeServiceDep,
+) -> None:
+
+    if "username_change.update" not in permissions:
+        raise UsernameChangeResponses.PERMISSION_ERROR
+
+    try:
+        return await service.approve_username_change(
+            user_id,
+            username_change_id
+        )
+
+    except UserNotFoundError:
+        raise UsernameChangeResponses.USER_NOT_FOUND
+
+    except UsernameChangeNotFoundError:
+        raise UsernameChangeResponses.USERNAME_CHANGE_NOT_FOUND
+
+
+@router.patch(
+    "/{user_id}/username-changes/{username_change_id}/reject",
+    status_code=200,
+    responses=UsernameChangeResponses.responses,
+    summary="Reject a firstname and lastname change request"
+)
+async def reject_username_change(
+    user_id: Annotated[int, Path()],
+    username_change_id: Annotated[int, Path()],
+    permissions: AdminPermissionsDep,
+    admin: AdminUserDep,
+    service: UsernameChangeServiceDep,
+    reject_username_change_data: UsernameChangeRejectByAdminSchema
+) -> None:
+
+    if "username_change.update" not in permissions:
+        raise UsernameChangeResponses.PERMISSION_ERROR
+
+    try:
+        await service.reject_username_change(
+            user_id,
+            username_change_id,
+            reject_username_change_data.model_dump()
+        )
+
+    except UserNotFoundError:
+        raise UsernameChangeResponses.USER_NOT_FOUND
+
+    except UsernameChangeNotFoundError:
+        raise UsernameChangeResponses.USERNAME_CHANGE_NOT_FOUND

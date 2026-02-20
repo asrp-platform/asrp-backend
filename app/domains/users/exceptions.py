@@ -1,4 +1,4 @@
-from app.core.common.exceptions import NotFoundError
+from app.core.common.exceptions import NotFoundError, AlreadyExistsResourceError, TimeCooldownError
 
 
 class InvalidPasswordError(Exception):
@@ -14,4 +14,16 @@ class UserNotFoundError(NotFoundError):
 
 
 class FellowshipNotFoundError(NotFoundError):
+    pass
+
+
+class UsernameChangeNotFoundError(NotFoundError):
+    pass
+
+
+class ActiveUsernameChangeAlreadyExistsError(AlreadyExistsResourceError):
+    pass
+
+
+class UsernameChangeCooldownNotExpiredError(TimeCooldownError):
     pass

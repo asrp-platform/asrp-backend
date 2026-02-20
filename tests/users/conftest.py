@@ -2,7 +2,13 @@ import pytest
 from faker import Faker
 
 from app.domains.users.infrastructure import UserUnitOfWork
-from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User
+from app.domains.users.models import (
+    Fellowship,
+    ProfessionalInformation,
+    Residency,
+    User,
+    UsernameChange
+)
 
 
 @pytest.fixture(scope="function")
@@ -108,3 +114,33 @@ def residency_data(
         "country": faker.country(),
         "years_from_to": year_range,
     }
+
+
+@pytest.fixture(scope="function")
+async def username_change(
+    faker: Faker,
+    user_uow: UserUnitOfWork,
+    test_user: User,
+) -> UsernameChange:
+    async with user_uow:
+        username_change = await user_uow.username_change_repository.create(
+            firstname=faker.first_name(),
+            lastname=faker.last_name(),
+            reason_change=faker.text(max_nb_chars=100),
+            user_id=test_user.id
+        )
+    return username_change
+
+
+@pytest.fixture(scope="function")
+def username_change_data(faker: Faker) -> dict:
+    return {
+        "firstname": faker.first_name(),
+        "lastname": faker.last_name(),
+        "reason_change": faker.text(max_nb_chars=100)
+    }
+
+
+@pytest.fixture(scope="function")
+def username_reject_change_data(faker: Faker) -> dict:
+    return {"reason_rejecting": faker.text(max_nb_chars=100)}

@@ -169,3 +169,19 @@ class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
     model_config = {
         "from_attributes": True,
     }
+
+
+class UsernameChangeCreateSchema(BaseModel):
+    firstname: str
+    lastname: str
+    reason_change: str
+
+
+class UsernameChangeViewSchema(ViewMixin, UsernameChangeCreateSchema):
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class UsernameChangeRejectByAdminSchema(BaseModel):
+    reason_rejecting: str

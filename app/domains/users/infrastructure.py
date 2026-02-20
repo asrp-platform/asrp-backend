@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_repository import SQLAlchemyRepository
 from app.core.database.setup_db import session_getter
 from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
-from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User
+from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User, UsernameChange
 
 
 class UserRepository(SQLAlchemyRepository):
@@ -25,6 +25,10 @@ class FellowshipRepository(SQLAlchemyRepository):
     model = Fellowship
 
 
+class UsernameChangeRepository(SQLAlchemyRepository):
+    model = UsernameChange
+
+
 class UserUnitOfWork(SQLAlchemyUnitOfWork):
     def __init__(self, session=None):
         super().__init__(session)
@@ -32,6 +36,7 @@ class UserUnitOfWork(SQLAlchemyUnitOfWork):
         self.professional_information_repository = ProfessionalInformationRepository(self._session)
         self.residency_repository = ResidencyRepository(self._session)
         self.fellowship_repository = FellowshipRepository(self._session)
+        self.username_change_repository = UsernameChangeRepository(self._session)
 
 
 def get_user_unit_of_work(session: Annotated[AsyncSession, Depends(session_getter)]) -> UserUnitOfWork:
