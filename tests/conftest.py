@@ -2,7 +2,6 @@ import pytest
 
 from tests.fixtures.auth import *  # noqa
 from tests.fixtures.client import *  # noqa
-from tests.fixtures.context import *  # noqa
 from tests.fixtures.database import *  # noqa
 from tests.fixtures.faker import *  # noqa
 from tests.fixtures.permissions import *  # noqa

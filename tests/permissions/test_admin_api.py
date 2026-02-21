@@ -6,9 +6,8 @@ from httpx import AsyncClient
 
 from app.domains.permissions.services import get_permissions_service
 from app.domains.shared.deps import get_users_permissions
-from app.domains.users.routes.admin_api import ManagePermissionsResponses
+from app.domains.users.routes.admin_users_api import ManagePermissionsResponses
 from app.main import app
-from tests.fixtures.context import UserContext
 
 pytestmark = pytest.mark.anyio
 
@@ -53,12 +52,12 @@ async def test_put_permissions_success(
     mock_service: AsyncMock,
     override_permissions_service,
     mock_permissions_with_update,
-    admin_all_permissions_context: UserContext,
+    admin_user,
+    admin_auth_headers,
+    admin_all_permissions,
     user_factory,
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
     target_user = await user_factory()
-
     new_perms_ids = [1, 2, 3]
 
     mock_permissions = [
@@ -72,7 +71,7 @@ async def test_put_permissions_success(
     response = await client.put(
         f"/api/admin/users/{target_user.id}/permissions",
         json=new_perms_ids,
-        headers=headers,
+        headers=admin_auth_headers,
     )
 
     assert response.status_code == 200
@@ -85,24 +84,23 @@ async def test_put_permissions_success(
     call_args = mock_service.set_users_permissions.call_args
     assert call_args[0][0] == target_user.id
     assert call_args[0][1] == new_perms_ids
-    assert call_args[0][2].id == admin_all_permissions_context.user.id
+    assert call_args[0][2].id == admin_user.id
 
 
 async def test_put_permissions_forbidden(
     client: AsyncClient,
     mock_service: AsyncMock,
     override_permissions_service,
-    admin_no_permissions_context: UserContext,
+    admin_auth_headers,
     user_factory,
 ) -> None:
-    headers, _, _ = admin_no_permissions_context.auth
     target_user = await user_factory()
     new_perms_ids = [1, 2]
 
     response = await client.put(
         f"/api/admin/users/{target_user.id}/permissions",
         json=new_perms_ids,
-        headers=headers,
+        headers=admin_auth_headers,
     )
 
     assert response.status_code == 403
@@ -114,16 +112,17 @@ async def test_put_permissions_user_not_found(
     mock_service: AsyncMock,
     override_permissions_service,
     mock_permissions_with_update,
-    admin_all_permissions_context: UserContext,
+    admin_auth_headers,
+    admin_all_permissions,
 ) -> None:
-    headers, _, _ = admin_all_permissions_context.auth
+    mock_service.set_users_permissions.side_effect = ValueError("User with provided ID not found")
 
     response = await client.put(
         "/api/admin/users/999999/permissions",
         json=[1],
-        headers=headers,
+        headers=admin_auth_headers,
     )
 
     assert response.status_code == 404
     assert response.json()["detail"] == ManagePermissionsResponses.USER_NOT_FOUND.detail  # type: ignore[attr-defined]
-    mock_service.set_users_permissions.assert_not_called()
+    mock_service.set_users_permissions.assert_called_once()
