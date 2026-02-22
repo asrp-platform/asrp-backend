@@ -144,4 +144,4 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
         if result is None:
             raise ValueError("There is no such record with provided id")
 
-        return result  # noqa: Returns ID - integer value
+        return result

@@ -3,6 +3,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.core.database.mixins import UCIMixinSchema
 from app.domains.feedback.models import ContactMessageTypeEnum
 
 
@@ -42,3 +43,14 @@ class ContactMessageResponseSchema(CreateContactMessageSchema):
     model_config = {
         "from_attributes": True,
     }
+
+
+class ContactMessageReplyCreate(BaseModel):
+    answer: str = Field(min_length=32)
+
+
+class ContactMessageReplyResponseSchema(UCIMixinSchema):
+    contact_message_id: int
+    answer: str
+
+    model_config = {"from_attributes": True}
