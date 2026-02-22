@@ -10,6 +10,7 @@ from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import BASE_DIR
 from app.domains.users.exceptions import (
     FellowshipNotFoundError,
+    InvalidCommunicationFieldError,
     InvalidPasswordError,
     ResidencyNotFoundError,
     UserNotFoundError,
@@ -293,6 +294,91 @@ class FellowshipService:
             return await self.uow.fellowship_repository.mark_as_deleted(fellowship_id)
 
 
+class CommunicationPreferenceService:
+    def __init__(self, uow):
+        self.uow = uow
+
+    async def check_resource_owner(self, user_id: int, *, current_user_id: int = None):
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
+
+            if current_user_id is not None and user_id != current_user_id:
+                raise NotResourceOwnerError("Not resource owner")
+
+    async def get_or_create_for_user(self, user_id: int) -> Any:
+        async with self.uow:
+            preferences = await self.uow.communication_preference_repository.get_first_by_kwargs(user_id=user_id)
+
+            if not preferences:
+                preferences = await self.uow.communication_preference_repository.create(
+                    user_id=user_id,
+                    membership_account_notifications=True,
+                    newsletters=False,
+                    events_meetings=False,
+                    committees_leadership=False,
+                    volunteer_opportunities=False
+                )
+
+            return preferences
+
+    async def get_preferences(self, user_id: int, current_user_id: int = None) -> Any:
+        await self.check_resource_owner(user_id, current_user_id=current_user_id)
+        return await self.get_or_create_for_user(user_id)
+
+    async def update_preference(
+        self,
+        user_id: int,
+        current_user_id: int,
+        field: str,
+        value: bool
+    ) -> Any:
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
+            if current_user_id is not None and user_id != current_user_id:
+                raise NotResourceOwnerError("Not resource owner")
+
+            valid_fields = [
+                'newsletters',
+                'events_meetings',
+                'committees_leadership',
+                'volunteer_opportunities'
+            ]
+
+            if field == 'membership_account_notifications':
+                raise InvalidCommunicationFieldError(
+                    "Membership & account notifications are required and cannot be disabled"
+                )
+
+            if field not in valid_fields:
+                raise InvalidCommunicationFieldError(
+                    f"Invalid field name. Must be one of: {', '.join(valid_fields)}"
+                )
+
+            preferences = await self.uow.communication_preference_repository.get_first_by_kwargs(user_id=user_id)
+            if not preferences:
+                preferences = await self.uow.communication_preference_repository.create(
+                    user_id=user_id,
+                    membership_account_notifications=True,
+                    newsletters=False,
+                    events_meetings=False,
+                    committees_leadership=False,
+                    volunteer_opportunities=False
+                )
+
+            update_data = {field: value}
+            updated_preferences = await self.uow.communication_preference_repository.update(
+                preferences.id,
+                update_data
+            )
+
+            return updated_preferences
+
+
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
     return UserService(uow)
 
@@ -313,9 +399,19 @@ def get_fellowship_service(
     return FellowshipService(uow)
 
 
+def get_communication_preference_service(
+    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+) -> CommunicationPreferenceService:
+    return CommunicationPreferenceService(uow)
+
+
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 ProfessionalInformationServiceDep = Annotated[
     ProfessionalInformationService, Depends(get_professional_information_service)
 ]
 ResidencyServiceDep = Annotated[ResidencyService, Depends(get_residency_service)]
 FellowshipServiceDep = Annotated[FellowshipService, Depends(get_fellowship_service)]
+CommunicationPreferenceServiceDep = Annotated[
+    CommunicationPreferenceService,
+    Depends(get_communication_preference_service)
+]

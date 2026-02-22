@@ -15,3 +15,7 @@ class UserNotFoundError(NotFoundError):
 
 class FellowshipNotFoundError(NotFoundError):
     pass
+
+
+class InvalidCommunicationFieldError(Exception):
+    pass
