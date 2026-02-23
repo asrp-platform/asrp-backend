@@ -82,8 +82,8 @@ async def insert_test_data(
                 Permission(action="legal_documents.view", name="View legal documents"),
                 Permission(action="legal_documents.update", name="Update legal documents"),
                 Permission(action="legal_documents.delete", name="Delete legal documents"),
-                Permission(action="username_change.view", name="View username change requests"),
-                Permission(action="username_change.update", name="Approve/reject username change requests"),
+                Permission(action="name_change_request.view", name="View name change requests"),
+                Permission(action="name_change_request.update", name="Approve/reject name change requests"),
             ]
         )
         await session.commit()

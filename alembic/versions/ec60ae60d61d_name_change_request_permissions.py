@@ -1,4 +1,4 @@
-"""username_change permissions
+"""name_change_request permissions
 
 Revision ID: ec60ae60d61d
 Revises: 78a6c82b5bd6
@@ -26,8 +26,8 @@ def upgrade() -> None:
     op.bulk_insert(
         permissions_table,
         [
-            {"action": "username_change.view", "name": "View username changes"},
-            {"action": "username_change.update", "name": "Approve/reject username changes"},
+            {"action": "name_change_request.view", "name": "View name change requests"},
+            {"action": "name_change_request.update", "name": "Approve/reject name change request"},
         ],
     )
 
@@ -38,8 +38,8 @@ def downgrade() -> None:
     conn.execute(
         sa.text("""
             DELETE FROM permissions WHERE action IN (
-            'username_change.view',
-            'username_change.update'
+            'name_change_request.view',
+            'name_change_request.update'
             )
         """)
     )

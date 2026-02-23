@@ -12,20 +12,20 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.save_file import save_file
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
-    ActiveUsernameChangeAlreadyExistsError,
+    PendingNameChangeRequestAlreadyExistsError,
     InvalidPasswordError,
-    UsernameChangeCooldownNotExpiredError,
+    NameChangeRequestCooldownNotExpiredError,
     UserNotFoundError,
 )
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     ChangePasswordSchema,
     UpdateUserSchema,
-    UsernameChangeCreateSchema,
-    UsernameChangeViewSchema,
+    NameChangeRequestCreateSchema,
+    NameChangeRequestViewSchema,
     UserSchema,
 )
-from app.domains.users.services import UsernameChangeServiceDep, UserServiceDep
+from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
@@ -175,36 +175,36 @@ async def change_user_password(
         raise ChangePasswordResponses.INVALID_PASSWORD
 
 
-class UsernameChangeResponses(Responses):
+class NameChangeRequestResponses(Responses):
     NOT_RESOURCE_OWNER = 403, "Not resource owner"
-    ACTIVE_USERNAME_CHANGE_ALREADY_EXISTS = 409, "Active username change already exists"
-    USERNAME_CHANGE_COOLDOWN_NOT_EXPIRED = 429, "Username change cooldown not expired"
+    PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS = 409, "Pending name change request already exists"
+    NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED = 429, "Name change request cooldown not expired"
 
 
 @router.post(
-    "/{user_id}/username-changes",
+    "/{user_id}/name-change-requests",
     status_code=201,
-    responses=UsernameChangeResponses.responses,
+    responses=NameChangeRequestResponses.responses,
     summary="Create request to change user firstname and lastname"
 )
-async def create_username_change(
+async def create_name_change_request(
     user_id: Annotated[int, Path()],
-    service: UsernameChangeServiceDep,
+    service: NameChangeRequestServiceDep,
     current_user: CurrentUserDep,
-    username_change_data: UsernameChangeCreateSchema
-) -> UsernameChangeViewSchema:
+    name_change_request_data: NameChangeRequestCreateSchema
+) -> NameChangeRequestViewSchema:
     try:
-        username_change = await service.create_username_change(
+        name_change_request = await service.create_name_change_request(
             user_id,
-            **username_change_data.model_dump()
+            **name_change_request_data.model_dump()
         )
-        return UsernameChangeViewSchema.model_validate(username_change)
+        return NameChangeRequestViewSchema.model_validate(name_change_request)
 
     except NotResourceOwnerError:
-        raise UsernameChangeResponses.NOT_RESOURCE_OWNER
+        raise NameChangeRequestResponses.NOT_RESOURCE_OWNER
 
-    except ActiveUsernameChangeAlreadyExistsError:
-        raise UsernameChangeResponses.ACTIVE_USERNAME_CHANGE_ALREADY_EXISTS
+    except PendingNameChangeRequestAlreadyExistsError:
+        raise NameChangeRequestResponses.PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS
 
-    except UsernameChangeCooldownNotExpiredError:
-        raise UsernameChangeResponses.USERNAME_CHANGE_COOLDOWN_NOT_EXPIRED
+    except NameChangeRequestCooldownNotExpiredError:
+        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED

@@ -6,7 +6,7 @@ class NotResourceOwnerError(Exception):
     pass
 
 
-class AlreadyExistsResourceError(Exception):
+class ResourceAlreadyExistsError(Exception):
     pass
 
 

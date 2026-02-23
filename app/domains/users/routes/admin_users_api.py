@@ -10,15 +10,15 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
-from app.domains.users.exceptions import UsernameChangeNotFoundError, UserNotFoundError
+from app.domains.users.exceptions import NameChangeRequestNotFoundError, UserNotFoundError
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     UpdateUserByAdminSchema,
-    UsernameChangeRejectByAdminSchema,
-    UsernameChangeViewSchema,
+    NameChangeRequestRejectByAdminSchema,
+    NameChangeRequestViewSchema,
     UserSchema,
 )
-from app.domains.users.services import UsernameChangeServiceDep, UserServiceDep
+from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users")
 
@@ -53,31 +53,31 @@ async def get_users(
         raise UserListResponses.INVALID_SORTER_FIELD
 
 
-class UsernameChangeResponses(Responses):
-    PERMISSION_ERROR = 403, "Don't have enough permissions to view username change requests"
+class NameChangeRequestResponses(Responses):
+    PERMISSION_ERROR = 403, "Don't have enough permissions to view name change requests"
     USER_NOT_FOUND = 404, "User with provided ID not found"
-    USERNAME_CHANGE_NOT_FOUND = 404, "Username change request with provided ID not found"
-    ACTIVE_USERNAME_CHANGE_ALREADY_EXISTS = 409, "Active username change already exists"
-    USERNAME_CHANGE_COOLDOWN_NOT_EXPIRED = 429, "Username change cooldown not expired"
+    NAME_CHANGE_REQUEST_NOT_FOUND = 404, "Name change request with provided ID not found"
+    PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS = 409, "Pending name change request already exists"
+    NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED = 429, "Name change request cooldown not expired"
 
 
 @router.get(
-    "/username-changes",
+    "/name-change-requests",
     status_code=200,
-    responses=UsernameChangeResponses.responses,
+    responses=NameChangeRequestResponses.responses,
     summary="Get all requests for a firstname and lastname change"
 )
-async def get_all_active_username_changes(
+async def get_all_pending_name_change_requests(
     permissions: AdminPermissionsDep,
     admin: AdminUserDep,
-    service: UsernameChangeServiceDep,
-) -> list[UsernameChangeViewSchema]:
+    service: NameChangeRequestServiceDep,
+) -> list[NameChangeRequestViewSchema]:
 
-    if "username_change.view" not in permissions:
-        raise UsernameChangeResponses.PERMISSION_ERROR
+    if "name_change_request.view" not in permissions:
+        raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    requests_to_change_username = await service.get_all_active_username_changes()
-    return [UsernameChangeViewSchema.model_validate(request) for request in requests_to_change_username]
+    requests_to_change_name = await service.get_all_pending_name_change_requests()
+    return [NameChangeRequestViewSchema.model_validate(request) for request in requests_to_change_name]
 
 
 class UpdateUserByAdminResponses(Responses):
@@ -161,90 +161,90 @@ async def set_user_permissions(
 
 
 @router.get(
-    "/{user_id}/username-changes/{username_change_id}",
+    "/{user_id}/name-change-requests/{name_change_request_id}",
     status_code=200,
-    responses=UsernameChangeResponses.responses,
+    responses=NameChangeRequestResponses.responses,
     summary="Get request for a firstname and lastname change"
 )
-async def get_active_username_change(
+async def get_pending_name_change_request(
     user_id: Annotated[int, Path()],
-    username_change_id: Annotated[int, Path()],
+    name_change_request_id: Annotated[int, Path()],
     permissions: AdminPermissionsDep,
     admin: AdminUserDep,
-    service: UsernameChangeServiceDep,
-) -> UsernameChangeViewSchema:
+    service: NameChangeRequestServiceDep,
+) -> NameChangeRequestViewSchema:
 
-    if "username_change.view" not in permissions:
-        raise UsernameChangeResponses.PERMISSION_ERROR
+    if "name_change_request.view" not in permissions:
+        raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
-        username_change_request = await service.get_active_username_change(user_id, username_change_id)
-        return UsernameChangeViewSchema.model_validate(username_change_request)
+        name_change_request = await service.get_pending_name_change_request(user_id, name_change_request_id)
+        return NameChangeRequestViewSchema.model_validate(name_change_request)
 
     except UserNotFoundError:
-        raise UsernameChangeResponses.USER_NOT_FOUND
+        raise NameChangeRequestResponses.USER_NOT_FOUND
 
-    except UsernameChangeNotFoundError:
-        raise UsernameChangeResponses.USERNAME_CHANGE_NOT_FOUND
+    except NameChangeRequestNotFoundError:
+        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
 
 
 @router.patch(
-    "/{user_id}/username-changes/{username_change_id}/approve",
+    "/{user_id}/name-change-requests/{name_change_request_id}/approve",
     status_code=200,
-    responses=UsernameChangeResponses.responses,
+    responses=NameChangeRequestResponses.responses,
     summary="Approve a firstname and lastname change request"
 )
-async def approve_username_change(
+async def approve_name_change_request(
     user_id: Annotated[int, Path()],
-    username_change_id: Annotated[int, Path()],
+    name_change_request_id: Annotated[int, Path()],
     permissions: AdminPermissionsDep,
     admin: AdminUserDep,
-    service: UsernameChangeServiceDep,
+    service: NameChangeRequestServiceDep,
 ) -> None:
 
-    if "username_change.update" not in permissions:
-        raise UsernameChangeResponses.PERMISSION_ERROR
+    if "name_change_request.update" not in permissions:
+        raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
-        return await service.approve_username_change(
+        return await service.approve_name_change_request(
             user_id,
-            username_change_id
+            name_change_request_id
         )
 
     except UserNotFoundError:
-        raise UsernameChangeResponses.USER_NOT_FOUND
+        raise NameChangeRequestResponses.USER_NOT_FOUND
 
-    except UsernameChangeNotFoundError:
-        raise UsernameChangeResponses.USERNAME_CHANGE_NOT_FOUND
+    except NameChangeRequestNotFoundError:
+        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
 
 
 @router.patch(
-    "/{user_id}/username-changes/{username_change_id}/reject",
+    "/{user_id}/name-change-requests/{name_change_request_id}/reject",
     status_code=200,
-    responses=UsernameChangeResponses.responses,
+    responses=NameChangeRequestResponses.responses,
     summary="Reject a firstname and lastname change request"
 )
-async def reject_username_change(
+async def reject_name_change_request(
     user_id: Annotated[int, Path()],
-    username_change_id: Annotated[int, Path()],
+    name_change_request_id: Annotated[int, Path()],
     permissions: AdminPermissionsDep,
     admin: AdminUserDep,
-    service: UsernameChangeServiceDep,
-    reject_username_change_data: UsernameChangeRejectByAdminSchema
+    service: NameChangeRequestServiceDep,
+    reject_name_change_request_data: NameChangeRequestRejectByAdminSchema
 ) -> None:
 
-    if "username_change.update" not in permissions:
-        raise UsernameChangeResponses.PERMISSION_ERROR
+    if "name_change_request.update" not in permissions:
+        raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
-        await service.reject_username_change(
+        await service.reject_name_change_request(
             user_id,
-            username_change_id,
-            reject_username_change_data.model_dump()
+            name_change_request_id,
+            reject_name_change_request_data.model_dump()
         )
 
     except UserNotFoundError:
-        raise UsernameChangeResponses.USER_NOT_FOUND
+        raise NameChangeRequestResponses.USER_NOT_FOUND
 
-    except UsernameChangeNotFoundError:
-        raise UsernameChangeResponses.USERNAME_CHANGE_NOT_FOUND
+    except NameChangeRequestNotFoundError:
+        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND

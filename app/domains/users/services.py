@@ -9,12 +9,12 @@ from loguru import logger
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import BASE_DIR, settings
 from app.domains.users.exceptions import (
-    ActiveUsernameChangeAlreadyExistsError,
+    PendingNameChangeRequestAlreadyExistsError,
     FellowshipNotFoundError,
     InvalidPasswordError,
     ResidencyNotFoundError,
-    UsernameChangeCooldownNotExpiredError,
-    UsernameChangeNotFoundError,
+    NameChangeRequestCooldownNotExpiredError,
+    NameChangeRequestNotFoundError,
     UserNotFoundError,
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
@@ -23,8 +23,8 @@ from app.domains.users.models import (
     ProfessionalInformation,
     Residency,
     User,
-    UsernameChange,
-    UsernameChangeStatusEnum,
+    NameChangeRequest,
+    NameChangeRequestStatusEnum,
 )
 
 """
@@ -303,7 +303,7 @@ class FellowshipService:
             return await self.uow.fellowship_repository.mark_as_deleted(fellowship_id)
 
 
-class UsernameChangeService:
+class NameChangeRequestService:
     def __init__(self, uow: UserUnitOfWork):
         self.uow = uow
 
@@ -313,7 +313,7 @@ class UsernameChangeService:
             user_id: int,
             *,
             current_user_id: int | None = None,
-            username_change_id: int | None = None,
+            name_change_request_id: int | None = None,
     ) -> None:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
@@ -324,111 +324,111 @@ class UsernameChangeService:
             if current_user_id is not None and user_id != current_user_id:
                 raise NotResourceOwnerError("Not resource owner")
 
-            if username_change_id is not None:
-                username_change = await self.uow.username_change_repository.get_first_by_kwargs(
-                    id=username_change_id,
+            if name_change_request_id is not None:
+                name_change_request = await self.uow.name_change_request_repository.get_first_by_kwargs(
+                    id=name_change_request_id,
                     user_id=user_id
                 )
-                if username_change is None:
-                    raise UsernameChangeNotFoundError("Username change request with provided ID not found")
+                if name_change_request is None:
+                    raise NameChangeRequestNotFoundError("Mame change request with provided ID not found")
 
 
-    async def get_active_username_change(
+    async def get_pending_name_change_request(
         self,
         user_id: int,
-        username_change_id: int
-    ) -> UsernameChange:
-        await self.check_existence_resource(user_id, username_change_id=username_change_id)
+        name_change_request_id: int
+    ) -> NameChangeRequest:
+        await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
-            return await self.uow.username_change_repository.get_first_by_kwargs(
-                id=username_change_id,
-                status=UsernameChangeStatusEnum.ACTIVE
+            return await self.uow.name_change_request_repository.get_first_by_kwargs(
+                id=name_change_request_id,
+                status=NameChangeRequestStatusEnum.PENDING
             )
 
 
-    async def get_all_active_username_changes(self) -> list[UsernameChange]:
+    async def get_all_pending_name_change_requests(self) -> list[NameChangeRequest]:
         async with self.uow:
-            username_changes, _ = await self.uow.username_change_repository.list(
-                filters={"status": UsernameChangeStatusEnum.ACTIVE},
+            name_change_requestss, _ = await self.uow.name_change_request_repository.list(
+                filters={"status": NameChangeRequestStatusEnum.PENDING},
             )
-            return username_changes
+            return name_change_requestss
 
 
-    async def get_last_username_change_by_user_id(self, user_id: int) -> UsernameChange | None:
+    async def get_last_name_change_request_by_user_id(self, user_id: int) -> NameChangeRequest | None:
         async with self.uow:
-            username_change, _ = await self.uow.username_change_repository.list(
+            name_change_request, _ = await self.uow.name_change_request_repository.list(
                 filters={"user_id": user_id},
                 limit=1,
                 order_by="-created_at",
             )
 
-            if username_change:
-                return username_change[0]
+            if name_change_request:
+                return name_change_request[0]
             return None
 
 
-    async def create_username_change(self, user_id: int, **kwargs) -> UsernameChange:
+    async def create_name_change_request(self, user_id: int, **kwargs) -> NameChangeRequest:
         await self.check_existence_resource(user_id)
 
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-            username_change = await self.get_last_username_change_by_user_id(user_id=user_id)
+            name_change_request = await self.get_last_name_change_request_by_user_id(user_id=user_id)
 
-            if username_change is not None and username_change.status == UsernameChangeStatusEnum.ACTIVE:
-                raise ActiveUsernameChangeAlreadyExistsError(
-                    "Active username change request for User with provided ID is already exists"
+            if name_change_request is not None and name_change_request.status == NameChangeRequestStatusEnum.PENDING:
+                raise PendingNameChangeRequestAlreadyExistsError(
+                    "Pending name change request for User with provided ID is already exists"
                 )
 
-            cooldown = settings.USERNAME_CHANGE_COOLDOWN_DAYS
-            if username_change is not None and cooldown is not None and user.last_name_change is not None:
+            cooldown = settings.NAME_CHANGE_REQUEST_COOLDOWN_DAYS
+            if name_change_request is not None and cooldown is not None and user.last_name_change is not None:
                 days_elapsed = (datetime.now(tz=timezone.utc) - user.last_name_change).days
 
                 if days_elapsed < cooldown:
-                    raise UsernameChangeCooldownNotExpiredError(
-                        "The time until the next username change request for User with provided ID has not passed yet"
+                    raise NameChangeRequestCooldownNotExpiredError(
+                        "The time until the next name change request for User with provided ID has not passed yet"
                     )
 
-            return await self.uow.username_change_repository.create(user_id=user_id, **kwargs)
+            return await self.uow.name_change_request_repository.create(user_id=user_id, **kwargs)
 
 
-    async def approve_username_change(
+    async def approve_name_change_request(
         self,
         user_id: int,
-        username_change_id: int
+        name_change_request_id: int
     ) -> None:
-        await self.check_existence_resource(user_id, username_change_id=username_change_id)
+        await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
-            username_change = await self.uow.username_change_repository.get_first_by_kwargs(id=username_change_id)
+            name_change_request = await self.uow.name_change_request_repository.get_first_by_kwargs(id=name_change_request_id)
 
             await self.uow.user_repository.update(
                 user_id,
                 {
-                    "firstname": username_change.firstname,
-                    "lastname": username_change.lastname,
+                    "firstname": name_change_request.firstname,
+                    "lastname": name_change_request.lastname,
                     "last_name_change": datetime.now(tz=timezone.utc)
                 }
             )
 
-            await self.uow.username_change_repository.update(
-                username_change_id,
-                {"status": UsernameChangeStatusEnum.APPROVED}
+            await self.uow.name_change_request_repository.update(
+                name_change_request_id,
+                {"status": NameChangeRequestStatusEnum.APPROVED}
             )
 
 
-    async def reject_username_change(
+    async def reject_name_change_request(
         self,
         user_id: int,
-        username_change_id: int,
-        reject_username_change_data: dict
+        name_change_request_id: int,
+        reject_name_change_request_data: dict
     ) -> None:
-        await self.check_existence_resource(user_id, username_change_id=username_change_id)
+        await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
-            await self.uow.username_change_repository.update(
-                username_change_id,
-                reject_username_change_data
+            await self.uow.name_change_request_repository.update(
+                name_change_request_id,
+                reject_name_change_request_data
             )
 
 
@@ -452,10 +452,10 @@ def get_fellowship_service(
     return FellowshipService(uow)
 
 
-def get_username_change_service(
+def get_name_change_request_service(
     uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]
-) -> UsernameChangeService:
-    return UsernameChangeService(uow)
+) -> NameChangeRequestService:
+    return NameChangeRequestService(uow)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
@@ -464,4 +464,4 @@ ProfessionalInformationServiceDep = Annotated[
 ]
 ResidencyServiceDep = Annotated[ResidencyService, Depends(get_residency_service)]
 FellowshipServiceDep = Annotated[FellowshipService, Depends(get_fellowship_service)]
-UsernameChangeServiceDep = Annotated[UsernameChangeService, Depends(get_username_change_service)]
+NameChangeRequestServiceDep = Annotated[NameChangeRequestService, Depends(get_name_change_request_service)]
