@@ -136,5 +136,16 @@ def name_change_request_data(faker: Faker) -> dict:
 
 
 @pytest.fixture(scope="function")
+def name_change_request_approve_data(faker: Faker) -> dict:
+    return {
+        "action": "approve",
+        "reason_rejecting": None,
+    }
+
+
+@pytest.fixture(scope="function")
 def name_change_request_reject_data(faker: Faker) -> dict:
-    return {"reason_rejecting": faker.text(max_nb_chars=100)}
+    return {
+        "action": "reject",
+        "reason_rejecting": faker.text(max_nb_chars=100),
+    }
