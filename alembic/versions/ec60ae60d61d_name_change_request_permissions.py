@@ -28,6 +28,8 @@ def upgrade() -> None:
         [
             {"action": "name_change_request.view", "name": "View name change requests"},
             {"action": "name_change_request.update", "name": "Approve/reject name change request"},
+            {"action": "name_change_request.create", "name": "Create name change request"},
+            {"action": "name_change_request.delete", "name": "Delete name change request"},
         ],
     )
 
@@ -40,6 +42,8 @@ def downgrade() -> None:
             DELETE FROM permissions WHERE action IN (
             'name_change_request.view',
             'name_change_request.update'
+            'name_change_request.create'
+            'name_change_request.delete'
             )
         """)
     )
