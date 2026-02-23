@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.users.infrastructure import UserUnitOfWork
-from app.domains.users.models import User, NameChangeRequest, NameChangeRequestStatusEnum
+from app.domains.users.models import NameChangeRequest, NameChangeRequestStatusEnum, User
 from tests.fixtures.auth import AuthHeaders
 
 pytestmark = pytest.mark.anyio

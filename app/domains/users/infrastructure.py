@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_repository import SQLAlchemyRepository
 from app.core.database.setup_db import session_getter
 from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
-from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User, NameChangeRequest
+from app.domains.users.models import Fellowship, NameChangeRequest, ProfessionalInformation, Residency, User
 
 
 class UserRepository(SQLAlchemyRepository):

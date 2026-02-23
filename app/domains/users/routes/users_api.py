@@ -12,17 +12,17 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.save_file import save_file
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
-    PendingNameChangeRequestAlreadyExistsError,
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
+    PendingNameChangeRequestAlreadyExistsError,
     UserNotFoundError,
 )
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     ChangePasswordSchema,
-    UpdateUserSchema,
     NameChangeRequestCreateSchema,
     NameChangeRequestViewSchema,
+    UpdateUserSchema,
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep

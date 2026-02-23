@@ -2,7 +2,7 @@ import pytest
 from faker import Faker
 
 from app.domains.users.infrastructure import UserUnitOfWork
-from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User, NameChangeRequest
+from app.domains.users.models import Fellowship, NameChangeRequest, ProfessionalInformation, Residency, User
 
 
 @pytest.fixture(scope="function")

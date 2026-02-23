@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from pydantic_core import PydanticCustomError
 from fastapi import APIRouter, Depends
 from fastapi.params import Path
 from fastapi_exception_responses import Responses
+from pydantic_core import PydanticCustomError
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
@@ -14,9 +14,9 @@ from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 from app.domains.users.exceptions import NameChangeRequestNotFoundError, UserNotFoundError
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
-    UpdateUserByAdminSchema,
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
+    UpdateUserByAdminSchema,
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep

@@ -1,4 +1,4 @@
-from app.core.common.exceptions import ResourceAlreadyExistsError, NotFoundError, TimeCooldownError
+from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError, TimeCooldownError
 
 
 class InvalidPasswordError(Exception):

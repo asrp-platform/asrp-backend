@@ -9,22 +9,22 @@ from loguru import logger
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import BASE_DIR, settings
 from app.domains.users.exceptions import (
-    PendingNameChangeRequestAlreadyExistsError,
     FellowshipNotFoundError,
     InvalidPasswordError,
-    ResidencyNotFoundError,
     NameChangeRequestCooldownNotExpiredError,
     NameChangeRequestNotFoundError,
+    PendingNameChangeRequestAlreadyExistsError,
+    ResidencyNotFoundError,
     UserNotFoundError,
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
 from app.domains.users.models import (
     Fellowship,
+    NameChangeRequest,
+    NameChangeRequestStatusEnum,
     ProfessionalInformation,
     Residency,
     User,
-    NameChangeRequest,
-    NameChangeRequestStatusEnum,
 )
 
 """
