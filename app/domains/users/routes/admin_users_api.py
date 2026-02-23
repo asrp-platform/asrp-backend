@@ -63,7 +63,6 @@ class NameChangeRequestResponses(Responses):
 
 @router.get(
     "/name-change-requests",
-    status_code=200,
     responses=NameChangeRequestResponses.responses,
     summary="Get all requests for a firstname and lastname change"
 )
@@ -162,7 +161,6 @@ async def set_user_permissions(
 
 @router.get(
     "/{user_id}/name-change-requests/{name_change_request_id}",
-    status_code=200,
     responses=NameChangeRequestResponses.responses,
     summary="Get request for a firstname and lastname change"
 )
@@ -190,7 +188,7 @@ async def get_pending_name_change_request(
 
 @router.patch(
     "/{user_id}/name-change-requests/{name_change_request_id}/approve",
-    status_code=200,
+    status_code=204,
     responses=NameChangeRequestResponses.responses,
     summary="Approve a firstname and lastname change request"
 )
@@ -220,7 +218,7 @@ async def approve_name_change_request(
 
 @router.patch(
     "/{user_id}/name-change-requests/{name_change_request_id}/reject",
-    status_code=200,
+    status_code=204,
     responses=NameChangeRequestResponses.responses,
     summary="Reject a firstname and lastname change request"
 )

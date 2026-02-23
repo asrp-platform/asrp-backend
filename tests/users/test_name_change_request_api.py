@@ -63,7 +63,7 @@ async def test_approve_request_to_name_change(
         headers=admin_auth_headers,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 204
 
 
 async def test_reject_request_to_name_change(
@@ -79,7 +79,7 @@ async def test_reject_request_to_name_change(
         json=name_change_request_reject_data
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 204
 
 
 async def test_create_request_to_name_change_not_authorized(
