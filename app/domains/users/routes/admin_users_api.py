@@ -1,5 +1,6 @@
 from typing import Annotated
 
+from pydantic_core import PydanticCustomError
 from fastapi import APIRouter, Depends
 from fastapi.params import Path
 from fastapi_exception_responses import Responses
@@ -14,7 +15,7 @@ from app.domains.users.exceptions import NameChangeRequestNotFoundError, UserNot
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     UpdateUserByAdminSchema,
-    NameChangeRequestRejectByAdminSchema,
+    NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
     UserSchema,
 )
@@ -58,6 +59,7 @@ class NameChangeRequestResponses(Responses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
     NAME_CHANGE_REQUEST_NOT_FOUND = 404, "Name change request with provided ID not found"
     PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS = 409, "Pending name change request already exists"
+    FIELD_REASON_REJECTING_IS_REQUIRED = 422, "Specifying the reason for rejecting the request is mandatory"
     NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED = 429, "Name change request cooldown not expired"
 
 
@@ -187,14 +189,15 @@ async def get_pending_name_change_request(
 
 
 @router.patch(
-    "/{user_id}/name-change-requests/{name_change_request_id}/approve",
+    "/{user_id}/name-change-requests/{name_change_request_id}",
     status_code=204,
     responses=NameChangeRequestResponses.responses,
-    summary="Approve a firstname and lastname change request"
+    summary="Approve/reject a firstname and lastname change request"
 )
-async def approve_name_change_request(
+async def update_name_change_request(
     user_id: Annotated[int, Path()],
     name_change_request_id: Annotated[int, Path()],
+    name_change_request_data: NameChangeRequestUpdateByAdminSchema,
     permissions: AdminPermissionsDep,
     admin: AdminUserDep,
     service: NameChangeRequestServiceDep,
@@ -204,10 +207,18 @@ async def approve_name_change_request(
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
-        return await service.approve_name_change_request(
-            user_id,
-            name_change_request_id
-        )
+        if name_change_request_data.action == "approve":
+            return await service.approve_name_change_request(
+                user_id,
+                name_change_request_id
+            )
+
+        if name_change_request_data.action == "reject":
+            await service.reject_name_change_request(
+                user_id,
+                name_change_request_id,
+                name_change_request_data.reason_rejecting
+            )
 
     except UserNotFoundError:
         raise NameChangeRequestResponses.USER_NOT_FOUND
@@ -215,34 +226,5 @@ async def approve_name_change_request(
     except NameChangeRequestNotFoundError:
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
 
-
-@router.patch(
-    "/{user_id}/name-change-requests/{name_change_request_id}/reject",
-    status_code=204,
-    responses=NameChangeRequestResponses.responses,
-    summary="Reject a firstname and lastname change request"
-)
-async def reject_name_change_request(
-    user_id: Annotated[int, Path()],
-    name_change_request_id: Annotated[int, Path()],
-    permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
-    service: NameChangeRequestServiceDep,
-    reject_name_change_request_data: NameChangeRequestRejectByAdminSchema
-) -> None:
-
-    if "name_change_request.update" not in permissions:
-        raise NameChangeRequestResponses.PERMISSION_ERROR
-
-    try:
-        await service.reject_name_change_request(
-            user_id,
-            name_change_request_id,
-            reject_name_change_request_data.model_dump()
-        )
-
-    except UserNotFoundError:
-        raise NameChangeRequestResponses.USER_NOT_FOUND
-
-    except NameChangeRequestNotFoundError:
-        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
+    except PydanticCustomError:
+        raise NameChangeRequestResponses.FIELD_REASON_REJECTING_IS_REQUIRED

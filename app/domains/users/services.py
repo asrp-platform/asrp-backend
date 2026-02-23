@@ -421,14 +421,14 @@ class NameChangeRequestService:
         self,
         user_id: int,
         name_change_request_id: int,
-        reject_name_change_request_data: dict
+        reason_rejecting: str
     ) -> None:
         await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
             await self.uow.name_change_request_repository.update(
                 name_change_request_id,
-                reject_name_change_request_data
+                {"reason_rejecting": reason_rejecting}
             )
 
 

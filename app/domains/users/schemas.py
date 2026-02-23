@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 
 import phonenumbers
 from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
@@ -183,5 +183,15 @@ class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
     }
 
 
-class NameChangeRequestRejectByAdminSchema(BaseModel):
-    reason_rejecting: str
+class NameChangeRequestUpdateByAdminSchema(BaseModel):
+    action: Literal["approve", "reject"]
+    reason_rejecting: str | None
+
+    @model_validator(mode="after")
+    def check_reason_rejecting(self):
+        if self.action == "reject" and self.reason_rejecting is None:
+            raise PydanticCustomError(
+                "reason_rejecting required",
+                "reason rejecting when the request is rejected is required to be filled in",
+            )
+        return self
