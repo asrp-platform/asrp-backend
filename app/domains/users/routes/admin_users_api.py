@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.params import Path
 from fastapi_exception_responses import Responses
-from pydantic_core import PydanticCustomError
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
@@ -207,24 +206,15 @@ async def update_name_change_request(
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
-        if name_change_request_data.action == "approve":
-            return await service.approve_name_change_request(
-                user_id,
-                name_change_request_id
-            )
-
-        if name_change_request_data.action == "reject":
-            await service.reject_name_change_request(
-                user_id,
-                name_change_request_id,
-                name_change_request_data.reason_rejecting
-            )
+        await service.update_name_change_request(
+            user_id,
+            name_change_request_id,
+            name_change_request_data.action,
+            name_change_request_data.reason_rejecting
+        )
 
     except UserNotFoundError:
         raise NameChangeRequestResponses.USER_NOT_FOUND
 
     except NameChangeRequestNotFoundError:
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
-
-    except PydanticCustomError:
-        raise NameChangeRequestResponses.FIELD_REASON_REJECTING_IS_REQUIRED

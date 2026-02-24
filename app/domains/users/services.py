@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import Depends
 from loguru import logger
@@ -308,7 +308,7 @@ class NameChangeRequestService:
         self.uow = uow
 
 
-    async def check_existence_resource(
+    async def check_resource_existence(
             self,
             user_id: int,
             *,
@@ -338,7 +338,7 @@ class NameChangeRequestService:
         user_id: int,
         name_change_request_id: int
     ) -> NameChangeRequest:
-        await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
+        await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
             return await self.uow.name_change_request_repository.get_first_by_kwargs(
@@ -369,7 +369,7 @@ class NameChangeRequestService:
 
 
     async def create_name_change_request(self, user_id: int, **kwargs) -> NameChangeRequest:
-        await self.check_existence_resource(user_id)
+        await self.check_resource_existence(user_id)
 
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
@@ -391,13 +391,25 @@ class NameChangeRequestService:
 
             return await self.uow.name_change_request_repository.create(user_id=user_id, **kwargs)
 
+    async def update_name_change_request(
+        self,
+        user_id: int,
+        name_change_request_id: int,
+        action: Literal["approve", "reject"],
+        reason_rejecting: str | None
+    ) -> None:
+        if action == "approve":
+            await self._approve_name_change_request(user_id, name_change_request_id)
+        if action == "reject":
+            await self._reject_name_change_request(user_id, name_change_request_id, reason_rejecting)
 
-    async def approve_name_change_request(
+
+    async def _approve_name_change_request(
         self,
         user_id: int,
         name_change_request_id: int
     ) -> None:
-        await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
+        await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
             name_change_request = await self.uow.name_change_request_repository.get_first_by_kwargs(id=name_change_request_id)
@@ -417,13 +429,13 @@ class NameChangeRequestService:
             )
 
 
-    async def reject_name_change_request(
+    async def _reject_name_change_request(
         self,
         user_id: int,
         name_change_request_id: int,
         reason_rejecting: str
     ) -> None:
-        await self.check_existence_resource(user_id, name_change_request_id=name_change_request_id)
+        await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
 
         async with self.uow:
             await self.uow.name_change_request_repository.update(
