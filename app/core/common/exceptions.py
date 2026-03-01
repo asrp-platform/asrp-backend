@@ -4,3 +4,11 @@ class NotFoundError(Exception):
 
 class NotResourceOwnerError(Exception):
     pass
+
+
+class ResourceAlreadyExistsError(Exception):
+    pass
+
+
+class TimeCooldownError(Exception):
+    pass

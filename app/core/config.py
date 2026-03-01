@@ -41,6 +41,8 @@ class Settings(BaseSettings, GmailConfig):
     ALGORITHM: str
     FERNET_KEY: str
 
+    NAME_CHANGE_REQUEST_COOLDOWN_DAYS: int | None = 14
+
     ACCESS_TOKEN_LIFESPAN_HOURS: int = 1
     REFRESH_TOKEN_LIFETIME_DAYS: int = 1
     REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS: int = 30

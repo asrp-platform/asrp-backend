@@ -1,8 +1,9 @@
 from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from passlib.hash import bcrypt
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text
+from sqlalchemy import Boolean, DateTime, Enum as SQLAEnum, ForeignKey, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
@@ -42,6 +43,7 @@ class User(Base):
     role: Mapped[str] = mapped_column()
 
     last_password_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_name_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     email_confirmed: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
@@ -54,6 +56,7 @@ class User(Base):
     )
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
     residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
+    name_change_requests: Mapped[list["NameChangeRequest"]] = relationship("NameChangeRequest", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -111,3 +114,28 @@ class Fellowship(Base, UCIMixin):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="fellowships")
+
+
+class NameChangeRequestStatusEnum(Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class NameChangeRequest(Base, UCIMixin):
+    __tablename__ = "name_change_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
+    firstname: Mapped[str] = mapped_column(nullable=False)
+    lastname: Mapped[str] = mapped_column(nullable=False)
+    reason_change: Mapped[str] = mapped_column(nullable=False)
+    reason_rejecting: Mapped[str] = mapped_column(nullable=True)
+    status: Mapped[NameChangeRequestStatusEnum] = mapped_column(
+        SQLAEnum(NameChangeRequestStatusEnum, name="name_change_request_status_enum"),
+        nullable=False,
+        default=NameChangeRequestStatusEnum.PENDING,
+        server_default=text("'PENDING'"),
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="name_change_requests")
