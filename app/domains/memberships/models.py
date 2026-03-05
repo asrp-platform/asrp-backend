@@ -61,7 +61,11 @@ class UserMembership(Base, UCIMixin):
     current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     cancel_at_period_end: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
-    has_access: Mapped[bool] = mapped_column(default=False)
+    primary_affiliation: Mapped[str] = mapped_column(nullable=False)
+    job_title: Mapped[str] = mapped_column(nullable=False)
+    practice_setting: Mapped[str] = mapped_column(nullable=False)
+    subspecialty: Mapped[str] = mapped_column(nullable=False)
+    is_trained_in_us: Mapped[bool] = mapped_column(nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     user: Mapped["User"] = relationship("User", back_populates="memberships")
