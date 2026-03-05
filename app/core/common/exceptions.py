@@ -1,5 +1,5 @@
 class NotFoundError(Exception):
-    pass
+    """Raised when an entity/record was not found in DB"""
 
 
 class NotResourceOwnerError(Exception):

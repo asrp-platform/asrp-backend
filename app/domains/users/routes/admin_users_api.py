@@ -132,7 +132,7 @@ async def get_user_permissions(
 
     try:
         permissions = await permissions_service.get_user_permissions(user_id)
-    except ValueError:
+    except UserNotFoundError:
         raise GetPermissionsResponses.USER_NOT_FOUND
 
     return [PermissionSchema.from_orm(permission) for permission in permissions]
@@ -156,7 +156,7 @@ async def set_user_permissions(
 
     try:
         return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
-    except ValueError:
+    except UserNotFoundError:
         raise ManagePermissionsResponses.USER_NOT_FOUND
 
 

@@ -147,7 +147,7 @@ async def remove_user_avatar(
 ):
     try:
         await user_service.delete_avatar(user_id)
-    except ValueError:
+    except UserNotFoundError:
         raise DeleteUserAvatarResponses.USER_NOT_FOUND
 
 
@@ -169,7 +169,7 @@ async def change_user_password(
 ) -> None:
     try:
         await user_service.change_password(user_id, data.old_password, data.new_password)
-    except ValueError:
+    except UserNotFoundError:
         raise ChangePasswordResponses.USER_NOT_FOUND
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD

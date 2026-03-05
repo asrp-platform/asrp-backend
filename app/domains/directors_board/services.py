@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy import func, select, update
 
+from app.domains.directors_board.exceptions import InvalidReorderItemsCountError
 from app.domains.directors_board.infrastructure import (
     DirectorsBoardMemberUnitOfWork,
     get_director_board_member_unit_of_work,
@@ -39,7 +40,7 @@ class DirectorBoardMemberService:
             _, count = await self.uow.director_board_member_repository.list()
 
         if len(items) != count:
-            raise ValueError(f"Reorder requires all board items. Expected {count}, received {len(items)}.")
+            raise InvalidReorderItemsCountError(f"Reorder requires all board items. Expected {count}, received {len(items)}.")
 
         # TODO: оптимизация с помощью case when
         for item in items:
