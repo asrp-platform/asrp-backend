@@ -5,6 +5,7 @@ from fastapi import Depends
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
+from app.domains.feedback.models import AdditionalDetail
 from app.domains.feedback.schemas import CreateContactMessageSchema
 
 
@@ -46,6 +47,25 @@ class FeedbackService:
         return message_reply
 
 
+class AdditionalDetailService:
+    def __init__(self, uow):
+        self.uow: FeedbackUnitOfWork = uow
+
+    async def create_additional_detail(
+            self,
+            user_id: int,
+            **kwargs
+    ) -> AdditionalDetail:
+        async with self.uow:
+            return await self.uow.additional_detail_repository.create(user_id=user_id, **kwargs)
+
+
+def get_additional_detail_service(
+    uow: Annotated[FeedbackUnitOfWork, Depends(get_feedback_unit_of_work)],
+) ->AdditionalDetailService:
+    return AdditionalDetailService(uow)
+
+
 def get_feedback_service(
     uow: Annotated[FeedbackUnitOfWork, Depends(get_feedback_unit_of_work)],
 ) -> FeedbackService:
@@ -53,3 +73,4 @@ def get_feedback_service(
 
 
 FeedbackServiceDep = Annotated[FeedbackService, Depends(get_feedback_service)]
+AdditionalDetailServiceDep = Annotated[AdditionalDetailService, Depends(get_additional_detail_service)]
