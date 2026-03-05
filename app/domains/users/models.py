@@ -48,7 +48,7 @@ class User(Base):
     email_confirmed: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
-    memberships: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="user")
+    membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="user")
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
