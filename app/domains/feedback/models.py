@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SQLAEnum, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -6,6 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
+
+if TYPE_CHECKING:
+    from app.domains.users.models import User
 
 
 # Добавление новых типов через ручное написание миграции
@@ -41,3 +45,14 @@ class ContactMessageReply(Base, UCIMixin):
     )
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     contact_message: Mapped["ContactMessage"] = relationship("ContactMessage", back_populates="replies")
+
+
+class AdditionalDetail(Base, UCIMixin):
+    __tablename__ = "additional_details"
+
+    hear_about_asrp: Mapped[str] = mapped_column(nullable=False)
+    tg_username: Mapped[str] = mapped_column(nullable=False)
+    interest_description: Mapped[str] = mapped_column(nullable=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="additional_details")
