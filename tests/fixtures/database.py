@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.core.config import TEST_DB_URL
 from app.core.database.setup_db import Base
+from app.domains.memberships.models import MembershipType
 from app.domains.permissions.models import Permission
 
 
@@ -86,6 +87,47 @@ async def insert_test_data(
                 Permission(action="name_change_request.update", name="Approve/reject name change requests"),
                 Permission(action="name_change_request.create", name="Create name change requests"),
                 Permission(action="name_change_request.delete", name="Delete name change requests"),
+
+                MembershipType(
+                    name="Active Member",
+                    type="ACTIVE",
+                    price_usd=20.00,
+                    duration=365,
+                    description="Any legally qualified Russian-speaking specialist (MD, DO, MBBS, PhD, or equivalent degree). practicing pathology in the united states",
+                    is_purchasable=True,
+                ),
+                MembershipType(
+                    name="Trainee Member",
+                    type="TRAINEE",
+                    price_usd=20.00,
+                    duration=365,
+                    description="Russian-speaking residents or fellows in pathology or related disciplines in the United States.",
+                    is_purchasable=True,
+                ),
+                MembershipType(
+                    name="Affiliate Member",
+                    type="AFFILIATE",
+                    price_usd=20.00,
+                    duration=365,
+                    description="Russian-speaking pathologists, scientists, researchers, or allied professionals interested in the field of pathology whose involvement is relevant and contributes meaningfully to the Society (non-voting).",
+                    is_purchasable=True,
+                ),
+                MembershipType(
+                    name="Honorary Member",
+                    type="HONORARY",
+                    price_usd=20.00,
+                    duration=365,
+                    description="Individuals recognized fo exceptional service to the field of pathology or the Society (non-voting).",
+                    is_purchasable=False,
+                ),
+                MembershipType(
+                    name="Pathway Member",
+                    type="PATHWAY",
+                    price_usd=20.00,
+                    duration=365,
+                    description="Russian-speaking individuals pursuing or transition into a medical career in the United States. This includes medical students and internationally trained medical graduates seeking mentorship and professional development as they prepare for pathology practice in the United States (non-voting).",
+                    is_purchasable=True,
+                ),
             ]
         )
         await session.commit()
