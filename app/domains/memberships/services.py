@@ -25,17 +25,18 @@ class MembershipService:
             membership_type_data: MembershipTypeEnum,
             **kwargs
     ):
-        membership = await self.uow.membership_repository.get_first_by_kwargs(user_id=user_id)
-        if membership is not None:
-            raise MembershipAlreadyExistsError("Membership for provided User already exists")
+        async with self.uow:
+            membership = await self.uow.membership_repository.get_first_by_kwargs(user_id=user_id)
+            if membership is not None:
+                raise MembershipAlreadyExistsError("Membership for provided User already exists")
 
-        membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type_data.value)
+            membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type_data.value)
 
-        return await self.uow.membership_repository.create(
-            user_id=user_id,
-            membership_type_id=membership_type.id,
-            **kwargs
-        )
+            return await self.uow.membership_repository.create(
+                user_id=user_id,
+                membership_type_id=membership_type.id,
+                **kwargs
+            )
 
 
 class MembershipTypeService:
