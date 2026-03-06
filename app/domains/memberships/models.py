@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Enum as SQLAEnum, ForeignKey, Numeric, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,7 +12,7 @@ from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 
 if TYPE_CHECKING:
-    from app.domains.users.models import User, UserSchema
+    from app.domains.users.models import User
 
 
 class MembershipTypeEnum(Enum):
@@ -60,66 +59,18 @@ class UserMembership(Base, UCIMixin):
 
     current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     cancel_at_period_end: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    auto_renewal: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
-    has_access: Mapped[bool] = mapped_column(default=False)
+    @property
+    def has_access(self) -> bool:
+        if self.approval_status != ApprovalStatusEnum.APPROVED:
+            return False
+        if self.current_period_end is None:
+            return True
+        return self.current_period_end > datetime.now(tz=timezone.utc)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     user: Mapped["User"] = relationship("User", back_populates="memberships")
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_memberships")
-
-
-class UpdateMembershipTypeSchema(BaseModel):
-    type: Optional[MembershipTypeEnum] = Field(None)
-    description: Optional[str] = Field(None)
-    is_purchasable: Optional[bool] = Field(None)
-    price_usd: Optional[float] = Field(None)
-
-
-class MembershipTypeSchema(BaseModel):
-    id: int
-    name: str
-    type: MembershipTypeEnum
-    price_usd: float
-    duration: int
-    description: str
-    is_purchasable: bool
-
-    model_config = {
-        "from_attributes": True,
-    }
-
-
-class UpdateUserMembershipSchema(BaseModel):
-    approval_status: ApprovalStatusEnum = Field(None)
-
-
-class UserMembershipSchema(BaseModel):
-    id: int
-
-    created_at: datetime
-    updated_at: datetime
-
-    approval_status: ApprovalStatusEnum
-
-    current_period_end: datetime | None
-    cancel_at_period_end: bool
-
-    has_access: bool
-
-    user_id: int
-    membership_type_id: int
-
-    model_config = {
-        "from_attributes": True,
-    }
-
-
-class ExtendedUserMembershipSchema(UserMembershipSchema):
-    user: UserSchema
-    membership_type: MembershipTypeSchema
-
-    model_config = {
-        "from_attributes": True,
-    }
