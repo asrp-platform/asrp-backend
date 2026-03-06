@@ -16,6 +16,7 @@ from app.domains.auth.routes.api import router as auth_router
 from app.domains.directors_board.routes.admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
+from app.domains.users.routes.memberships_api import router as users_memberships_router
 
 # admin routers
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
@@ -84,6 +85,7 @@ app.include_router(legal_documents_router, prefix="/api")
 app.include_router(professional_info_router, prefix="/api")
 app.include_router(residency_router, prefix="/api")
 app.include_router(fellowship_router, prefix="/api")
+app.include_router(users_memberships_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")

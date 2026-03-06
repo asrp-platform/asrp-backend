@@ -13,10 +13,14 @@ from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
+from app.domains.memberships.services import MembershipsServiceDep
+from app.domains.memberships.models import UserMembership
+from app.domains.memberships.exceptions import MembershipAccessDeniedError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 refresh_token_cookie = APIKeyCookie(name="refresh_token", auto_error=False)
 access_token_header = HTTPBearer(auto_error=False)
+
 
 
 def create_access_token(data: dict) -> str:
@@ -103,7 +107,24 @@ async def get_users_permissions(
     return list(map(lambda permissions: permissions.action, user_permissions))
 
 
+async def get_current_user_membership(
+    user: Annotated[User, Depends(get_current_user)],
+    memberships_service: MembershipsServiceDep,
+) -> UserMembership | None:
+    return await memberships_service.get_user_membership(user.id)
+
+
+async def ensure_active_membership(
+    membership: Annotated[UserMembership | None, Depends(get_current_user_membership)],
+) -> UserMembership:
+    if membership is None or not membership.has_access:
+        raise MembershipAccessDeniedError("Active membership required to access this content")
+    return membership
+
+
 RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 AdminUserDep = Annotated[User, Depends(get_admin_user)]
 AdminPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]
+CurrentUserMembershipDep = Annotated[UserMembership | None, Depends(get_current_user_membership)]
+ActiveMembershipDep = Annotated[UserMembership, Depends(ensure_active_membership)]
