@@ -36,17 +36,16 @@ class DirectorBoardMemberService:
 
     async def update_order(self, items):
         async with self.uow:
-            _, count = await self.uow.director_board_member_repository.list()
-
-        if len(items) != count:
-            raise ValueError(f"Reorder requires all board items. Expected {count}, received {len(items)}.")
-
-        # TODO: оптимизация с помощью case when
-        for item in items:
+            # Temporary order for second card to exclude order duplication
             await self.uow._session.execute(
-                update(DirectorBoardMember).where(DirectorBoardMember.id == item.id).values(order=item.order)
+                update(DirectorBoardMember).where(DirectorBoardMember.id == items[1].id).values(order=9999)
             )
-            await self.uow._session.commit()
+
+            for item in items:
+                await self.uow._session.execute(
+                    update(DirectorBoardMember).where(DirectorBoardMember.id == item.id).values(order=item.order)
+                )
+                await self.uow._session.commit()
 
 
 def get_director_board_member_service(
