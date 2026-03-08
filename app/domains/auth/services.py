@@ -15,6 +15,7 @@ from app.domains.emails.services import get_email_service
 class RegisterResponses(Responses):
     PASSWORDS_DONT_MATCH = 400, "Passwords don't match"
     EMAIL_ALREADY_IN_USE = 409, "Provided email is already in use"
+    EMAIL_ALREADY_CONFIRMED = 409, "Provided email is already confirmed"
 
 
 class AuthService:
@@ -51,12 +52,19 @@ class AuthService:
             await self.uow.user_repository.update(user.id, {"last_password_change": datetime.now(tz=timezone.utc)})
 
     async def reset_password(self, email: str):
+        async with self.uow:
+
+            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+
+        if user is None:
+            return
+
         token = self.cryptographer.create_token(email)
         link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
         message = f"""
         Hello,
 
-        We received a request to reset the password for your account (user@example.com).
+        We received a request to reset the password for your account ({email}).
         Please click the link below to set a new password:
 
         {link}
@@ -66,8 +74,34 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Password Reset", body=message)
 
+    async def send_email_confirm_link(self, email: str):
+        token = self.cryptographer.create_token(email)
+        link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirmations/?token={token.decode()}"
+        message = f"""
+        Hello,
+
+        Thank you for registering! To complete your account setup and verify your email address, please click the link below:
+
+        {link}
+
+        This link is valid for 1 day. If you did not request a password reset, please ignore this message.
+        """
+        await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
+
+    async def confirm_email(self, current_user_id: int, email_from_confirmation_token: str, current_user_email: str):
+        async with self.uow:
+
+            if current_user_email != email_from_confirmation_token:
+                raise ValueError("email of the confirmation token does not match email of the authorized user")
+
+            await self.uow.user_repository.update(current_user_id, {"email_confirmed": True})
+
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
+        return self.cryptographer.verify_token(token, lifetime_seconds)
+
+    def verify_email_confirmation_token(self, token: bytes) -> str:
+        lifetime_seconds = 86400  # 1 day
         return self.cryptographer.verify_token(token, lifetime_seconds)
 
 

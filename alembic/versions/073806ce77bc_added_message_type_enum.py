@@ -15,8 +15,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "004"
-down_revision: Union[str, None] = "003"
+revision = "073806ce77bc"
+down_revision = "d40a344e3cf9"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -24,7 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # При создании Enum'а в уже существующей таблице, его надо создавать отдельно
     contact_message_type_enum = postgresql.ENUM(
-        "CONTACT_MESSAGE", "GET_INVOLVED_MESSAGE", name="contact_message_type_enum"
+        "CONTACT", "GET_INVOLVED", "GET_INVOLVED_COMMITTEES", name="contact_message_type_enum"
     )
     contact_message_type_enum.create(op.get_bind(), checkfirst=True)
 

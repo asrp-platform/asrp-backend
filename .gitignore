@@ -9,3 +9,6 @@ venv
 /media/
 
 /logs/
+
+__pycache__/
+*.pyc

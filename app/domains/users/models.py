@@ -1,16 +1,14 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Optional
+from enum import Enum
+from typing import TYPE_CHECKING
 
-import phonenumbers
 from passlib.hash import bcrypt
-from pydantic import BaseModel, Field, field_validator, model_validator
-from pydantic_core import PydanticCustomError
-from sqlalchemy import Boolean, DateTime, String, func, text
+from sqlalchemy import Boolean, DateTime, Enum as SQLAEnum, ForeignKey, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.memberships.models import UserMembership
-from app.domains.shared.types import Password
 
 if TYPE_CHECKING:
     from app.domains.news.models import News
@@ -22,11 +20,20 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
     firstname: Mapped[str] = mapped_column(nullable=False)
+    middlename: Mapped[str] = mapped_column(nullable=True)
     lastname: Mapped[str] = mapped_column(nullable=False)
+    suffix: Mapped[str] = mapped_column(nullable=True)
+    credentials: Mapped[str] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=True, unique=True)
     stuff: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
     description: Mapped[str] = mapped_column(String(512), nullable=True)
+    country: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=True)
+    city: Mapped[str] = mapped_column(nullable=False)
+    languages_spoken: Mapped[str] = mapped_column(nullable=True)
+    professional_interests: Mapped[str] = mapped_column(nullable=True)
+    telegram_username: Mapped[str] = mapped_column(nullable=True, unique=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=func.now(), server_default=func.now(), nullable=False
@@ -36,6 +43,7 @@ class User(Base):
     role: Mapped[str] = mapped_column()
 
     last_password_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_name_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     email_confirmed: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
@@ -43,6 +51,12 @@ class User(Base):
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
+    professional_information: Mapped["ProfessionalInformation"] = relationship(
+        "ProfessionalInformation", back_populates="user", uselist=False
+    )
+    fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
+    residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
+    name_change_requests: Mapped[list["NameChangeRequest"]] = relationship("NameChangeRequest", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -59,68 +73,69 @@ class User(Base):
         return bcrypt.verify(plain_password, self._password)
 
 
-class UserSchema(BaseModel):
-    id: int
-    firstname: str
-    lastname: str
-    email: str
-    stuff: bool
-    description: str | None
-    created_at: datetime
-    institution: str
-    role: str
-    avatar_path: str | None
-    phone_number: str | None
-    pending: bool
-    last_password_change: datetime | None
-    email_confirmed: bool
+class ProfessionalInformation(Base, UCIMixin):
+    __tablename__ = "users_professional_information"
 
-    model_config = {
-        "from_attributes": True,
-    }
+    medical_school: Mapped[str] = mapped_column(nullable=False)
+    medical_school_country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    is_board_certified_pathologist: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+    is_us_pathology_trainee: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+    is_us_lab_professional: Mapped[bool] = mapped_column(nullable=False, default=text("false"))
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="professional_information")
 
 
-class UpdateUserByAdminSchema(BaseModel):
-    stuff: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
+class Residency(Base, UCIMixin):
+    __tablename__ = "users_residency"
+
+    institution: Mapped[str] = mapped_column(nullable=False)
+    speciality: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=False)
+    country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="residencies")
 
 
-class UpdateUserSchema(BaseModel):
-    firstname: Annotated[str | None, Field(min_length=2)] = None
-    lastname: Annotated[str | None, Field(min_length=2)] = None
-    description: str | None = None
-    institution: Annotated[str | None, Field(min_length=2)] = None
-    role: str | None = None
-    phone_number: Annotated[str | None, Field()] = None
+class Fellowship(Base, UCIMixin):
+    __tablename__ = "users_fellowship"
 
-    @field_validator("phone_number")
-    def validate_phone_number(cls, value):
-        if value is None or value.strip() == "":
-            return None
-        try:
-            parsed = phonenumbers.parse(value, None)
-            if not phonenumbers.is_valid_number(parsed):
-                raise PydanticCustomError("phone_number.invalid", "Invalid phone number format")
-        except phonenumbers.NumberParseException:
-            raise PydanticCustomError("phone_number.unparsable", "Invalid phone number format")
-        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+    institution: Mapped[str] = mapped_column(nullable=False)
+    speciality: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    state: Mapped[str] = mapped_column(nullable=False)
+    country: Mapped[str] = mapped_column(nullable=False)
+    years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="fellowships")
 
 
-class ChangePasswordSchema(BaseModel):
-    old_password: str
-    new_password: Password
-    confirm_new_password: Password
+class NameChangeRequestStatusEnum(Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
-    @model_validator(mode="after")
-    def check_passwords_match(self):
-        if self.new_password != self.confirm_new_password:
-            raise PydanticCustomError(
-                "password_mismatch",  # internal code
-                "Passwords do not match",  # user-facing message
-            )
-        return self
 
-    @field_validator("new_password", "confirm_new_password")
-    def validate_password(cls, v):
-        if len(v) < 4:
-            raise PydanticCustomError("password_too_short", "Password should have at least 4 characters")
-        return v
+class NameChangeRequest(Base, UCIMixin):
+    __tablename__ = "name_change_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
+    firstname: Mapped[str] = mapped_column(nullable=False)
+    lastname: Mapped[str] = mapped_column(nullable=False)
+    reason_change: Mapped[str] = mapped_column(nullable=False)
+    reason_rejecting: Mapped[str] = mapped_column(nullable=True)
+    status: Mapped[NameChangeRequestStatusEnum] = mapped_column(
+        SQLAEnum(NameChangeRequestStatusEnum, name="name_change_request_status_enum"),
+        nullable=False,
+        default=NameChangeRequestStatusEnum.PENDING,
+        server_default=text("'PENDING'"),
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="name_change_requests")

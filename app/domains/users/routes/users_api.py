@@ -4,25 +4,37 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi_exception_responses import Responses
 
+from app.core.common.exceptions import NotResourceOwnerError
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
 from app.core.config import BASE_DIR, settings
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.save_file import save_file
 from app.domains.shared.deps import CurrentUserDep
-from app.domains.users.exceptions import InvalidPasswordError
+from app.domains.users.exceptions import (
+    InvalidPasswordError,
+    NameChangeRequestCooldownNotExpiredError,
+    PendingNameChangeRequestAlreadyExistsError,
+    UserNotFoundError,
+)
 from app.domains.users.filters import UsersFilter
-from app.domains.users.models import ChangePasswordSchema, UpdateUserSchema, UserSchema
-from app.domains.users.services import UserServiceDep
+from app.domains.users.schemas import (
+    ChangePasswordSchema,
+    NameChangeRequestCreateSchema,
+    NameChangeRequestViewSchema,
+    UpdateUserSchema,
+    UserSchema,
+)
+from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["Users"], prefix="/users")
 
 
 class UserListResponses(InvalidRequestParamsResponses):
     pass
 
 
-@router.get("/")
+@router.get("")
 async def get_users(
     user_service: UserServiceDep,
     params: PaginationParamsDep,
@@ -84,7 +96,7 @@ async def update_user_data(
 
     try:
         user = await user_service.update_user(user_id=user_id, update_data=update_data.model_dump(exclude_none=True))
-    except ValueError:
+    except UserNotFoundError:
         raise UpdateUserDataResponses.USER_NOT_FOUND
     return UserSchema.from_orm(user)
 
@@ -112,7 +124,7 @@ async def upload_user_avatar(
 
     try:
         await user_service.set_user_avatar(user_id=user_id, avatar_path=str(relative_filepath))
-    except ValueError:
+    except UserNotFoundError:
         os.remove(BASE_DIR / relative_filepath)
         raise SetAvatarResponses.USER_NOT_FOUND
 
@@ -161,3 +173,38 @@ async def change_user_password(
         raise ChangePasswordResponses.USER_NOT_FOUND
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD
+
+
+class NameChangeRequestResponses(Responses):
+    NOT_RESOURCE_OWNER = 403, "Not resource owner"
+    PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS = 409, "Pending name change request already exists"
+    NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED = 429, "Name change request cooldown not expired"
+
+
+@router.post(
+    "/{user_id}/name-change-requests",
+    status_code=201,
+    responses=NameChangeRequestResponses.responses,
+    summary="Create request to change user firstname and lastname"
+)
+async def create_name_change_request(
+    user_id: Annotated[int, Path()],
+    service: NameChangeRequestServiceDep,
+    current_user: CurrentUserDep,
+    name_change_request_data: NameChangeRequestCreateSchema
+) -> NameChangeRequestViewSchema:
+    try:
+        name_change_request = await service.create_name_change_request(
+            user_id,
+            **name_change_request_data.model_dump()
+        )
+        return NameChangeRequestViewSchema.model_validate(name_change_request)
+
+    except NotResourceOwnerError:
+        raise NameChangeRequestResponses.NOT_RESOURCE_OWNER
+
+    except PendingNameChangeRequestAlreadyExistsError:
+        raise NameChangeRequestResponses.PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS
+
+    except NameChangeRequestCooldownNotExpiredError:
+        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED

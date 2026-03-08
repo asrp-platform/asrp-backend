@@ -16,13 +16,18 @@ from app.domains.auth.routes.api import router as auth_router
 from app.domains.directors_board.routes.admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
-from app.domains.news.api import router as news_router
 
 # admin routers
+from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
+from app.domains.legal_documents.routes.api import router as legal_documents_router
+from app.domains.news.api import router as news_router
 from app.domains.permissions.routes.admin_api import router as permissions_admin_router
 from app.domains.permissions.routes.api import router as permission_router
-from app.domains.users.routes.admin_api import router as users_admin_router
-from app.domains.users.routes.api import router as users_router
+from app.domains.users.routes.admin_users_api import router as users_admin_router
+from app.domains.users.routes.fellowship_api import router as fellowship_router
+from app.domains.users.routes.professional_info_api import router as professional_info_router
+from app.domains.users.routes.residency_api import router as residency_router
+from app.domains.users.routes.users_api import router as users_router
 
 
 @asynccontextmanager
@@ -36,6 +41,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 logger.add("logs/request_logs.log", rotation="10 days")
+logger.add(
+    "logs/privileges.log",
+    filter=lambda record: record["extra"].get("name") == "privileges",
+    rotation="30 days",
+)
 
 
 app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME), name=settings.MEDIA_DIR_NAME)
@@ -70,10 +80,15 @@ app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
+app.include_router(legal_documents_router, prefix="/api")
+app.include_router(professional_info_router, prefix="/api")
+app.include_router(residency_router, prefix="/api")
+app.include_router(fellowship_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
 app.include_router(directors_board_admin_router, prefix="/api/admin")
+app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 
 
@@ -99,7 +114,7 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("")
 async def root():
     return {"message": f"Hello World DEV_MODE: {DEV_MODE}"}
 

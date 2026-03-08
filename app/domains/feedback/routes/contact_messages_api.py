@@ -5,17 +5,24 @@ from fastapi_exception_responses import Responses
 from pydantic import BaseModel
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
-from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
+from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.feedback.filters import ContactMessagesFilter
-from app.domains.feedback.models import ContactMessageResponseSchema, CreateContactMessageSchema
+from app.domains.feedback.schemas import (
+    ContactMessageReplyResponseSchema,
+    ContactMessageResponseSchema,
+    CreateContactMessageSchema,
+)
 from app.domains.feedback.services import FeedbackServiceDep
-from app.domains.shared.deps import AdminUserDep
+from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 
 router = APIRouter(prefix="/contact-messages", tags=["Contact Messages"])
 
 
-@router.post("/")
+@router.post(
+    "",
+    status_code=201,
+)
 async def create_contact_message(
     contact_message_service: FeedbackServiceDep,
     message_data: CreateContactMessageSchema,
@@ -24,14 +31,22 @@ async def create_contact_message(
     return ContactMessageResponseSchema.from_orm(contact_message)
 
 
-@router.get("/", responses=InvalidRequestParamsResponses.responses)
+class GetContactMessagesResponses(InvalidRequestParamsResponses, PermissionsResponses):
+    pass
+
+
+@router.get("", responses=GetContactMessagesResponses.responses)
 async def get_contact_messages(
     admin: AdminUserDep,  # noqa Admin auth argument
+    permissions: AdminPermissionsDep,
     contact_message_service: FeedbackServiceDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[ContactMessagesFilter, Depends()] = None,
 ) -> PaginatedResponse[ContactMessageResponseSchema]:
+    if "feedback.view" not in permissions:
+        raise GetContactMessagesResponses.PERMISSION_ERROR
+
     try:
         messages, messages_count = await contact_message_service.get_all_paginated_counted(
             order_by=ordering,
@@ -68,11 +83,18 @@ class AnswerContactMessageBody(BaseModel):
 async def answer_contact_message(
     message_id: int,
     body: AnswerContactMessageBody,
-    admin: AdminUserDep,  # noqa Admin auth argument
+    admin: AdminUserDep,  # noqa Admin authargument
+    permissions: AdminPermissionsDep,
     contact_message_service: FeedbackServiceDep,
-) -> str:
+) -> ContactMessageReplyResponseSchema:
+    if "feedback.update" not in permissions:
+        raise PermissionsResponses.PERMISSION_ERROR
+
     try:
-        await contact_message_service.answer_contact_message(message_id, **body.model_dump())
+        reply = await contact_message_service.answer_contact_message(
+            contact_message_id=message_id, subject=body.subject, answer_message=body.answer_message
+        )
     except ValueError:
         raise AnswerContactMessageResponses.CONTACT_MESSAGE_NOT_FOUND
-    return "Answered"
+
+    return ContactMessageReplyResponseSchema.from_orm(reply)

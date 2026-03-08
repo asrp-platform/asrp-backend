@@ -5,7 +5,7 @@ from fastapi import Depends
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
-from app.domains.feedback.models import CreateContactMessageSchema
+from app.domains.feedback.schemas import CreateContactMessageSchema
 
 
 class FeedbackService:
@@ -31,6 +31,10 @@ class FeedbackService:
             if contact_message is None:
                 raise ValueError("There is no contact message with provided id")
 
+            message_reply = await self.uow.contact_message_reply_repository.create(
+                contact_message_id=contact_message.id, answer=answer_message
+            )
+
             await self.uow.contact_message_repository.update(contact_message_id, {"answered": True})
 
         await self.email_provider.send_email(
@@ -38,6 +42,8 @@ class FeedbackService:
             subject=subject,
             body=answer_message,
         )
+
+        return message_reply
 
 
 def get_feedback_service(

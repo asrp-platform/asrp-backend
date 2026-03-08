@@ -41,6 +41,8 @@ class Settings(BaseSettings, GmailConfig):
     ALGORITHM: str
     FERNET_KEY: str
 
+    NAME_CHANGE_REQUEST_COOLDOWN_DAYS: int | None = 14
+
     ACCESS_TOKEN_LIFESPAN_HOURS: int = 1
     REFRESH_TOKEN_LIFETIME_DAYS: int = 1
     REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS: int = 30
@@ -50,6 +52,7 @@ class Settings(BaseSettings, GmailConfig):
     MEDIA_STORAGE_PATH: Path = Path("media")
     NEWS_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "news_uploads"
     DIRECTORS_BOARD_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "directors_board_uploads"
+    BYLAWS_PATH: Path = MEDIA_STORAGE_PATH / "bylaws"
 
     FRONTEND_DOMAIN_HTTP: str
     FRONTEND_DOMAIN: str

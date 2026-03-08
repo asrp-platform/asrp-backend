@@ -74,6 +74,18 @@ async def insert_test_data(
                 Permission(action="director_board.view", name="View director board members"),
                 Permission(action="director_board.delete", name="Remove director board members"),
                 Permission(action="director_board.update", name="Update director board members"),
+                Permission(action="feedback.create", name="Assign admin feedback"),
+                Permission(action="feedback.view", name="View admin feedback"),
+                Permission(action="feedback.delete", name="Remove admin feedback"),
+                Permission(action="feedback.update", name="Update admin feedback"),
+                Permission(action="legal_documents.create", name="Create legal documents"),
+                Permission(action="legal_documents.view", name="View legal documents"),
+                Permission(action="legal_documents.update", name="Update legal documents"),
+                Permission(action="legal_documents.delete", name="Delete legal documents"),
+                Permission(action="name_change_request.view", name="View name change requests"),
+                Permission(action="name_change_request.update", name="Approve/reject name change requests"),
+                Permission(action="name_change_request.create", name="Create name change requests"),
+                Permission(action="name_change_request.delete", name="Delete name change requests"),
             ]
         )
         await session.commit()

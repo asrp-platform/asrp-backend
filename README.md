@@ -177,3 +177,18 @@ pytest -v tests
 
 
 ## Troubleshooting
+
+
+### Get all existing permissions script
+
+```sql
+INSERT INTO users_permissions (permission_id, user_id)
+SELECT p.id, 1
+FROM permissions p
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM users_permissions up
+    WHERE up.permission_id = p.id
+      AND up.user_id = 1
+);
+```
