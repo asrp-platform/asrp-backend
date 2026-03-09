@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, UploadFile
 
 from app.core.common.responses import PermissionsResponses
 from app.core.config import settings
@@ -13,9 +13,9 @@ from app.domains.directors_board.schemas import (
     UpdateBoardMemberSchema,
 )
 from app.domains.directors_board.services import DirectorBoardMemberServiceDep
-from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
+from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
-router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"])
+router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
 
 
 class ViewDirectorResponses(PermissionsResponses):
@@ -25,7 +25,6 @@ class ViewDirectorResponses(PermissionsResponses):
 @router.get("", responses=ViewDirectorResponses.responses, summary="View all directors board (admin view)")
 async def get_all_director_members(
     director_service: DirectorBoardMemberServiceDep,
-    admin: AdminUserDep,  # noqa Auth dep
     permissions: AdminPermissionsDep,
 ) -> list[BoardMemberSchema]:
     if "director_board.view" not in permissions:
@@ -46,7 +45,6 @@ class CreateDirectorResponses(PermissionsResponses):
 )
 async def create_director_member(
     data: CreateBoardMemberSchema,
-    admin: AdminUserDep,  # noqa auth dep
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
 ) -> BoardMemberSchema:
@@ -67,7 +65,6 @@ class UpdateDirectorMemberResponses(PermissionsResponses):
 )
 async def update_director_member(
     director_member_id: Annotated[int, Path(...)],
-    admin: AdminUserDep,  # noqa auth dep
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
     update_data: UpdateBoardMemberSchema,
@@ -94,7 +91,6 @@ class DeleteDirectorMemberResponses(PermissionsResponses):
 )
 async def delete_director_member(
     director_member_id: Annotated[int, Path(...)],
-    admin: AdminUserDep,  # noqa auth dep
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
 ) -> int:
@@ -119,7 +115,6 @@ class UploadImageResponses(PermissionsResponses):
 )
 async def upload_director_member_photo(
     file: Annotated[UploadFile, File(...)],
-    admin: AdminUserDep,  # noqa
     permissions: AdminPermissionsDep,
 ) -> dict:
     if "director_board.update" not in permissions:
@@ -144,7 +139,6 @@ class ReorderCardResponses(PermissionsResponses):
 async def reorder_cards(
     items: list[CardOrderUpdate],
     director_service: DirectorBoardMemberServiceDep,
-    admin: AdminUserDep,  # noqa
     permissions: AdminPermissionsDep,
 ):
     if "director_board.update" not in permissions:
