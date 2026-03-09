@@ -10,6 +10,7 @@ from app.domains.auth.infrastructure import AuthUnitOfWork, get_auth_unit_of_wor
 from app.domains.auth.schemas import RegisterFormData
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
+from app.domains.users.exceptions import UserNotFoundError
 
 
 class RegisterResponses(Responses):
@@ -45,7 +46,7 @@ class AuthService:
             user = await self.uow.user_repository.get_first_by_kwargs(email=email)
 
             if user is None:
-                raise ValueError("user with provided email not found")
+                raise UserNotFoundError("User with provided email not found")
 
             user.password = password
             await self.uow._session.flush()  # noqa property's setter manual calling

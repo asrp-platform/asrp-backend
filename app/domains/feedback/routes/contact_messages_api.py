@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
+from app.domains.feedback.exceptions import ContactMessageNotFoundError
 from app.domains.feedback.filters import ContactMessagesFilter
 from app.domains.feedback.schemas import (
     ContactMessageReplyResponseSchema,
@@ -94,7 +95,7 @@ async def answer_contact_message(
         reply = await contact_message_service.answer_contact_message(
             contact_message_id=message_id, subject=body.subject, answer_message=body.answer_message
         )
-    except ValueError:
+    except ContactMessageNotFoundError:
         raise AnswerContactMessageResponses.CONTACT_MESSAGE_NOT_FOUND
 
     return ContactMessageReplyResponseSchema.from_orm(reply)

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, Path, UploadFile
 from app.core.common.responses import PermissionsResponses
 from app.core.config import settings
 from app.core.utils.save_file import save_file
+from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError, InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
     BoardMemberSchema,
     CardOrderUpdate,
@@ -75,7 +76,7 @@ async def update_director_member(
         updated_director_member = await director_service.update_director_member(director_member_id, update_data_dict)
         return BoardMemberSchema.from_orm(updated_director_member)
 
-    except ValueError:
+    except DirectionBoardMemberNotFoundError:
         raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
 
 
@@ -98,7 +99,7 @@ async def delete_director_member(
     try:
         deleted_id = await director_service.delete_director_member(director_member_id)
         return deleted_id
-    except ValueError:
+    except DirectionBoardMemberNotFoundError:
         raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
 
 
@@ -144,5 +145,5 @@ async def reorder_cards(
         raise ReorderCardResponses.PERMISSION_ERROR
     try:
         await director_service.update_order(items)
-    except ValueError:
+    except InvalidReorderItemsCountError:
         raise ReorderCardResponses.INVALID_REORDER_ITEMS_COUNT
