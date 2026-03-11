@@ -4,7 +4,7 @@ from pydantic_core import PydanticCustomError
 
 class AdditionalDetailCreateSchema(BaseModel):
     hear_about_asrp: str
-    tg_username: str
+    tg_username: str | None
     interest_description: str | None
 
     model_config = {
