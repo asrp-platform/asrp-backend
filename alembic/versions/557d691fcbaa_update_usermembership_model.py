@@ -1,4 +1,4 @@
-"""update UserMembersip model
+"""update UserMembership model
 
 Revision ID: 557d691fcbaa
 Revises: b99d31e2536a
