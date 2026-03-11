@@ -55,4 +55,4 @@ class AdditionalDetail(Base, UCIMixin):
     interest_description: Mapped[str] = mapped_column(nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="additional_details")
+    user: Mapped["User"] = relationship("User", back_populates="additional_detail")
