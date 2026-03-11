@@ -51,7 +51,7 @@ class AdditionalDetail(Base, UCIMixin):
     __tablename__ = "additional_details"
 
     hear_about_asrp: Mapped[str] = mapped_column(nullable=False)
-    tg_username: Mapped[str] = mapped_column(nullable=False)
+    tg_username: Mapped[str] = mapped_column(nullable=True)
     interest_description: Mapped[str] = mapped_column(nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
