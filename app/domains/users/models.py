@@ -61,7 +61,7 @@ class User(Base):
     communication_preferences: Mapped["CommunicationPreferences"] = relationship(
         "CommunicationPreferences", back_populates="user", uselist=False
     )
-    additional_details: Mapped["AdditionalDetail"] = relationship("AdditionalDetail", back_populates="user")
+    additional_detail: Mapped["AdditionalDetail"] = relationship("AdditionalDetail", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
