@@ -174,6 +174,7 @@ class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
 class NameChangeRequestCreateSchema(BaseModel):
     firstname: str
     lastname: str
+    middlename: str | None = None
     reason_change: str
 
 

@@ -185,18 +185,17 @@ class NameChangeRequestResponses(Responses):
     "/{user_id}/name-change-requests",
     status_code=201,
     responses=NameChangeRequestResponses.responses,
-    summary="Create request to change user firstname and lastname"
+    summary="Create request to change user firstname and lastname",
 )
 async def create_name_change_request(
     user_id: Annotated[int, Path()],
     service: NameChangeRequestServiceDep,
     current_user: CurrentUserDep,
-    name_change_request_data: NameChangeRequestCreateSchema
+    name_change_request_data: NameChangeRequestCreateSchema,
 ) -> NameChangeRequestViewSchema:
     try:
         name_change_request = await service.create_name_change_request(
-            user_id,
-            **name_change_request_data.model_dump()
+            user_id, **name_change_request_data.model_dump(exclude_none=True)
         )
         return NameChangeRequestViewSchema.model_validate(name_change_request)
 
