@@ -186,7 +186,7 @@ class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
 
 class NameChangeRequestUpdateByAdminSchema(BaseModel):
     action: Literal["approve", "reject"]
-    reason_rejecting: str | None
+    reason_rejecting: str | None = None
 
     @model_validator(mode="after")
     def check_reason_rejecting(self):
