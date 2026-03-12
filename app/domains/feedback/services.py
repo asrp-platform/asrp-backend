@@ -57,8 +57,7 @@ class AdditionalDetailService:
             user_id: int,
             **kwargs
     ) -> AdditionalDetail:
-        async with self.uow:
-            return await self.uow.additional_detail_repository.create(user_id=user_id, **kwargs)
+        return await self.uow.additional_detail_repository.create(user_id=user_id, **kwargs)
 
 
 def get_additional_detail_service(
