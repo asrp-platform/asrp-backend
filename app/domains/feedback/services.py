@@ -4,7 +4,7 @@ from fastapi import Depends
 
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
-from app.domains.feedback.exceptions import ContactMessageNotFoundError
+from app.domains.feedback.exceptions import AdditionalDetailAlreadyExistsError, ContactMessageNotFoundError
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
 from app.domains.feedback.models import AdditionalDetail
 from app.domains.feedback.schemas import CreateContactMessageSchema
@@ -57,7 +57,12 @@ class AdditionalDetailService:
             user_id: int,
             **kwargs
     ) -> AdditionalDetail:
-        return await self.uow.additional_detail_repository.create(user_id=user_id, **kwargs)
+        async with self.uow:
+            additional_detail = await self.uow.additional_detail_repository.get_first_by_kwargs(user_id=user_id)
+            if additional_detail is not None:
+                raise AdditionalDetailAlreadyExistsError("Additional detail for User with provided ID is already exists")
+
+            return await self.uow.additional_detail_repository.create(user_id=user_id, **kwargs)
 
 
 def get_additional_detail_service(
