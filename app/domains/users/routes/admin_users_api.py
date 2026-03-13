@@ -11,7 +11,7 @@ from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.users.exceptions import NameChangeRequestNotFoundError, UserNotFoundError
-from app.domains.users.filters import UsersFilter
+from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
@@ -52,7 +52,7 @@ async def get_users(
         raise UserListResponses.INVALID_SORTER_FIELD
 
 
-class NameChangeRequestResponses(Responses):
+class NameChangeRequestResponses(InvalidRequestParamsResponses):
     PERMISSION_ERROR = 403, "Don't have enough permissions to view name change requests"
     USER_NOT_FOUND = 404, "User with provided ID not found"
     NAME_CHANGE_REQUEST_NOT_FOUND = 404, "Name change request with provided ID not found"
@@ -69,12 +69,29 @@ class NameChangeRequestResponses(Responses):
 async def get_all_pending_name_change_requests(
     permissions: AdminPermissionsDep,
     service: NameChangeRequestServiceDep,
-) -> list[NameChangeRequestViewSchema]:
+    params: PaginationParamsDep,
+    ordering: OrderingParamsDep = None,
+    filters: Annotated[NameChangeRequestsFilters, Depends()] = None,
+) -> PaginatedResponse[NameChangeRequestViewSchema]:
     if "name_change_request.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    requests_to_change_name = await service.get_all_pending_name_change_requests()
-    return [NameChangeRequestViewSchema.model_validate(request) for request in requests_to_change_name]
+    try:
+        name_change_requests, count = await service.get_all_paginated_counted_name_change_requests(
+            order_by=ordering,
+            filters=filters.model_dump(exclude_none=True),
+            limit=params["limit"],
+            offset=params["offset"],
+        )
+        data = [NameChangeRequestViewSchema.model_validate(request) for request in name_change_requests]
+        return PaginatedResponse(
+            count=count,
+            data=data,
+            page=params["page"],
+            page_size=params["page_size"],
+        )
+    except InvalidOrderAttributeError:
+        raise NameChangeRequestResponses.INVALID_SORTER_FIELD
 
 
 class UpdateUserByAdminResponses(Responses):
