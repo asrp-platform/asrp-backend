@@ -37,6 +37,19 @@ class UserService:
     def __init__(self, uow):
         self.uow = uow
 
+    async def __check_resource_owner(self, user_id: int, *, current_user: User):
+        """
+        Ensures:
+        - user exists
+        - current user is a resource owner (optional) or admin
+        """
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
+            if current_user is None or user_id != current_user.id or not current_user.stuff:
+                raise NotResourceOwnerError("Not resource owner")
+
     async def get_all_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> [list[User], int]:
@@ -55,7 +68,8 @@ class UserService:
         async with self.uow:
             return await self.uow.user_repository.get_first_by_kwargs(**kwargs)
 
-    async def set_user_avatar(self, user_id: int, avatar_path: Path):
+    async def set_user_avatar(self, user_id: int, current_user: User, avatar_path: Path):
+        await self.__check_resource_owner(user_id, current_user=current_user)
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
@@ -70,7 +84,9 @@ class UserService:
 
             await self.uow.user_repository.update(user_id, {"avatar_path": avatar_path})
 
-    async def update_user(self, user_id: int, update_data: dict) -> User:
+    async def update_user(self, user_id: int, current_user: User, update_data: dict) -> User:
+        await self.__check_resource_owner(user_id, current_user=current_user)
+
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
@@ -78,7 +94,8 @@ class UserService:
             await self.uow.user_repository.update(user_id, update_data)
         return user
 
-    async def delete_avatar(self, user_id: int) -> None:
+    async def delete_avatar(self, user_id: int, current_user: User) -> None:
+        await self.__check_resource_owner(user_id, current_user=current_user)
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
@@ -93,7 +110,14 @@ class UserService:
 
             await self.uow.user_repository.update(user_id, {"avatar_path": None})
 
-    async def change_password(self, user_id, old_password, new_password):
+    async def change_password(
+        self,
+        user_id: int,
+        current_user: User,
+        old_password: str,
+        new_password: str,
+    ):
+        await self.__check_resource_owner(user_id, current_user=current_user)
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
