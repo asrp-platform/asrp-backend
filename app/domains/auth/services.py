@@ -41,7 +41,7 @@ class AuthService:
 
         return user
 
-    async def change_password(self, email, password):
+    async def set_new_password(self, email, password):
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(email=email)
 
@@ -54,7 +54,6 @@ class AuthService:
 
     async def reset_password(self, email: str):
         async with self.uow:
-
             user = await self.uow.user_repository.get_first_by_kwargs(email=email)
 
         if user is None:
@@ -91,7 +90,6 @@ class AuthService:
 
     async def confirm_email(self, current_user_id: int, email_from_confirmation_token: str, current_user_email: str):
         async with self.uow:
-
             if current_user_email != email_from_confirmation_token:
                 raise ValueError("email of the confirmation token does not match email of the authorized user")
 
