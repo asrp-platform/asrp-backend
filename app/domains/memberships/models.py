@@ -53,6 +53,8 @@ class UserMembership(Base, UCIMixin):
     subspecialty: Mapped[str] = mapped_column(nullable=False)
     is_trained_in_us: Mapped[bool] = mapped_column(nullable=False)
 
+    has_access: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     user: Mapped["User"] = relationship("User", back_populates="membership")
 
