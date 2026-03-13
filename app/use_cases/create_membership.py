@@ -9,7 +9,6 @@ from app.domains.feedback.services import (
 )
 from app.domains.memberships.enums import MembershipTypeEnum
 from app.domains.memberships.infrastructure import MembershipUnitOfWork, get_membership_unit_of_work
-from app.domains.memberships.models import UserMembership
 from app.domains.memberships.services import MembershipService, MembershipServiceDep, get_membership_service
 
 
