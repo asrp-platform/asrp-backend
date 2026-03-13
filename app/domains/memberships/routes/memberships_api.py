@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
 
+from app.domains.feedback.exceptions import AdditionalDetailAlreadyExistsError
 from app.domains.memberships.exceptions import MembershipAlreadyExistsError
 from app.domains.memberships.schemas import MembershipDataSchema
 from app.domains.shared.deps import CurrentUserDep
@@ -11,6 +12,7 @@ router = APIRouter(tags=["Memberships"], prefix="/memberships")
 
 class MembershipResponses(Responses):
     MEMBERSHIP_ALREADY_EXISTS = 409, "Membership for provided User already exists"
+    ADDITIONAL_DETAIL_ALREADY_EXISTS = 409, "Additional Detail for provided User already exists"
 
 
 @router.post(
@@ -35,4 +37,6 @@ async def create_membership(
 
     except MembershipAlreadyExistsError:
         raise MembershipResponses.MEMBERSHIP_ALREADY_EXISTS
+    except AdditionalDetailAlreadyExistsError:
+        raise MembershipResponses.ADDITIONAL_DETAIL_ALREADY_EXISTS
 
