@@ -47,12 +47,12 @@ class ContactMessageReply(Base, UCIMixin):
     contact_message: Mapped["ContactMessage"] = relationship("ContactMessage", back_populates="replies")
 
 
-class AdditionalDetail(Base, UCIMixin):
-    __tablename__ = "additional_details"
+class FeedbackAdditionalInfo(Base, UCIMixin):
+    __tablename__ = "feedback_additional_infos"
 
     hear_about_asrp: Mapped[str] = mapped_column(nullable=False)
     tg_username: Mapped[str] = mapped_column(nullable=True)
     interest_description: Mapped[str] = mapped_column(nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="additional_detail")
+    user: Mapped["User"] = relationship("User", back_populates="feedback_additional_info")

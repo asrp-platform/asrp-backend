@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, Field
@@ -10,10 +11,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
-from app.domains.memberships.enums import ApprovalStatusEnum, MembershipTypeEnum
 
 if TYPE_CHECKING:
     from app.domains.users.models import User, UserSchema
+
+
+class MembershipTypeEnum(Enum):
+    ACTIVE = "ACTIVE"
+    TRAINEE = "TRAINEE"
+    AFFILIATE = "AFFILIATE"
+    HONORARY = "HONORARY"
+    PATHWAY = "PATHWAY"
 
 
 class MembershipType(Base):
@@ -32,6 +40,12 @@ class MembershipType(Base):
     is_purchasable: Mapped[bool] = mapped_column(nullable=False, default=True, server_default=text("true"))
 
     memberships: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="membership_type")
+
+
+class ApprovalStatusEnum(Enum):
+    APPROVED = "APPROVED"
+    PENDING = "PENDING"
+    REJECTED = "REJECTED"
 
 
 class UserMembership(Base, UCIMixin):

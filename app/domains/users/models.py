@@ -11,7 +11,7 @@ from app.core.database.setup_db import Base
 from app.domains.memberships.models import UserMembership
 
 if TYPE_CHECKING:
-    from app.domains.feedback.models import AdditionalDetail
+    from app.domains.feedback.models import FeedbackAdditionalInfo
     from app.domains.news.models import News
     from app.domains.permissions.models import Permission
 
@@ -58,7 +58,7 @@ class User(Base):
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
     residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
     name_change_requests: Mapped[list["NameChangeRequest"]] = relationship("NameChangeRequest", back_populates="user")
-    additional_detail: Mapped["AdditionalDetail"] = relationship("AdditionalDetail", back_populates="user")
+    feedback_additional_info: Mapped["FeedbackAdditionalInfo"] = relationship("FeedbackAdditionalInfo", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)

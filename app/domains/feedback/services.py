@@ -4,9 +4,9 @@ from fastapi import Depends
 
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
-from app.domains.feedback.exceptions import AdditionalDetailAlreadyExistsError
+from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
-from app.domains.feedback.models import AdditionalDetail
+from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.feedback.schemas import CreateContactMessageSchema
 
 
@@ -48,27 +48,27 @@ class FeedbackService:
         return message_reply
 
 
-class AdditionalDetailService:
+class FeedbackAdditionalInfoService:
     def __init__(self, uow):
         self.uow: FeedbackUnitOfWork = uow
 
-    async def create_additional_detail(
+    async def create_feedback_additional_info(
             self,
             user_id: int,
             **kwargs
-    ) -> AdditionalDetail:
+    ) -> FeedbackAdditionalInfo:
         async with self.uow:
-            additional_detail = await self.uow.additional_detail_repository.get_first_by_kwargs(user_id=user_id)
-            if additional_detail is not None:
-                raise AdditionalDetailAlreadyExistsError("Additional detail for User with provided ID is already exists")
+            feedback_additional_info = await self.uow.feedback_additional_info_repository.get_first_by_kwargs(user_id=user_id)
+            if feedback_additional_info is not None:
+                raise FeedbackAdditionalInfoAlreadyExistsError("Additional detail for User with provided ID is already exists")
 
-            return await self.uow.additional_detail_repository.create(user_id=user_id, **kwargs)
+            return await self.uow.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
 
 
-def get_additional_detail_service(
+def get_feedback_additional_info_service(
     uow: Annotated[FeedbackUnitOfWork, Depends(get_feedback_unit_of_work)],
-) ->AdditionalDetailService:
-    return AdditionalDetailService(uow)
+) ->FeedbackAdditionalInfoService:
+    return FeedbackAdditionalInfoService(uow)
 
 
 def get_feedback_service(
@@ -78,4 +78,4 @@ def get_feedback_service(
 
 
 FeedbackServiceDep = Annotated[FeedbackService, Depends(get_feedback_service)]
-AdditionalDetailServiceDep = Annotated[AdditionalDetailService, Depends(get_additional_detail_service)]
+FeedbackAdditionalInfoServiceDep = Annotated[FeedbackAdditionalInfoService, Depends(get_feedback_additional_info_service)]
