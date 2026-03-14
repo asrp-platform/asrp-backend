@@ -1,8 +1,8 @@
 
 from pydantic import BaseModel, Field
 
-from app.domains.memberships.enums import MembershipTypeEnum
-from app.domains.shared.schemas import AdditionalDetailCreateSchema
+from app.domains.memberships.models import MembershipTypeEnum
+from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
 
 
 class MembershipTypeSchema(BaseModel):
@@ -30,7 +30,7 @@ class MembershipCreateSchema(BaseModel):
 class MembershipDataSchema(BaseModel):
     membership: MembershipCreateSchema
     membership_type: MembershipTypeEnum
-    additional_detail: AdditionalDetailCreateSchema
+    feedback_additional_info: FeedbackAdditionalInfoCreateSchema
     is_agrees_communications: bool
 
     model_config = {

@@ -1,9 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.memberships.enums import ApprovalStatusEnum
 from app.domains.memberships.infrastructure import MembershipUnitOfWork
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import ApprovalStatusEnum, UserMembership
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
 
