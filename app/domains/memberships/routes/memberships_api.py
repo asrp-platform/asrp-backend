@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
 
-from app.domains.feedback.exceptions import AdditionalDetailAlreadyExistsError
+from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.memberships.exceptions import MembershipAlreadyExistsError
 from app.domains.memberships.schemas import MembershipDataSchema
 from app.domains.shared.deps import CurrentUserDep
@@ -12,7 +12,7 @@ router = APIRouter(tags=["Memberships"], prefix="/memberships")
 
 class MembershipResponses(Responses):
     MEMBERSHIP_ALREADY_EXISTS = 409, "Membership for provided User already exists"
-    ADDITIONAL_DETAIL_ALREADY_EXISTS = 409, "Additional Detail for provided User already exists"
+    FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS = 409, "Additional Detail for provided User already exists"
 
 
 @router.post(
@@ -32,11 +32,11 @@ async def create_membership(
             is_agrees_communications=membership_data.is_agrees_communications,
             membership_type=membership_data.membership_type,
             user_membership_data=membership_data.membership.model_dump(),
-            additional_detail_data=membership_data.additional_detail.model_dump()
+            feedback_additional_info_data=membership_data.feedback_additional_info.model_dump()
         )
 
     except MembershipAlreadyExistsError:
         raise MembershipResponses.MEMBERSHIP_ALREADY_EXISTS
-    except AdditionalDetailAlreadyExistsError:
-        raise MembershipResponses.ADDITIONAL_DETAIL_ALREADY_EXISTS
+    except FeedbackAdditionalInfoAlreadyExistsError:
+        raise MembershipResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
 

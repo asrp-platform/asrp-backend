@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.domains.memberships.enums import MembershipTypeEnum
 from app.domains.memberships.exceptions import MembershipAlreadyExistsError
 from app.domains.memberships.infrastructure import MembershipUnitOfWork, get_membership_unit_of_work
+from app.domains.memberships.models import MembershipTypeEnum
 
 
 class MembershipService:

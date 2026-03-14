@@ -6,15 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_repository import SQLAlchemyRepository
 from app.core.database.setup_db import session_getter
 from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
-from app.domains.feedback.models import AdditionalDetail, ContactMessage, ContactMessageReply
+from app.domains.feedback.models import ContactMessage, ContactMessageReply, FeedbackAdditionalInfo
 
 
 class ContactMessageRepository(SQLAlchemyRepository[ContactMessage]):
     model = ContactMessage
 
 
-class AdditionalDetailRepository(SQLAlchemyRepository):
-    model = AdditionalDetail
+class FeedbackAdditionalInfoRepository(SQLAlchemyRepository):
+    model = FeedbackAdditionalInfo
 
 
 class FeedbackUnitOfWork(SQLAlchemyUnitOfWork):
@@ -22,7 +22,7 @@ class FeedbackUnitOfWork(SQLAlchemyUnitOfWork):
         super().__init__(session)
         self.contact_message_repository = ContactMessageRepository(self._session)
         self.contact_message_reply_repository = ContactMessageReplyRepository(self._session)
-        self.additional_detail_repository = AdditionalDetailRepository(self._session)
+        self.feedback_additional_info_repository = FeedbackAdditionalInfoRepository(self._session)
 
 
 def get_feedback_unit_of_work(

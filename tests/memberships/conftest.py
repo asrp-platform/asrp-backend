@@ -1,9 +1,8 @@
 import pytest
 from faker import Faker
 
-from app.domains.memberships.enums import MembershipTypeEnum
 from app.domains.memberships.infrastructure import MembershipUnitOfWork
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import MembershipTypeEnum, UserMembership
 from app.domains.users.models import User
 
 
@@ -39,7 +38,7 @@ def membership_data(faker: Faker):
 
         "membership_type": MembershipTypeEnum.TRAINEE.value,
 
-        "additional_detail": {
+        "feedback_additional_info": {
             "hear_about_asrp": faker.text(max_nb_chars=50),
             "tg_username": f"@{faker.pystr(min_chars=5, max_chars=32)}",
             "interest_description": faker.text(max_nb_chars=100),

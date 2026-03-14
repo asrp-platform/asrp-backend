@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
 
 
-class AdditionalDetailCreateSchema(BaseModel):
+class FeedbackAdditionalInfoCreateSchema(BaseModel):
     hear_about_asrp: str
     tg_username: str | None
     interest_description: str | None
