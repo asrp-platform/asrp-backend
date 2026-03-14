@@ -174,6 +174,7 @@ class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
 class NameChangeRequestCreateSchema(BaseModel):
     firstname: str
     lastname: str
+    middlename: str | None = None
     reason_change: str
 
 
@@ -185,7 +186,7 @@ class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
 
 class NameChangeRequestUpdateByAdminSchema(BaseModel):
     action: Literal["approve", "reject"]
-    reason_rejecting: str | None
+    reason_rejecting: str | None = None
 
     @model_validator(mode="after")
     def check_reason_rejecting(self):

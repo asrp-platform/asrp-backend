@@ -8,6 +8,7 @@ from app.core.common.responses import InvalidRequestParamsResponses, PaginatedRe
 from app.core.config import settings
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.save_file import save_file
+from app.domains.news.exceptions import NewsNotFoundError
 from app.domains.news.filters import NewsFilter
 from app.domains.news.models import CreateNewsSchema, NewsSchema, UpdateNewsSchema
 from app.domains.news.services import NewsServiceDep
@@ -60,7 +61,7 @@ async def update_news(
 ) -> None:
     try:
         await service.update_news(news_id, body.model_dump())
-    except ValueError:
+    except NewsNotFoundError:
         raise NewsNotFoundResponses.NEWS_NOT_FOUND
 
 
@@ -103,7 +104,7 @@ async def get_news_detail(
         if news.is_deleted:
             raise NewsNotFoundResponses.NEWS_NOT_FOUND
         return NewsSchema.from_orm(news)
-    except ValueError:
+    except NewsNotFoundError:
         raise NewsNotFoundResponses.NEWS_NOT_FOUND
 
 
@@ -114,5 +115,5 @@ async def delete_news(
 ):
     try:
         await news_service.set_news_deleted(news_id)
-    except ValueError:
+    except NewsNotFoundError:
         raise NewsNotFoundResponses.NEWS_NOT_FOUND

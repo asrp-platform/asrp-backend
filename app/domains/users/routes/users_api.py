@@ -147,7 +147,7 @@ async def remove_user_avatar(
 ):
     try:
         await user_service.delete_avatar(user_id)
-    except ValueError:
+    except UserNotFoundError:
         raise DeleteUserAvatarResponses.USER_NOT_FOUND
 
 
@@ -169,7 +169,7 @@ async def change_user_password(
 ) -> None:
     try:
         await user_service.change_password(user_id, data.old_password, data.new_password)
-    except ValueError:
+    except UserNotFoundError:
         raise ChangePasswordResponses.USER_NOT_FOUND
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD
@@ -185,18 +185,17 @@ class NameChangeRequestResponses(Responses):
     "/{user_id}/name-change-requests",
     status_code=201,
     responses=NameChangeRequestResponses.responses,
-    summary="Create request to change user firstname and lastname"
+    summary="Create request to change user firstname and lastname",
 )
 async def create_name_change_request(
     user_id: Annotated[int, Path()],
     service: NameChangeRequestServiceDep,
     current_user: CurrentUserDep,
-    name_change_request_data: NameChangeRequestCreateSchema
+    name_change_request_data: NameChangeRequestCreateSchema,
 ) -> NameChangeRequestViewSchema:
     try:
         name_change_request = await service.create_name_change_request(
-            user_id,
-            **name_change_request_data.model_dump()
+            user_id, **name_change_request_data.model_dump(exclude_none=True)
         )
         return NameChangeRequestViewSchema.model_validate(name_change_request)
 

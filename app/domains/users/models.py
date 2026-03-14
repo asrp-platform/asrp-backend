@@ -130,6 +130,7 @@ class NameChangeRequest(Base, UCIMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
     firstname: Mapped[str] = mapped_column(nullable=False)
     lastname: Mapped[str] = mapped_column(nullable=False)
+    middlename: Mapped[str] = mapped_column(nullable=True)
     reason_change: Mapped[str] = mapped_column(nullable=False)
     reason_rejecting: Mapped[str] = mapped_column(nullable=True)
     status: Mapped[NameChangeRequestStatusEnum] = mapped_column(

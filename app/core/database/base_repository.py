@@ -5,6 +5,7 @@ from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.common.exceptions import NotFoundError
 from app.core.utils.filters import build_conditions
 
 
@@ -120,7 +121,7 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
         )
 
         if result is None:
-            raise ValueError("There is no such record with provided id")
+            raise NotFoundError(f"{self.model.__name__} with provided ID not found")
 
         return result
 
@@ -142,6 +143,6 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
         )
 
         if result is None:
-            raise ValueError("There is no such record with provided id")
+            raise NotFoundError(f"{self.model.__name__} with provided ID not found")
 
         return result

@@ -2,6 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 
+from app.domains.news.exceptions import NewsNotFoundError
 from app.domains.news.infrastructure import NewsUnitOfWork, get_news_unit_of_work
 from app.domains.news.models import News
 
@@ -24,21 +25,21 @@ class NewsService:
         async with self.uow:
             news = await self.uow.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
-                raise ValueError("There is no such user with provided id")
+                raise NewsNotFoundError("News with provided ID not found")
             await self.uow.news_repository.update(news_id, update_data)
 
     async def get_news_by_id(self, news_id: int) -> News:
         async with self.uow:
             news = await self.uow.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
-                raise ValueError("There is no such user with provided id")
+                raise NewsNotFoundError("News with provided ID not found")
             return news
 
     async def set_news_deleted(self, news_id):
         async with self.uow:
             news = await self.uow.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
-                raise ValueError("There is no such user with provided id")
+                raise NewsNotFoundError("News with provided ID not found")
             await self.uow.news_repository.update(news_id, {"is_deleted": True})
 
 

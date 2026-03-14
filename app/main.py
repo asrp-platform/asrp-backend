@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
+from app.core.common.exceptions import NotFoundError
 from app.core.config import DEV_MODE, settings
 from app.core.utils.open_api import get_custom_open_api
 
@@ -50,6 +51,14 @@ logger.add(
 
 
 app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME), name=settings.MEDIA_DIR_NAME)
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_error_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(
+        status_code=404,
+        content={'detail': str(exc)}
+    )
 
 
 @app.middleware("http")
