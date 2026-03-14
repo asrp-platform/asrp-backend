@@ -39,7 +39,7 @@ class MembershipType(Base):
     description: Mapped[str] = mapped_column(nullable=True)
     is_purchasable: Mapped[bool] = mapped_column(nullable=False, default=True, server_default=text("true"))
 
-    user_memberships: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="membership_type")
+    memberships: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="membership_type")
 
 
 class ApprovalStatusEnum(Enum):
@@ -61,13 +61,19 @@ class UserMembership(Base, UCIMixin):
     current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     cancel_at_period_end: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
-    has_access: Mapped[bool] = mapped_column(default=False)
+    primary_affiliation: Mapped[str] = mapped_column(nullable=False)
+    job_title: Mapped[str] = mapped_column(nullable=False)
+    practice_setting: Mapped[str] = mapped_column(nullable=False)
+    subspecialty: Mapped[str] = mapped_column(nullable=False)
+    is_trained_in_us: Mapped[bool] = mapped_column(nullable=False)
+
+    has_access: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="memberships")
+    user: Mapped["User"] = relationship("User", back_populates="membership")
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
-    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_memberships")
+    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="memberships")
 
 
 class UpdateMembershipTypeSchema(BaseModel):
