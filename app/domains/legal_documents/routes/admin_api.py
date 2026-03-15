@@ -27,7 +27,7 @@ async def upsert_bylaws(
         raise BylawsAdminResponses.PERMISSION_ERROR
 
     if file.content_type != "application/pdf":
-         raise BylawsAdminResponses.INVALID_CONTENT_TYPE
+        raise BylawsAdminResponses.INVALID_CONTENT_TYPE
 
     path = await service.upsert(file)
     return {"url": path}
