@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from app.domains.permissions.services import get_permissions_service
 from app.domains.shared.deps import get_users_permissions
 from app.domains.users.exceptions import UserNotFoundError
-from app.domains.users.routes.admin_users_api import ManagePermissionsResponses
+from app.domains.users.routes.users_admin_api import ManagePermissionsResponses
 from app.main import app
 
 pytestmark = pytest.mark.anyio
