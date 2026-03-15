@@ -181,6 +181,7 @@ class NameChangeRequestCreateSchema(BaseModel):
 
 class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
     status: NameChangeRequestStatusEnum
+    reason_rejecting: str | None
     model_config = {
         "from_attributes": True,
     }
