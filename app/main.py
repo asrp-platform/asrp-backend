@@ -13,21 +13,21 @@ from app.core.config import DEV_MODE, settings
 from app.core.utils.open_api import get_custom_open_api
 
 # routers
-from app.domains.auth.routes.api import router as auth_router
-from app.domains.directors_board.routes.admin_api import router as directors_board_admin_router
-from app.domains.directors_board.routes.api import router as directors_board_router
-from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
+from app.domains.auth.routes.auth_api import router as auth_router
+from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
+from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
 
 # admin routers
+from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
+from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.news.api import router as news_router
-from app.domains.permissions.routes.admin_api import router as permissions_admin_router
-from app.domains.permissions.routes.api import router as permission_router
-from app.domains.users.routes.admin_users_api import router as users_admin_router
+from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
 from app.domains.users.routes.fellowship_api import router as fellowship_router
 from app.domains.users.routes.professional_info_api import router as professional_info_router
 from app.domains.users.routes.residency_api import router as residency_router
+from app.domains.users.routes.users_admin_api import router as users_admin_router
 from app.domains.users.routes.users_api import router as users_router
 
 
@@ -54,10 +54,7 @@ app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME
 
 @app.exception_handler(NotFoundError)
 async def not_found_error_handler(request: Request, exc: NotFoundError):
-    return JSONResponse(
-        status_code=404,
-        content={'detail': str(exc)}
-    )
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
 @app.middleware("http")
@@ -85,7 +82,6 @@ app.openapi = get_custom_open_api(app)
 
 app.include_router(users_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
-app.include_router(permission_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
@@ -99,6 +95,7 @@ app.include_router(users_admin_router, prefix="/api/admin")
 app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
+app.include_router(contact_messages_admin_router, prefix="/api/admin")
 
 
 if DEV_MODE:
