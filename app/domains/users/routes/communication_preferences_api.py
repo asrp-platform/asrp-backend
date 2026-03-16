@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
+from pydantic import ValidationError
 
 from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
-from app.domains.users.exceptions import InvalidCommunicationFieldError, UserNotFoundError
-from app.domains.users.schemas import CommunicationPreferenceUpdateSchema, CommunicationPreferenceViewSchema
-from app.domains.users.services import CommunicationPreferenceServiceDep
+from app.domains.users.exceptions import UserNotFoundError
+from app.domains.users.schemas import CommunicationPreferencesUpdateSchema, CommunicationPreferencesViewSchema
+from app.domains.users.services import CommunicationPreferencesServiceDep
 
 router = APIRouter(tags=["Communication Preferences"], prefix="/users/{user_id}/communication-preferences")
 
@@ -23,49 +24,50 @@ class GetCommunicationPreferencesResponses(Responses):
 async def get_user_communication_preferences(
     user_id: int,
     current_user: CurrentUserDep,  # noqa: Auth dependency
-    communication_preferences_service: CommunicationPreferenceServiceDep,
-) -> CommunicationPreferenceViewSchema:
+    communication_preferences_service: CommunicationPreferencesServiceDep,
+) -> CommunicationPreferencesViewSchema:
     try:
-        preferences = await communication_preferences_service.get_preferences(
+        communication_preferences = await communication_preferences_service.get_preferences(
             user_id=user_id,
             current_user_id=current_user.id
         )
-        return CommunicationPreferenceViewSchema.model_validate(preferences)
+        return CommunicationPreferencesViewSchema.model_validate(communication_preferences)
     except UserNotFoundError:
         raise GetCommunicationPreferencesResponses.USER_NOT_FOUND
     except NotResourceOwnerError:
         raise GetCommunicationPreferencesResponses.NOT_RESOURCE_OWNER
 
 
-class UpdateCommunicationPreferenceResponses(GetCommunicationPreferencesResponses):
+class UpdateCommunicationPreferencesResponses(GetCommunicationPreferencesResponses):
     INVALID_FIELD = 400, "Invalid communication field or trying to modify required preference"
     MEMBERSHIP_NOT_DISABLE = 400, "Membership & account notifications are required and cannot be disabled"
-
+    VALIDATION_ERROR = 422, "Validation error in request data"
 
 @router.patch(
     "",
-    responses=UpdateCommunicationPreferenceResponses.responses,
+    responses=UpdateCommunicationPreferencesResponses.responses,
     summary="Update a single communication preference",
 )
-async def update_communication_preference(
+async def update_communication_preferences(
     user_id: int,
     current_user: CurrentUserDep,  # noqa: Auth dependency
-    communication_preferences_service: CommunicationPreferenceServiceDep,
-    preference_update: CommunicationPreferenceUpdateSchema,
-) -> CommunicationPreferenceViewSchema:
+    communication_preferences_service: CommunicationPreferencesServiceDep,
+    preference_update: CommunicationPreferencesUpdateSchema,
+) -> CommunicationPreferencesViewSchema:
     try:
-        updated_preferences = await communication_preferences_service.update_preference(
+        updated_preference = await communication_preferences_service.update_preference(
             user_id=user_id,
             current_user_id=current_user.id,
-            field=preference_update.field,
-            value=preference_update.value
+            update_data=preference_update
         )
-        return CommunicationPreferenceViewSchema.model_validate(updated_preferences)
+        return CommunicationPreferencesViewSchema.model_validate(updated_preference)
     except UserNotFoundError:
-        raise UpdateCommunicationPreferenceResponses.USER_NOT_FOUND
+        raise UpdateCommunicationPreferencesResponses.USER_NOT_FOUND
     except NotResourceOwnerError:
-        raise UpdateCommunicationPreferenceResponses.NOT_RESOURCE_OWNER
-    except InvalidCommunicationFieldError as e:
-        if "Membership & account notifications" in str(e):
-            raise UpdateCommunicationPreferenceResponses.MEMBERSHIP_NOT_DISABLE
-        raise UpdateCommunicationPreferenceResponses.INVALID_FIELD
+        raise UpdateCommunicationPreferencesResponses.NOT_RESOURCE_OWNER
+    except ValidationError as e:
+        errors = e.errors()
+        for error in errors:
+            if error.get('loc') == ('membership_account_notifications',):
+                raise UpdateCommunicationPreferencesResponses.MEMBERSHIP_NOT_DISABLE
+        raise UpdateCommunicationPreferencesResponses.VALIDATION_ERROR

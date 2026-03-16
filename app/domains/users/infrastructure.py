@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_repository import SQLAlchemyRepository
 from app.core.database.setup_db import session_getter
 from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
-from app.domains.users.models import CommunicationPreference, Fellowship, ProfessionalInformation, Residency, User
+from app.domains.users.models import CommunicationPreferences, Fellowship, ProfessionalInformation, Residency, User
 
 
 class UserRepository(SQLAlchemyRepository):
@@ -25,8 +25,8 @@ class FellowshipRepository(SQLAlchemyRepository):
     model = Fellowship
 
 
-class CommunicationPreferenceRepository(SQLAlchemyRepository):
-    model = CommunicationPreference
+class CommunicationPreferencesRepository(SQLAlchemyRepository):
+    model = CommunicationPreferences
 
 
 class UserUnitOfWork(SQLAlchemyUnitOfWork):
@@ -36,7 +36,7 @@ class UserUnitOfWork(SQLAlchemyUnitOfWork):
         self.professional_information_repository = ProfessionalInformationRepository(self._session)
         self.residency_repository = ResidencyRepository(self._session)
         self.fellowship_repository = FellowshipRepository(self._session)
-        self.communication_preference_repository = CommunicationPreferenceRepository(self._session)
+        self.communication_preferences_repository = CommunicationPreferencesRepository(self._session)
 
 
 def get_user_unit_of_work(session: Annotated[AsyncSession, Depends(session_getter)]) -> UserUnitOfWork:

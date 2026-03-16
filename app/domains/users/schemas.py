@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from enum import Enum
 from typing import Annotated, Optional
 
 import phonenumbers
@@ -172,7 +171,7 @@ class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
     }
 
 
-class CommunicationPreferenceBaseSchema(BaseModel):
+class CommunicationPreferencesBaseSchema(BaseModel):
     membership_account_notifications: bool = True
     newsletters: bool = False
     events_meetings: bool = False
@@ -180,23 +179,14 @@ class CommunicationPreferenceBaseSchema(BaseModel):
     volunteer_opportunities: bool = False
 
 
-class CommunicationPreferenceCreateSchema(CommunicationPreferenceBaseSchema):
-    user_id: int
+class CommunicationPreferencesUpdateSchema(BaseModel):
+    ewsletters: Optional[bool] = None
+    events_meetings: Optional[bool] = None
+    committees_leadership: Optional[bool] = None
+    volunteer_opportunities: Optional[bool] = None
 
 
-class CommunicationField(str, Enum):
-    NEWSLETTERS = "newsletters"
-    EVENTS_MEETINGS = "events_meetings"
-    COMMITTEES_LEADERSHIP = "committees_leadership"
-    VOLUNTEER_OPPORTUNITIES = "volunteer_opportunities"
-
-
-class CommunicationPreferenceUpdateSchema(BaseModel):
-    field: CommunicationField
-    value: bool
-
-
-class CommunicationPreferenceViewSchema(CommunicationPreferenceBaseSchema, ViewMixin):
+class CommunicationPreferencesViewSchema(CommunicationPreferencesBaseSchema, ViewMixin):
     user_id: int
     model_config = {
         "from_attributes": True,

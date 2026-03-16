@@ -10,13 +10,13 @@ from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import BASE_DIR
 from app.domains.users.exceptions import (
     FellowshipNotFoundError,
-    InvalidCommunicationFieldError,
     InvalidPasswordError,
     ResidencyNotFoundError,
     UserNotFoundError,
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
 from app.domains.users.models import Fellowship, ProfessionalInformation, Residency, User
+from app.domains.users.schemas import CommunicationPreferencesUpdateSchema
 
 """
 Не использую HTTPExceptions в сервисах, так как
@@ -294,7 +294,7 @@ class FellowshipService:
             return await self.uow.fellowship_repository.mark_as_deleted(fellowship_id)
 
 
-class CommunicationPreferenceService:
+class CommunicationPreferencesService:
     def __init__(self, uow):
         self.uow = uow
 
@@ -309,20 +309,19 @@ class CommunicationPreferenceService:
                 raise NotResourceOwnerError("Not resource owner")
 
     async def get_or_create_for_user(self, user_id: int) -> Any:
+        """
+        Retrieves communication settings for the user or creates them with default values.
+        This ensures that the user always has the settings after calling the method.
+        """
         async with self.uow:
-            preferences = await self.uow.communication_preference_repository.get_first_by_kwargs(user_id=user_id)
+            communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
 
-            if not preferences:
-                preferences = await self.uow.communication_preference_repository.create(
-                    user_id=user_id,
-                    membership_account_notifications=True,
-                    newsletters=False,
-                    events_meetings=False,
-                    committees_leadership=False,
-                    volunteer_opportunities=False
+            if not communication_preferences:
+                communication_preferences = await self.uow.communication_preferences_repository.create(
+                    user_id=user_id
                 )
 
-            return preferences
+            return communication_preferences
 
     async def get_preferences(self, user_id: int, current_user_id: int = None) -> Any:
         await self.check_resource_owner(user_id, current_user_id=current_user_id)
@@ -332,8 +331,7 @@ class CommunicationPreferenceService:
         self,
         user_id: int,
         current_user_id: int,
-        field: str,
-        value: bool
+        update_data: CommunicationPreferencesUpdateSchema
     ) -> Any:
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
@@ -341,41 +339,18 @@ class CommunicationPreferenceService:
                 raise UserNotFoundError("User with provided ID not found")
             if current_user_id is not None and user_id != current_user_id:
                 raise NotResourceOwnerError("Not resource owner")
-
-            valid_fields = [
-                'newsletters',
-                'events_meetings',
-                'committees_leadership',
-                'volunteer_opportunities'
-            ]
-
-            if field == 'membership_account_notifications':
-                raise InvalidCommunicationFieldError(
-                    "Membership & account notifications are required and cannot be disabled"
+            communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
+            if not communication_preferences:
+                communication_preferences = await self.uow.communication_preferences_repository.create(
+                    user_id=user_id
                 )
-
-            if field not in valid_fields:
-                raise InvalidCommunicationFieldError(
-                    f"Invalid field name. Must be one of: {', '.join(valid_fields)}"
-                )
-
-            preferences = await self.uow.communication_preference_repository.get_first_by_kwargs(user_id=user_id)
-            if not preferences:
-                preferences = await self.uow.communication_preference_repository.create(
-                    user_id=user_id,
-                    membership_account_notifications=True,
-                    newsletters=False,
-                    events_meetings=False,
-                    committees_leadership=False,
-                    volunteer_opportunities=False
-                )
-
-            update_data = {field: value}
-            updated_preferences = await self.uow.communication_preference_repository.update(
-                preferences.id,
-                update_data
+            update_dict = update_data.model_dump(exclude_unset=True, exclude_none=True)
+            if not update_dict:
+                return communication_preferences
+            updated_preferences = await self.uow.communication_preferences_repository.update(
+                communication_preferences.id,
+                update_dict
             )
-
             return updated_preferences
 
 
@@ -399,10 +374,10 @@ def get_fellowship_service(
     return FellowshipService(uow)
 
 
-def get_communication_preference_service(
+def get_communication_preferences_service(
     uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
-) -> CommunicationPreferenceService:
-    return CommunicationPreferenceService(uow)
+) -> CommunicationPreferencesService:
+    return CommunicationPreferencesService(uow)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
@@ -411,7 +386,7 @@ ProfessionalInformationServiceDep = Annotated[
 ]
 ResidencyServiceDep = Annotated[ResidencyService, Depends(get_residency_service)]
 FellowshipServiceDep = Annotated[FellowshipService, Depends(get_fellowship_service)]
-CommunicationPreferenceServiceDep = Annotated[
-    CommunicationPreferenceService,
-    Depends(get_communication_preference_service)
+CommunicationPreferencesServiceDep = Annotated[
+    CommunicationPreferencesService,
+    Depends(get_communication_preferences_service)
 ]

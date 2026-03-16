@@ -54,8 +54,8 @@ class User(Base):
     )
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
     residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
-    communication_preferences: Mapped["CommunicationPreference"] = relationship(
-        "CommunicationPreference", back_populates="user", uselist=False
+    communication_preferences: Mapped["CommunicationPreferences"] = relationship(
+        "CommunicationPreferences", back_populates="user", uselist=False
     )
 
     _password: Mapped[str] = mapped_column()
@@ -116,7 +116,7 @@ class Fellowship(Base, UCIMixin):
     user: Mapped["User"] = relationship("User", back_populates="fellowships")
 
 
-class CommunicationPreference(Base, UCIMixin):
+class CommunicationPreferences(Base, UCIMixin):
     __tablename__ = "users_communication_preferences"
 
     membership_account_notifications: Mapped[bool] = mapped_column(
