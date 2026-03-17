@@ -57,12 +57,11 @@ class FeedbackAdditionalInfoService:
             user_id: int,
             **kwargs
     ) -> FeedbackAdditionalInfo:
-        async with self.uow:
-            feedback_additional_info = await self.uow.feedback_additional_info_repository.get_first_by_kwargs(user_id=user_id)
-            if feedback_additional_info is not None:
-                raise FeedbackAdditionalInfoAlreadyExistsError("Additional detail for User with provided ID is already exists")
+        feedback_additional_info = await self.uow.feedback_additional_info_repository.get_first_by_kwargs(user_id=user_id)
+        if feedback_additional_info is not None:
+            raise FeedbackAdditionalInfoAlreadyExistsError("Additional detail for User with provided ID is already exists")
 
-            return await self.uow.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
+        return await self.uow.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
 
 
 def get_feedback_additional_info_service(
