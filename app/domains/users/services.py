@@ -368,13 +368,6 @@ class NameChangeRequestService:
         async with self.uow:
             return await self.uow.name_change_request_repository.list(limit, offset, order_by, filters)
 
-    async def get_all_pending_name_change_requests(self) -> list[NameChangeRequest]:
-        async with self.uow:
-            name_change_requests, count = await self.uow.name_change_request_repository.list(
-                filters={"status": NameChangeRequestStatusEnum.PENDING},
-            )
-            return name_change_requests
-
     async def get_last_name_change_request_by_user_id(self, user_id: int) -> NameChangeRequest | None:
         async with self.uow:
             name_change_request, _ = await self.uow.name_change_request_repository.list(

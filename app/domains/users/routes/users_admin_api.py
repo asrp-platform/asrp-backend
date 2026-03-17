@@ -64,9 +64,9 @@ class NameChangeRequestResponses(InvalidRequestParamsResponses):
 @router.get(
     "/name-change-requests",
     responses=NameChangeRequestResponses.responses,
-    summary="Get all requests for a firstname and lastname change",
+    summary="Get a list of name change requests",
 )
-async def get_all_pending_name_change_requests(
+async def get_name_change_requests(
     permissions: AdminPermissionsDep,
     service: NameChangeRequestServiceDep,
     params: PaginationParamsDep,
