@@ -16,7 +16,7 @@ pytestmark = pytest.mark.anyio
         "get_involved_committees_message_data",
     ],
 )
-async def test_create_directors_board_member(
+async def test_create_contact(
     faker: Faker,
     client: AsyncClient,
     data_fixture: str,
@@ -40,7 +40,7 @@ async def test_retrieve_contact_message(
     admin_all_permissions,
 ) -> None:
     response = await client.get(
-        "/api/contact-messages",
+        "/api/admin/contact-messages",
         headers=admin_auth_headers,
     )
     response_data = response.json()["data"]
@@ -53,7 +53,7 @@ async def test_retrieve_contact_message_not_authorized(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        "/api/contact-messages",
+        "/api/admin/contact-messages",
     )
 
     assert response.status_code == 401
@@ -61,7 +61,7 @@ async def test_retrieve_contact_message_not_authorized(
 
 async def test_retrieve_contact_message_by_user(client: AsyncClient, auth_headers: AuthHeaders) -> None:
     response = await client.get(
-        "/api/contact-messages",
+        "/api/admin/contact-messages",
         headers=auth_headers,
     )
 
@@ -73,7 +73,7 @@ async def test_retrieve_contact_message_no_permissions(
     admin_auth_headers: AuthHeaders,
 ) -> None:
     response = await client.get(
-        "/api/contact-messages",
+        "/api/admin/contact-messages",
         headers=admin_auth_headers,
     )
 

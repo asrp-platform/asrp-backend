@@ -137,6 +137,8 @@ The following branch types are used according to the GitFlow development workflo
 
 We use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) to name our commits using the following special words:
 
+- feat: (msg) - for new features
+- fix: (msg) - for bug fixing
 - docs: (msg) — for documentation changes
 - refactor: (msg) — for code refactoring without changing behavior
 - test: (msg) — for adding or updating tests
