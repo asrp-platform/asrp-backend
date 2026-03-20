@@ -177,7 +177,6 @@ pytest -v tests
 ```
 
 
-
 ## Troubleshooting
 
 
@@ -193,4 +192,10 @@ WHERE NOT EXISTS (
     WHERE up.permission_id = p.id
       AND up.user_id = 1
 );
+```
+
+### Update nginx config in container
+
+```shell
+docker exec nginx_server service nginx restart
 ```
