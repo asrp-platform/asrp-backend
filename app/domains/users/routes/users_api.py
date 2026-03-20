@@ -36,6 +36,7 @@ class UserListResponses(InvalidRequestParamsResponses):
 
 @router.get("")
 async def get_users(
+    current_user: CurrentUserDep,  # noqa
     user_service: UserServiceDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
@@ -71,6 +72,7 @@ class GetUserResponses(Responses):
 @router.get("/{user_id}", summary="Get user by id", responses=GetUserResponses.responses)
 async def get_user(
     user_id: Annotated[int, Path(...)],
+    current_user: CurrentUserDep,  # noqa
     user_service: UserServiceDep,
 ) -> UserSchema:
     user = await user_service.get_user_by_kwargs(id=user_id)
