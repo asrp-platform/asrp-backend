@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException
 from app.core.config import settings
 from app.domains.memberships.exceptions import MembershipAccessDeniedError
 from app.domains.memberships.models import UserMembership
-from app.domains.memberships.use_cases.get_user_membership import GetUserMembershipUseCaseDep
+from app.domains.memberships.services import MembershipServiceDep
 from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.users.models import User
@@ -108,9 +108,9 @@ async def get_users_permissions(
 
 async def get_current_user_membership(
     user: Annotated[User, Depends(get_current_user)],
-    get_membership_use_case: GetUserMembershipUseCaseDep,
+    membership_service: MembershipServiceDep,
 ) -> UserMembership | None:
-    return await get_membership_use_case.execute(user.id)
+    return await membership_service.get_user_membership(user.id)
 
 
 async def ensure_active_membership(
