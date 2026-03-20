@@ -36,11 +36,11 @@ class UserMembershipSchema(BaseModel):
     }
 
 
-class UserMembershipOut(UserMembershipSchema):
+class UserMembershipViewSchema(UserMembershipSchema):
     membership_type: MembershipTypeSchema
 
 
-class UpdateUserMembershipMockIn(BaseModel):
+class UserMembershipMockUpdateSchema(BaseModel):
     approval_status: ApprovalStatusEnum = Field(
         default=ApprovalStatusEnum.PENDING,
         description="Approval status of the membership",
