@@ -81,7 +81,7 @@ async def get_user(
 
 class UpdateUserDataResponses(Responses):
     USER_NOT_FOUND = 404, "User with the provided email was not found"
-    PERMISSION_DENIED = 403, "You do not have permission to update this user"
+    NOT_RESOURCE_OWNER = 403, "Not resource owner"
 
 
 @router.put("/{user_id}", summary="Update user data", responses=UpdateUserDataResponses.responses)
@@ -91,19 +91,19 @@ async def update_user_data(
     user_id: Annotated[int, Path(...)],
     update_data: UpdateUserSchema | None = None,
 ) -> UserSchema:
-    if not (current_user.id == user_id or current_user.stuff):
-        raise UpdateUserDataResponses.PERMISSION_DENIED
-
     try:
-        user = await user_service.update_user(user_id=user_id, update_data=update_data.model_dump(exclude_none=True))
+        user = await user_service.update_user(
+            user_id=user_id, current_user=current_user, update_data=update_data.model_dump(exclude_none=True)
+        )
     except UserNotFoundError:
         raise UpdateUserDataResponses.USER_NOT_FOUND
+    except NotResourceOwnerError:
+        raise UpdateUserDataResponses.NOT_RESOURCE_OWNER
     return UserSchema.from_orm(user)
 
 
-class SetAvatarResponses(Responses):
+class SetAvatarResponses(UpdateUserDataResponses):
     INVALID_CONTENT_TYPE = 422, "Invalid avatar content type"
-    USER_NOT_FOUND = 404, "User with provided id not found"
 
 
 @router.put(
@@ -123,16 +123,20 @@ async def upload_user_avatar(
     relative_filepath = await save_file(file, settings.MEDIA_STORAGE_PATH)
 
     try:
-        await user_service.set_user_avatar(user_id=user_id, avatar_path=str(relative_filepath))
+        await user_service.set_user_avatar(
+            user_id=user_id, current_user=current_user, avatar_path=str(relative_filepath)
+        )
     except UserNotFoundError:
         os.remove(BASE_DIR / relative_filepath)
         raise SetAvatarResponses.USER_NOT_FOUND
+    except NotResourceOwnerError:
+        raise SetAvatarResponses.NOT_RESOURCE_OWNER
 
     return {"path": relative_filepath.as_posix()}
 
 
-class DeleteUserAvatarResponses(Responses):
-    USER_NOT_FOUND = 404, "User with provided id not found"
+class DeleteUserAvatarResponses(UpdateUserDataResponses):
+    pass
 
 
 @router.delete(
@@ -146,14 +150,17 @@ async def remove_user_avatar(
     current_user: CurrentUserDep,  # noqa
 ):
     try:
-        await user_service.delete_avatar(user_id)
-    except ValueError:
+        await user_service.delete_avatar(user_id, current_user)
+    except UserNotFoundError:
         raise DeleteUserAvatarResponses.USER_NOT_FOUND
+    except NotResourceOwnerError:
+        raise DeleteUserAvatarResponses.NOT_RESOURCE_OWNER
 
 
 class ChangePasswordResponses(Responses):
     INVALID_PASSWORD = 403, "Invalid password"
     USER_NOT_FOUND = 404, "User with provided ID not found"
+    NOT_RESOURCE_OWNER = "Not resource owner"
 
 
 @router.post(
@@ -168,11 +175,13 @@ async def change_user_password(
     data: ChangePasswordSchema,
 ) -> None:
     try:
-        await user_service.change_password(user_id, data.old_password, data.new_password)
-    except ValueError:
+        await user_service.change_password(user_id, current_user, data.old_password, data.new_password)
+    except UserNotFoundError:
         raise ChangePasswordResponses.USER_NOT_FOUND
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD
+    except NotResourceOwnerError:
+        raise ChangePasswordResponses.NOT_RESOURCE_OWNER
 
 
 class NameChangeRequestResponses(Responses):

@@ -4,6 +4,7 @@ import pytest
 
 from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionsService
+from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
 from tests.fixtures.uow import PermissionsUnitOfWork
 
@@ -52,5 +53,5 @@ async def test_set_users_permissions_user_not_found(
     service: PermissionsService,
     admin_user: User,
 ):
-    with pytest.raises(ValueError, match="User with provided ID not found"):
+    with pytest.raises(UserNotFoundError, match="User with provided ID not found"):
         await service.set_users_permissions(999999, [], admin_user)

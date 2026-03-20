@@ -73,7 +73,7 @@ async def verify_refresh_token(
 async def get_current_user(
     user_service: UserServiceDep,
     access_token: Annotated[HTTPAuthorizationCredentials, Depends(access_token_header)],
-) -> User | None:
+) -> User:
     email = get_email_by_access_token(access_token)
     user = await user_service.get_user_by_kwargs(email=email)
 

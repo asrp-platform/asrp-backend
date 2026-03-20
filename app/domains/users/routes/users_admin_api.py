@@ -9,9 +9,9 @@ from app.core.common.responses import InvalidRequestParamsResponses, PaginatedRe
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
-from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
+from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.users.exceptions import NameChangeRequestNotFoundError, UserNotFoundError
-from app.domains.users.filters import UsersFilter
+from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
@@ -20,7 +20,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
 
-router = APIRouter(tags=["Admin: Users"], prefix="/users")
+router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends(get_admin_user)])
 
 
 class UserListResponses(InvalidRequestParamsResponses):
@@ -31,7 +31,6 @@ class UserListResponses(InvalidRequestParamsResponses):
 async def get_users(
     user_service: UserServiceDep,
     params: PaginationParamsDep,
-    admin: AdminUserDep,  # noqa Admin auth argument
     ordering: OrderingParamsDep = None,
     filters: Annotated[UsersFilter, Depends()] = None,
 ) -> PaginatedResponse[UserSchema]:
@@ -53,7 +52,7 @@ async def get_users(
         raise UserListResponses.INVALID_SORTER_FIELD
 
 
-class NameChangeRequestResponses(Responses):
+class NameChangeRequestResponses(InvalidRequestParamsResponses):
     PERMISSION_ERROR = 403, "Don't have enough permissions to view name change requests"
     USER_NOT_FOUND = 404, "User with provided ID not found"
     NAME_CHANGE_REQUEST_NOT_FOUND = 404, "Name change request with provided ID not found"
@@ -65,19 +64,34 @@ class NameChangeRequestResponses(Responses):
 @router.get(
     "/name-change-requests",
     responses=NameChangeRequestResponses.responses,
-    summary="Get all requests for a firstname and lastname change"
+    summary="Get a list of name change requests",
 )
-async def get_all_pending_name_change_requests(
+async def get_name_change_requests(
     permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
     service: NameChangeRequestServiceDep,
-) -> list[NameChangeRequestViewSchema]:
-
+    params: PaginationParamsDep,
+    ordering: OrderingParamsDep = None,
+    filters: Annotated[NameChangeRequestsFilters, Depends()] = None,
+) -> PaginatedResponse[NameChangeRequestViewSchema]:
     if "name_change_request.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    requests_to_change_name = await service.get_all_pending_name_change_requests()
-    return [NameChangeRequestViewSchema.model_validate(request) for request in requests_to_change_name]
+    try:
+        name_change_requests, count = await service.get_all_paginated_counted_name_change_requests(
+            order_by=ordering,
+            filters=filters.model_dump(exclude_none=True),
+            limit=params["limit"],
+            offset=params["offset"],
+        )
+        data = [NameChangeRequestViewSchema.model_validate(request) for request in name_change_requests]
+        return PaginatedResponse(
+            count=count,
+            data=data,
+            page=params["page"],
+            page_size=params["page_size"],
+        )
+    except InvalidOrderAttributeError:
+        raise NameChangeRequestResponses.INVALID_SORTER_FIELD
 
 
 class UpdateUserByAdminResponses(Responses):
@@ -94,7 +108,7 @@ class UpdateUserByAdminResponses(Responses):
 async def update_user_by_admin(
     user_id: Annotated[int, Path()],
     user_service: UserServiceDep,
-    admin: AdminUserDep,  # noqa Admin auth argument
+    admin: AdminUserDep,
     permissions: AdminPermissionsDep,
     update_data: UpdateUserByAdminSchema,
 ):
@@ -106,7 +120,7 @@ async def update_user_by_admin(
         raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
 
     try:
-        return await user_service.update_user(user_id, update_data.model_dump())
+        return await user_service.update_user(user_id, admin, update_data.model_dump())
     except UserNotFoundError:
         raise UpdateUserByAdminResponses.USER_NOT_FOUND
 
@@ -125,14 +139,13 @@ async def get_user_permissions(
     user_id: Annotated[int, Path()],
     permissions_service: PermissionServiceDep,
     current_user_permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
 ) -> list[PermissionSchema]:
     if "permissions.view" not in current_user_permissions:
         raise GetPermissionsResponses.PERMISSION_ERROR
 
     try:
         permissions = await permissions_service.get_user_permissions(user_id)
-    except ValueError:
+    except UserNotFoundError:
         raise GetPermissionsResponses.USER_NOT_FOUND
 
     return [PermissionSchema.from_orm(permission) for permission in permissions]
@@ -156,23 +169,21 @@ async def set_user_permissions(
 
     try:
         return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
-    except ValueError:
+    except UserNotFoundError:
         raise ManagePermissionsResponses.USER_NOT_FOUND
 
 
 @router.get(
     "/{user_id}/name-change-requests/{name_change_request_id}",
     responses=NameChangeRequestResponses.responses,
-    summary="Get request for a firstname and lastname change"
+    summary="Get request for a firstname and lastname change",
 )
 async def get_pending_name_change_request(
     user_id: Annotated[int, Path()],
     name_change_request_id: Annotated[int, Path()],
     permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
     service: NameChangeRequestServiceDep,
 ) -> NameChangeRequestViewSchema:
-
     if "name_change_request.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
@@ -191,26 +202,21 @@ async def get_pending_name_change_request(
     "/{user_id}/name-change-requests/{name_change_request_id}",
     status_code=204,
     responses=NameChangeRequestResponses.responses,
-    summary="Approve/reject a firstname and lastname change request"
+    summary="Approve/reject a firstname and lastname change request",
 )
 async def update_name_change_request(
     user_id: Annotated[int, Path()],
     name_change_request_id: Annotated[int, Path()],
     name_change_request_data: NameChangeRequestUpdateByAdminSchema,
     permissions: AdminPermissionsDep,
-    admin: AdminUserDep,
     service: NameChangeRequestServiceDep,
 ) -> None:
-
     if "name_change_request.update" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
         await service.update_name_change_request(
-            user_id,
-            name_change_request_id,
-            name_change_request_data.action,
-            name_change_request_data.reason_rejecting
+            user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
         )
 
     except UserNotFoundError:

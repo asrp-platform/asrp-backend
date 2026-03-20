@@ -8,6 +8,7 @@ from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.shared.types import Password
+from app.domains.users.models import NameChangeRequestStatusEnum
 
 
 def validate_year_range(value: str) -> str:
@@ -179,6 +180,8 @@ class NameChangeRequestCreateSchema(BaseModel):
 
 
 class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
+    status: NameChangeRequestStatusEnum
+    reason_rejecting: str | None
     model_config = {
         "from_attributes": True,
     }
@@ -186,7 +189,7 @@ class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
 
 class NameChangeRequestUpdateByAdminSchema(BaseModel):
     action: Literal["approve", "reject"]
-    reason_rejecting: str | None
+    reason_rejecting: str | None = None
 
     @model_validator(mode="after")
     def check_reason_rejecting(self):

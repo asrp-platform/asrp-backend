@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.domains.permissions.infrastructure import PermissionsUnitOfWork, get_permissions_unit_of_work
 from app.domains.permissions.models import Permission
+from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
 
 privileges_logger = logger.bind(name="privileges")
@@ -43,8 +44,7 @@ class PermissionsService:
             user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
 
             if user is None:
-                raise ValueError("User with provided ID not found")
-
+                raise UserNotFoundError("User with provided ID not found")
             return user.permissions
 
     async def set_users_permissions(self, user_id: int, permissions_ids: list[int], actor: User):
@@ -66,7 +66,7 @@ class PermissionsService:
             list[Permission]: The updated list of `Permission` objects assigned to the user.
 
         Raises:
-            ValueError: If the target user is not found.
+            UserNotFoundError: If the target user is not found.
         """
 
         async with self.uow:
@@ -76,7 +76,7 @@ class PermissionsService:
             user: User | None = (await self.uow._session.execute(user_stmt)).scalar_one_or_none()
 
             if user is None:
-                raise ValueError("User with provided ID not found")
+                raise UserNotFoundError("User with provided ID not found")
 
             permissions_stmt = select(Permission).where(Permission.id.in_(permissions_ids))
             permissions = (await self.uow._session.execute(permissions_stmt)).scalars().all()
