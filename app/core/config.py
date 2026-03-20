@@ -30,6 +30,19 @@ class GmailConfig(BaseModel):
     GMAIL_SERVER: str | None = None
 
 
+class S3Config(BaseModel):
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: str = "minioadmin"
+    S3_BUCKET: str = "uploads"
+    S3_REGION: str = "us-east-1"
+
+    S3_ENDPOINT_DEV: str = "http://localhost:9000"
+    S3_ENDPOINT_PROD: str = "https://s3.example.com"
+
+    S3_PUBLIC_URL_DEV: str = "http://localhost:9000"
+    S3_PUBLIC_URL_PROD: str = "https://files.example.com"
+
+
 class Settings(BaseSettings, GmailConfig):
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
