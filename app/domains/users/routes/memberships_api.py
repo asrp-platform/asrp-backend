@@ -1,17 +1,17 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.domains.memberships.exceptions import MembershipTypeNotFoundError
-from app.domains.memberships.schemas import UpdateUserMembershipMockIn, UserMembershipOut
+from app.domains.memberships.schemas import UserMembershipMockUpdateSchema, UserMembershipViewSchema
 from app.domains.memberships.use_cases.update_user_membership_mock import (
     UpdateUserMembershipMockRequest,
     UpdateUserMembershipMockUseCaseDep,
 )
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
 
-router = APIRouter(tags=["Users"], prefix="/users")
+router = APIRouter(tags=["Current User"], prefix="/current-user")
 
 
-@router.get("/current-user/membership", response_model=UserMembershipOut)
+@router.get("/membership", response_model=UserMembershipViewSchema)
 async def get_current_user_membership(
     membership: CurrentUserMembershipDep,
 ):
@@ -23,10 +23,10 @@ async def get_current_user_membership(
     return membership
 
 
-@router.patch("/current-user/membership/mock", response_model=UserMembershipOut)
+@router.patch("/membership/mock", response_model=UserMembershipViewSchema)
 async def update_current_user_membership_mock(
     user: CurrentUserDep,
-    update_data: UpdateUserMembershipMockIn,
+    update_data: UserMembershipMockUpdateSchema,
     update_use_case: UpdateUserMembershipMockUseCaseDep,
 ):
     """
