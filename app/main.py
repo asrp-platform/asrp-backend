@@ -60,7 +60,7 @@ async def not_found_error_handler(request: Request, exc: NotFoundError):
 
 @app.exception_handler(NotResourceOwnerError)
 async def not_resource_owner_error_handler(request: Request, exc: NotResourceOwnerError):
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
 
 
 # --- Обработчик ошибок 422 ---
