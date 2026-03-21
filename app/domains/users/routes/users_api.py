@@ -26,6 +26,7 @@ from app.domains.users.schemas import (
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.use_cases.get_user_communication_preferences import RetrieveCommunicationPreferencesUseCaseDep
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
@@ -218,3 +219,12 @@ async def create_name_change_request(
 
     except NameChangeRequestCooldownNotExpiredError:
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED
+
+
+@router.get("/{user_id}/communication-preferences")
+async def get_user_communication_preferences(
+    user_id: Annotated[int, Path()],
+    current_user: CurrentUserDep,
+    use_case: RetrieveCommunicationPreferencesUseCaseDep,
+):
+    return await use_case.execute(user_id)

@@ -57,6 +57,9 @@ class User(Base):
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
     residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
     name_change_requests: Mapped[list["NameChangeRequest"]] = relationship("NameChangeRequest", back_populates="user")
+    communication_preferences: Mapped["CommunicationPreferences"] = relationship(
+        "CommunicationPreferences", back_populates="user", uselist=False
+    )
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -140,3 +143,24 @@ class NameChangeRequest(Base, UCIMixin):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="name_change_requests")
+
+
+class CommunicationPreferences(Base, UCIMixin):
+    __tablename__ = "users_communication_preferences"
+
+    membership_account_notifications: Mapped[bool] = mapped_column(
+        Boolean(), default=True, nullable=False, server_default=text("true")
+    )
+    newsletters: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False, server_default=text("false"))
+    events_meetings: Mapped[bool] = mapped_column(
+        Boolean(), default=False, nullable=False, server_default=text("false")
+    )
+    committees_leadership: Mapped[bool] = mapped_column(
+        Boolean(), default=False, nullable=False, server_default=text("false")
+    )
+    volunteer_opportunities: Mapped[bool] = mapped_column(
+        Boolean(), default=False, nullable=False, server_default=text("false")
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="communication_preferences")
