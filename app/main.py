@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
 from app.core.config import DEV_MODE, settings
 from app.core.utils.open_api import get_custom_open_api
 
@@ -58,12 +58,9 @@ async def not_found_error_handler(request: Request, exc: NotFoundError):
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
-@app.middleware("http")
-async def log_request(request: Request, call_next):
-    message = f"URL: {request.url.path} Method: {request.method}"
-    logger.info(message)
-    response = await call_next(request)
-    return response
+@app.exception_handler(NotResourceOwnerError)
+async def not_resource_owner_error_handler(request: Request, exc: NotResourceOwnerError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
 # --- Обработчик ошибок 422 ---
@@ -76,6 +73,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={"detail": {"errors": custom_errors}},
     )
+
+
+@app.middleware("http")
+async def log_request(request: Request, call_next):
+    message = f"URL: {request.url.path} Method: {request.method}"
+    logger.info(message)
+    response = await call_next(request)
+    return response
 
 
 app.openapi = get_custom_open_api(app)

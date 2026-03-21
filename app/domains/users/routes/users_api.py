@@ -20,13 +20,18 @@ from app.domains.users.exceptions import (
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     ChangePasswordSchema,
+    CommunicationPreferencesUpdateSchema,
+    CommunicationPreferencesViewSchema,
     NameChangeRequestCreateSchema,
     NameChangeRequestViewSchema,
     UpdateUserSchema,
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
-from app.domains.users.use_cases.get_user_communication_preferences import RetrieveCommunicationPreferencesUseCaseDep
+from app.domains.users.use_cases.retrieve_user_communication_preferences import (
+    RetrieveCommunicationPreferencesUseCaseDep,
+)
+from app.domains.users.use_cases.update_user_communication_preferences import UpdateCommunicationPreferencesUseCaseDep
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
@@ -224,7 +229,19 @@ async def create_name_change_request(
 @router.get("/{user_id}/communication-preferences")
 async def get_user_communication_preferences(
     user_id: Annotated[int, Path()],
-    current_user: CurrentUserDep,
+    current_user: CurrentUserDep,  # noqa
     use_case: RetrieveCommunicationPreferencesUseCaseDep,
+) -> CommunicationPreferencesViewSchema:
+    preferences = await use_case.execute(user_id)
+    return CommunicationPreferencesViewSchema.model_validate(preferences)
+
+
+@router.patch("/{user_id}/communication-preferences")
+async def update_user_communication_preferences(
+    user_id: Annotated[int, Path()],
+    current_user: CurrentUserDep,
+    use_case: UpdateCommunicationPreferencesUseCaseDep,
+    update_data: CommunicationPreferencesUpdateSchema,
 ):
-    return await use_case.execute(user_id)
+    updated_preferences = await use_case.execute(user_id, current_user.id, update_data.model_dump(exclude_none=True))
+    return CommunicationPreferencesViewSchema.model_validate(updated_preferences)
