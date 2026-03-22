@@ -58,7 +58,6 @@ class UserMembership(Base, UCIMixin):
     )
 
     current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    cancel_at_period_end: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     auto_renewal: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
     @property

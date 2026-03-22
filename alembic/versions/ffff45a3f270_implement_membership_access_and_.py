@@ -25,6 +25,7 @@ def upgrade() -> None:
         "users_memberships",
         sa.Column("auto_renewal", sa.Boolean(), server_default=sa.text("true"), nullable=False),
     )
+    op.drop_column("users_memberships", "cancel_at_period_end")
     op.drop_column("users_memberships", "has_access")
     # ### end Alembic commands ###
 
@@ -47,5 +48,9 @@ def downgrade() -> None:
         """
     )
     op.alter_column("users_memberships", "has_access", nullable=False)
+    op.add_column(
+        "users_memberships",
+        sa.Column("cancel_at_period_end", sa.Boolean(), server_default=sa.text("false"), nullable=False),
+    )
     op.drop_column("users_memberships", "auto_renewal")
     # ### end Alembic commands ###

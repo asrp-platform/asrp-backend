@@ -37,7 +37,6 @@ async def update_current_user_membership_mock(
             user_id=user.id,
             approval_status=update_data.approval_status,
             current_period_end=update_data.current_period_end,
-            cancel_at_period_end=update_data.cancel_at_period_end,
             auto_renewal=update_data.auto_renewal,
             membership_type=update_data.membership_type,
             updated_fields=set(update_data.model_fields_set),

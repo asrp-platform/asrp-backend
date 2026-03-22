@@ -17,7 +17,6 @@ class UpdateUserMembershipMockRequest:
     user_id: int
     approval_status: ApprovalStatusEnum = ApprovalStatusEnum.PENDING
     current_period_end: datetime | None = None
-    cancel_at_period_end: bool = False
     auto_renewal: bool = True
     membership_type: MembershipTypeEnum = MembershipTypeEnum.ACTIVE
     updated_fields: set[str] = field(default_factory=set)
@@ -61,8 +60,6 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
             update_data["approval_status"] = request.approval_status
         if "current_period_end" in request.updated_fields:
             update_data["current_period_end"] = request.current_period_end
-        if "cancel_at_period_end" in request.updated_fields:
-            update_data["cancel_at_period_end"] = request.cancel_at_period_end
         if "auto_renewal" in request.updated_fields:
             update_data["auto_renewal"] = request.auto_renewal
         if "membership_type" in request.updated_fields:
@@ -80,7 +77,6 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
             if "approval_status" in request.updated_fields
             else ApprovalStatusEnum.PENDING,
             "current_period_end": request.current_period_end if "current_period_end" in request.updated_fields else None,
-            "cancel_at_period_end": request.cancel_at_period_end if "cancel_at_period_end" in request.updated_fields else False,
             "auto_renewal": request.auto_renewal if "auto_renewal" in request.updated_fields else True,
             "membership_type_id": await self._get_membership_type_id(membership_type),
         }
