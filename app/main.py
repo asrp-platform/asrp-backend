@@ -24,6 +24,7 @@ from app.domains.legal_documents.routes.admin_api import router as legal_documen
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.news.api import router as news_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
+from app.domains.users.routes.current_user_api import router as current_user_router
 from app.domains.users.routes.fellowship_api import router as fellowship_router
 from app.domains.users.routes.memberships_api import router as users_memberships_router
 from app.domains.users.routes.professional_info_api import router as professional_info_router
@@ -86,8 +87,9 @@ async def log_request(request: Request, call_next):
 app.openapi = get_custom_open_api(app)
 
 
-app.include_router(users_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
+app.include_router(current_user_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")

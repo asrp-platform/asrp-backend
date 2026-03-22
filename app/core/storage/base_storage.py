@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
 from aiobotocore.session import get_session
 
@@ -41,9 +42,20 @@ class S3BaseStorage:
                 Bucket=bucket,
                 Key=object_name,
                 Body=file,
-                # ContentType=file.content_type,
             )
         return {"bucket": bucket, "object_name": object_name}
+
+    async def get_presigned_object(self, object_key: str):
+        async with self.get_client() as client:
+            url = await client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": "uploads",
+                    "Key": object_key,
+                },
+                ExpiresIn=int(timedelta(hours=1).total_seconds()),
+            )
+            return url
 
     async def __ensure_bucket_exists(self, bucket_name: str | None = None):
         bucket = bucket_name or self.bucket_name

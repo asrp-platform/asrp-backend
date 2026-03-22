@@ -11,13 +11,10 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_create_request_to_name_change(
-    client: AsyncClient,
-    test_user: User,
-    auth_headers: AuthHeaders,
-    name_change_request_data: dict
+    client: AsyncClient, test_user: User, auth_headers: AuthHeaders, name_change_request_data: dict
 ) -> None:
     response = await client.post(
-        f"api/users/{test_user.id}/name-change-requests",
+        "api/users/current-user/name-change-requests",
         headers=auth_headers,
         json=name_change_request_data,
     )
@@ -26,9 +23,7 @@ async def test_create_request_to_name_change(
 
 
 async def test_get_all_requests_to_name_change(
-    client: AsyncClient,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions
+    client: AsyncClient, admin_auth_headers: AuthHeaders, admin_all_permissions
 ) -> None:
     response = await client.get(
         "api/admin/users/name-change-requests",
@@ -39,10 +34,7 @@ async def test_get_all_requests_to_name_change(
 
 
 async def test_get_request_to_name_change(
-    client: AsyncClient,
-    name_change_request: NameChangeRequest,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions
+    client: AsyncClient, name_change_request: NameChangeRequest, admin_auth_headers: AuthHeaders, admin_all_permissions
 ) -> None:
     response = await client.get(
         f"api/admin/users/{name_change_request.user_id}/name-change-requests/{name_change_request.id}",
@@ -57,12 +49,12 @@ async def test_approve_request_to_name_change(
     name_change_request: NameChangeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
-    name_change_request_approve_data: dict
+    name_change_request_approve_data: dict,
 ) -> None:
     response = await client.patch(
         f"api/admin/users/{name_change_request.user_id}/name-change-requests/{name_change_request.id}",
         headers=admin_auth_headers,
-        json=name_change_request_approve_data
+        json=name_change_request_approve_data,
     )
 
     assert response.status_code == 204
@@ -73,26 +65,21 @@ async def test_reject_request_to_name_change(
     name_change_request: NameChangeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
-    name_change_request_reject_data: dict
+    name_change_request_reject_data: dict,
 ) -> None:
     response = await client.patch(
         f"api/admin/users/{name_change_request.user_id}/name-change-requests/{name_change_request.id}",
         headers=admin_auth_headers,
-        json=name_change_request_reject_data
+        json=name_change_request_reject_data,
     )
 
     assert response.status_code == 204
 
 
 async def test_create_request_to_name_change_not_authorized(
-    client: AsyncClient,
-    test_user: User,
-    name_change_request_data: dict
+    client: AsyncClient, test_user: User, name_change_request_data: dict
 ) -> None:
-    response = await client.post(
-        f"api/users/{test_user.id}/name-change-requests",
-        json=name_change_request_data
-    )
+    response = await client.post("api/users/current-user/name-change-requests", json=name_change_request_data)
 
     assert response.status_code == 401
 
@@ -117,27 +104,21 @@ async def test_get_request_to_name_change_not_authorized(
 
 
 async def test_update_request_to_name_change_not_authorized(
-    client: AsyncClient,
-    name_change_request: NameChangeRequest,
-    name_change_request_approve_data: dict
+    client: AsyncClient, name_change_request: NameChangeRequest, name_change_request_approve_data: dict
 ) -> None:
     response = await client.patch(
         f"api/admin/users/{name_change_request.user_id}/name-change-requests/{name_change_request.id}",
-        json=name_change_request_approve_data
+        json=name_change_request_approve_data,
     )
 
     assert response.status_code == 401
 
 
 async def test_get_request_to_name_change_does_not_exist(
-    client: AsyncClient,
-    test_user: User,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions
+    client: AsyncClient, test_user: User, admin_auth_headers: AuthHeaders, admin_all_permissions
 ) -> None:
     response = await client.get(
-        f"api/admin/users/{test_user.id}/name-change-requests/99999999",
-        headers=admin_auth_headers
+        f"api/admin/users/{test_user.id}/name-change-requests/99999999", headers=admin_auth_headers
     )
 
     assert response.status_code == 404
@@ -148,12 +129,12 @@ async def test_update_request_to_name_change_does_not_exist(
     test_user: User,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
-    name_change_request_approve_data: dict
+    name_change_request_approve_data: dict,
 ) -> None:
     response = await client.patch(
         f"api/admin/users/{test_user.id}/name-change-requests/99999999",
         headers=admin_auth_headers,
-        json=name_change_request_approve_data
+        json=name_change_request_approve_data,
     )
 
     assert response.status_code == 404
@@ -163,10 +144,10 @@ async def test_create_name_change_request_when_active_request_already_exists(
     client: AsyncClient,
     name_change_request: NameChangeRequest,
     auth_headers: AuthHeaders,
-    name_change_request_data: dict
+    name_change_request_data: dict,
 ) -> None:
     response = await client.post(
-        f"api/users/{name_change_request.user_id}/name-change-requests",
+        "api/users/current-user/name-change-requests",
         headers=auth_headers,
         json=name_change_request_data,
     )
@@ -179,21 +160,19 @@ async def test_create_name_change_request_when_cooldown_not_expired(
     user_uow: UserUnitOfWork,
     name_change_request: NameChangeRequest,
     auth_headers: AuthHeaders,
-    name_change_request_data: dict
+    name_change_request_data: dict,
 ) -> None:
     async with user_uow:
         await user_uow.user_repository.update(
-            name_change_request.user_id,
-            {"last_name_change": datetime.now(tz=timezone.utc)}
+            name_change_request.user_id, {"last_name_change": datetime.now(tz=timezone.utc)}
         )
 
         await user_uow.name_change_request_repository.update(
-            name_change_request.id,
-            {"status": NameChangeRequestStatusEnum.APPROVED}
+            name_change_request.id, {"status": NameChangeRequestStatusEnum.APPROVED}
         )
 
     response = await client.post(
-        f"api/users/{name_change_request.user_id}/name-change-requests",
+        "api/users/current-user/name-change-requests",
         headers=auth_headers,
         json=name_change_request_data,
     )
@@ -206,14 +185,14 @@ async def test_update_request_to_name_change_invalid_action(
     name_change_request: NameChangeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
-    name_change_request_approve_data: dict
+    name_change_request_approve_data: dict,
 ) -> None:
     name_change_request_approve_data["action"] = "invalid_action"
 
     response = await client.patch(
         f"api/admin/users/{name_change_request.user_id}/name-change-requests/{name_change_request.id}",
         headers=admin_auth_headers,
-        json=name_change_request_approve_data
+        json=name_change_request_approve_data,
     )
 
     assert response.status_code == 422
@@ -224,14 +203,14 @@ async def test_reject_request_to_name_change_without_reason(
     name_change_request: NameChangeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
-    name_change_request_reject_data: dict
+    name_change_request_reject_data: dict,
 ) -> None:
     name_change_request_reject_data["reason_rejecting"] = None
 
     response = await client.patch(
         f"api/admin/users/{name_change_request.user_id}/name-change-requests/{name_change_request.id}",
         headers=admin_auth_headers,
-        json=name_change_request_reject_data
+        json=name_change_request_reject_data,
     )
 
     assert response.status_code == 422
