@@ -19,6 +19,7 @@ from app.domains.users.exceptions import (
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
 from app.domains.users.models import (
+    CommunicationPreferences,
     Fellowship,
     NameChangeRequest,
     NameChangeRequestStatusEnum,
@@ -462,7 +463,7 @@ class CommunicationPreferencesService:
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
-    async def get_or_create(self, user_id: int) -> Any:
+    async def get_or_create(self, user_id: int) -> CommunicationPreferences:
         """
         Retrieves communication settings for the user or creates them with default values.
         This ensures that the user always has the settings after calling the method.
@@ -481,7 +482,7 @@ class CommunicationPreferencesService:
 
         return communication_preferences
 
-    async def update_or_create_preferences(self, user_id: int, update_data: dict):
+    async def update_or_create_preferences(self, user_id: int, update_data: dict) -> CommunicationPreferences:
         communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(
             user_id=user_id
         )

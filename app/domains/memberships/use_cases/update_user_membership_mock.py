@@ -6,10 +6,10 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from app.core.common.base_use_case import BaseUseCase
 from app.domains.memberships.exceptions import MembershipTypeNotFoundError
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
 from app.domains.memberships.models import ApprovalStatusEnum, MembershipTypeEnum, UserMembership
-from app.domains.memberships.use_cases.base import BaseUseCase
 
 
 @dataclass
@@ -76,7 +76,9 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
             "approval_status": request.approval_status
             if "approval_status" in request.updated_fields
             else ApprovalStatusEnum.PENDING,
-            "current_period_end": request.current_period_end if "current_period_end" in request.updated_fields else None,
+            "current_period_end": request.current_period_end
+            if "current_period_end" in request.updated_fields
+            else None,
             "auto_renewal": request.auto_renewal if "auto_renewal" in request.updated_fields else True,
             "membership_type_id": await self._get_membership_type_id(membership_type),
         }
@@ -89,7 +91,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
 
 
 def get_update_user_membership_mock_use_case(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)]
+    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
 ) -> UpdateUserMembershipMockUseCase:
     return UpdateUserMembershipMockUseCase(uow)
 

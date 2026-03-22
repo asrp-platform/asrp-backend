@@ -1,20 +1,30 @@
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
 
+from app.core.common.base_use_case import BaseUseCase
 from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
+from app.domains.users.models import CommunicationPreferences
 from app.domains.users.services import CommunicationPreferencesService, get_communication_preferences_service
 
 
-class RetrieveCommunicationPreferencesUseCase:
-    def __init__(self, uow: SQLAlchemyUnitOfWork, service: CommunicationPreferencesService):
-        self._service = service
-        self._uow = uow
+@dataclass
+class RetrieveCommunicationPreferencesRequest:
+    user_id: int
 
-    async def execute(self, user_id: int):
-        async with self._uow:
-            return await self._service.get_or_create(user_id)
+
+class RetrieveCommunicationPreferencesUseCase(
+    BaseUseCase[RetrieveCommunicationPreferencesRequest, CommunicationPreferences]
+):
+    def __init__(self, uow: SQLAlchemyUnitOfWork, service: CommunicationPreferencesService):
+        self.__service = service
+        self.__uow = uow
+
+    async def execute(self, request: RetrieveCommunicationPreferencesRequest) -> CommunicationPreferences:
+        async with self.__uow:
+            return await self.__service.get_or_create(request.user_id)
 
 
 def get_retrieve_user_communication_preferences_use_case(
