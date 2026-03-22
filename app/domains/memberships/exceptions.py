@@ -1,4 +1,7 @@
-class MembershipNotFoundError(Exception):
+from app.core.common.exceptions import NotFoundError
+
+
+class MembershipNotFoundError(NotFoundError):
     pass
 
 
@@ -10,5 +13,5 @@ class MembershipAccessDeniedError(Exception):
     pass
 
 
-class MembershipTypeNotFoundError(Exception):
+class MembershipTypeNotFoundError(NotFoundError):
     pass
