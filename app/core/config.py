@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
+from app.core.storage.base_storage import S3BaseStorage
+
 load_dotenv()
 
 DEV_MODE: bool = getenv("DEV_MODE", "true").strip().lower() in {"true", "1", "yes"}
@@ -35,15 +37,11 @@ class S3Config(BaseModel):
     S3_SECRET_KEY: str = "minioadmin"
     S3_BUCKET: str = "uploads"
     S3_REGION: str = "us-east-1"
-
-    S3_ENDPOINT_DEV: str = "http://localhost:9000"
-    S3_ENDPOINT_PROD: str = "https://s3.example.com"
-
-    S3_PUBLIC_URL_DEV: str = "http://localhost:9000"
-    S3_PUBLIC_URL_PROD: str = "https://files.example.com"
+    S3_ENDPOINT: str = "http://localhost:9000"
+    S3_PUBLIC_URL: str = "http://localhost:9000"
 
 
-class Settings(BaseSettings, GmailConfig):
+class Settings(BaseSettings, GmailConfig, S3Config):
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
     DB_PASSWORD: str = "test"
@@ -80,6 +78,13 @@ class Settings(BaseSettings, GmailConfig):
 
 settings = Settings()
 
+s3_storage = S3BaseStorage(
+    access_key=settings.S3_ACCESS_KEY,
+    secret_key=settings.S3_SECRET_KEY,
+    endpoint_url=settings.S3_ENDPOINT,
+    bucket_name=settings.S3_BUCKET,
+    region_name=settings.S3_REGION,
+)
 fernet = Fernet(settings.fernet_key_bytes)
 
 DB_URL: str = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
