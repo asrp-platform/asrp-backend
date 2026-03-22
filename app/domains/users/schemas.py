@@ -199,3 +199,26 @@ class NameChangeRequestUpdateByAdminSchema(BaseModel):
                 "reason rejecting when the request is rejected is required to be filled in",
             )
         return self
+
+
+class CommunicationPreferencesViewSchema(BaseModel):
+    membership_account_notifications: bool
+    newsletters: bool
+    events_meetings: bool
+    committees_leadership: bool
+    volunteer_opportunities: bool
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class CommunicationPreferencesUpdateSchema(BaseModel):
+    newsletters: Optional[bool] = None
+    events_meetings: Optional[bool] = None
+    committees_leadership: Optional[bool] = None
+    volunteer_opportunities: Optional[bool] = None
+
+    model_config = {
+        "extra": "forbid",
+    }

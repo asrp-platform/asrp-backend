@@ -2,7 +2,14 @@ import pytest
 from faker import Faker
 
 from app.domains.users.infrastructure import UserUnitOfWork
-from app.domains.users.models import Fellowship, NameChangeRequest, ProfessionalInformation, Residency, User
+from app.domains.users.models import (
+    CommunicationPreferences,
+    Fellowship,
+    NameChangeRequest,
+    ProfessionalInformation,
+    Residency,
+    User,
+)
 
 
 @pytest.fixture(scope="function")
@@ -121,7 +128,7 @@ async def name_change_request(
             firstname=faker.first_name(),
             lastname=faker.last_name(),
             reason_change=faker.text(max_nb_chars=100),
-            user_id=test_user.id
+            user_id=test_user.id,
         )
     return name_change_request
 
@@ -131,7 +138,7 @@ def name_change_request_data(faker: Faker) -> dict:
     return {
         "firstname": faker.first_name(),
         "lastname": faker.last_name(),
-        "reason_change": faker.text(max_nb_chars=100)
+        "reason_change": faker.text(max_nb_chars=100),
     }
 
 
@@ -149,3 +156,20 @@ def name_change_request_reject_data(faker: Faker) -> dict:
         "action": "reject",
         "reason_rejecting": faker.text(max_nb_chars=100),
     }
+
+
+@pytest.fixture(scope="function")
+async def communication_preferences(
+    faker: Faker,
+    user_uow: UserUnitOfWork,
+    test_user: User,
+) -> CommunicationPreferences:
+    async with user_uow:
+        preferences = await user_uow.communication_preferences_repository.create(
+            newsletters=faker.pybool(),
+            events_meetings=faker.pybool(),
+            committees_leadership=faker.pybool(),
+            volunteer_opportunities=faker.pybool(),
+            user_id=test_user.id,
+        )
+    return preferences

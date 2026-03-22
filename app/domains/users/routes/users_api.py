@@ -20,12 +20,22 @@ from app.domains.users.exceptions import (
 from app.domains.users.filters import UsersFilter
 from app.domains.users.schemas import (
     ChangePasswordSchema,
+    CommunicationPreferencesUpdateSchema,
+    CommunicationPreferencesViewSchema,
     NameChangeRequestCreateSchema,
     NameChangeRequestViewSchema,
     UpdateUserSchema,
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.use_cases.retrieve_user_communication_preferences import (
+    RetrieveCommunicationPreferencesRequest,
+    RetrieveCommunicationPreferencesUseCaseDep,
+)
+from app.domains.users.use_cases.update_user_communication_preferences import (
+    UpdateCommunicationPreferencesRequest,
+    UpdateCommunicationPreferencesUseCaseDep,
+)
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
@@ -201,7 +211,7 @@ class NameChangeRequestResponses(Responses):
 async def create_name_change_request(
     user_id: Annotated[int, Path()],
     service: NameChangeRequestServiceDep,
-    current_user: CurrentUserDep,
+    current_user: CurrentUserDep,  # noqa
     name_change_request_data: NameChangeRequestCreateSchema,
 ) -> NameChangeRequestViewSchema:
     try:
@@ -218,3 +228,31 @@ async def create_name_change_request(
 
     except NameChangeRequestCooldownNotExpiredError:
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED
+
+
+@router.get("/{user_id}/communication-preferences")
+async def get_user_communication_preferences(
+    user_id: Annotated[int, Path()],
+    current_user: CurrentUserDep,  # noqa
+    use_case: RetrieveCommunicationPreferencesUseCaseDep,
+) -> CommunicationPreferencesViewSchema:
+    request = RetrieveCommunicationPreferencesRequest(user_id=user_id)
+    preferences = await use_case.execute(request)
+    return CommunicationPreferencesViewSchema.model_validate(preferences)
+
+
+@router.patch("/{user_id}/communication-preferences")
+async def update_user_communication_preferences(
+    user_id: Annotated[int, Path()],
+    current_user: CurrentUserDep,
+    use_case: UpdateCommunicationPreferencesUseCaseDep,
+    update_data: CommunicationPreferencesUpdateSchema,
+):
+    request = UpdateCommunicationPreferencesRequest(
+        user_id=user_id,
+        current_user_id=current_user.id,
+        update_data=update_data.model_dump(exclude_none=True),
+    )
+
+    updated_preferences = await use_case.execute(request)
+    return CommunicationPreferencesViewSchema.model_validate(updated_preferences)

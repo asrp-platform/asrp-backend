@@ -19,6 +19,7 @@ from app.domains.users.exceptions import (
 )
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
 from app.domains.users.models import (
+    CommunicationPreferences,
     Fellowship,
     NameChangeRequest,
     NameChangeRequestStatusEnum,
@@ -449,6 +450,49 @@ class NameChangeRequestService:
             )
 
 
+class CommunicationPreferencesService:
+    def __init__(self, uow):
+        self.uow = uow
+
+    async def check_resource_owner(self, user_id: int, *, current_user_id: int = None):
+        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+
+        if user is None:
+            raise UserNotFoundError("User with provided ID not found")
+
+        if current_user_id is not None and user_id != current_user_id:
+            raise NotResourceOwnerError("Not resource owner")
+
+    async def get_or_create(self, user_id: int) -> CommunicationPreferences:
+        """
+        Retrieves communication settings for the user or creates them with default values.
+        This ensures that the user always has the settings after calling the method.
+        """
+        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+
+        if user is None:
+            raise UserNotFoundError("User with provided ID not found")
+
+        communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(
+            user_id=user_id
+        )
+
+        if not communication_preferences:
+            communication_preferences = await self.uow.communication_preferences_repository.create(user_id=user_id)
+
+        return communication_preferences
+
+    async def update_or_create_preferences(self, user_id: int, update_data: dict) -> CommunicationPreferences:
+        communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(
+            user_id=user_id
+        )
+
+        if not communication_preferences:
+            return await self.uow.communication_preferences_repository.create(user_id=user_id, **update_data)
+
+        return await self.uow.communication_preferences_repository.update(communication_preferences.id, update_data)
+
+
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
     return UserService(uow)
 
@@ -475,6 +519,12 @@ def get_name_change_request_service(
     return NameChangeRequestService(uow)
 
 
+def get_communication_preferences_service(
+    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+) -> CommunicationPreferencesService:
+    return CommunicationPreferencesService(uow)
+
+
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 ProfessionalInformationServiceDep = Annotated[
     ProfessionalInformationService, Depends(get_professional_information_service)
@@ -482,3 +532,6 @@ ProfessionalInformationServiceDep = Annotated[
 ResidencyServiceDep = Annotated[ResidencyService, Depends(get_residency_service)]
 FellowshipServiceDep = Annotated[FellowshipService, Depends(get_fellowship_service)]
 NameChangeRequestServiceDep = Annotated[NameChangeRequestService, Depends(get_name_change_request_service)]
+CommunicationPreferencesServiceDep = Annotated[
+    CommunicationPreferencesService, Depends(get_communication_preferences_service)
+]

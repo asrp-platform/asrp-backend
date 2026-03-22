@@ -17,4 +17,4 @@ class BaseUseCase(ABC, Generic[RequestType, ResponseType]):
         """
         The main method to execute the business logic of the use case.
         """
-        pass
+        ...
