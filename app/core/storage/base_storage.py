@@ -46,6 +46,8 @@ class S3BaseStorage:
         return {"bucket": bucket, "object_name": object_name}
 
     async def get_presigned_object(self, object_key: str):
+        if object_key is None:
+            return
         async with self.get_client() as client:
             url = await client.generate_presigned_url(
                 "get_object",

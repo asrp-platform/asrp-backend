@@ -4,7 +4,12 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi_exception_responses import Responses
 
 from app.core.common.exceptions import NotResourceOwnerError
-from app.domains.shared.deps import CurrentUserDep
+from app.domains.memberships.schemas import UserMembershipMockUpdateSchema, UserMembershipViewSchema
+from app.domains.memberships.use_cases.update_user_membership_mock import (
+    UpdateUserMembershipMockRequest,
+    UpdateUserMembershipMockUseCaseDep,
+)
+from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
 from app.domains.users.exceptions import (
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
@@ -62,7 +67,7 @@ async def update_user_data(
 async def get_user_avatar(
     current_user: CurrentUserDep,
     user_service: UserServiceDep,
-) -> str:
+) -> str | None:
     return await user_service.get_user_avatar_url(current_user.id)
 
 
@@ -164,3 +169,40 @@ async def create_name_change_request(
 
     except NameChangeRequestCooldownNotExpiredError:
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED
+
+
+class CurrentUserMembershipResponses(Responses):
+    MEMBERSHIP_NOT_FOUND = 404, "Membership not found for the current user"
+
+
+@router.get(
+    "/membership",
+    response_model=UserMembershipViewSchema,
+    responses=CurrentUserMembershipResponses.responses,
+)
+async def get_current_user_membership(
+    membership: CurrentUserMembershipDep,
+):
+    if membership is None:
+        raise CurrentUserMembershipResponses.MEMBERSHIP_NOT_FOUND
+    return membership
+
+
+@router.patch("/membership/mock", response_model=UserMembershipViewSchema)
+async def update_current_user_membership_mock(
+    user: CurrentUserDep,
+    update_data: UserMembershipMockUpdateSchema,
+    update_use_case: UpdateUserMembershipMockUseCaseDep,
+):
+    """
+    TEMP: Mock endpoint for development/testing membership status and periods.
+    """
+    request = UpdateUserMembershipMockRequest(
+        user_id=user.id,
+        approval_status=update_data.approval_status,
+        current_period_end=update_data.current_period_end,
+        auto_renewal=update_data.auto_renewal,
+        membership_type=update_data.membership_type,
+        updated_fields=set(update_data.model_fields_set),
+    )
+    return await update_use_case.execute(request)
