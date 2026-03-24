@@ -17,6 +17,14 @@ class FellowshipNotFoundError(NotFoundError):
     pass
 
 
+class JobNotFoundError(NotFoundError):
+    pass
+
+
+class ProfessionalExperienceCurrentPositionExistsError(ResourceAlreadyExistsError):
+    pass
+
+
 class NameChangeRequestNotFoundError(NotFoundError):
     pass
 

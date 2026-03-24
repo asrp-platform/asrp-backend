@@ -115,7 +115,8 @@ class ChangePasswordSchema(BaseModel):
         return v
 
 
-class PostgraduateTrainingMixin(BaseModel):
+class ProfessionalExperienceMixin(BaseModel):
+    current_position: bool
     institution: str = Field(min_length=2)
     speciality: str = Field(min_length=2)
     city: str = Field(min_length=2)
@@ -144,7 +145,7 @@ class ProfessionalInformationViewSchema(ViewMixin, ProfessionalInformationCreate
     }
 
 
-class ResidencyCreateSchema(PostgraduateTrainingMixin):
+class ResidencyCreateSchema(ProfessionalExperienceMixin):
     pass
 
 
@@ -158,7 +159,7 @@ class ResidencyViewSchema(ViewMixin, ResidencyCreateSchema):
     }
 
 
-class FellowshipCreateSchema(PostgraduateTrainingMixin):
+class FellowshipCreateSchema(ProfessionalExperienceMixin):
     pass
 
 
@@ -167,6 +168,20 @@ class FellowshipUpdateSchema(FellowshipCreateSchema):
 
 
 class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class JobCreateSchema(ProfessionalExperienceMixin):
+    pass
+
+
+class JobUpdateSchema(JobCreateSchema):
+    pass
+
+
+class JobViewSchema(ViewMixin, JobCreateSchema):
     model_config = {
         "from_attributes": True,
     }
