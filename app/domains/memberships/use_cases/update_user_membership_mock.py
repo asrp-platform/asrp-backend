@@ -38,7 +38,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
 
             if membership:
                 if update_data:
-                    await self.uow.user_membership_repository.update(membership.id, update_data)
+                    await self.uow.user_membership_repository.update(membership.id, **update_data)
             else:
                 new_data = await self._build_create_data(request)
                 new_data.update(

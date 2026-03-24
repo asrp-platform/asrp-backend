@@ -36,7 +36,7 @@ class FeedbackService:
                 contact_message_id=contact_message.id, answer=answer_message
             )
 
-            await self.uow.contact_message_repository.update(contact_message_id, {"answered": True})
+            await self.uow.contact_message_repository.update(contact_message_id, answered=True)
 
         await self.email_provider.send_email(
             to=contact_message.email,

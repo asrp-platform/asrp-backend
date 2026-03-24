@@ -50,7 +50,7 @@ class AuthService:
 
             user.password = password
             await self.uow._session.flush()  # noqa property's setter manual calling
-            await self.uow.user_repository.update(user.id, {"last_password_change": datetime.now(tz=timezone.utc)})
+            await self.uow.user_repository.update(user.id, last_password_change=datetime.now(tz=timezone.utc))
 
     async def reset_password(self, email: str):
         async with self.uow:
@@ -93,7 +93,7 @@ class AuthService:
             if current_user_email != email_from_confirmation_token:
                 raise ValueError("email of the confirmation token does not match email of the authorized user")
 
-            await self.uow.user_repository.update(current_user_id, {"email_confirmed": True})
+            await self.uow.user_repository.update(current_user_id, email_confirmed=True)
 
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour

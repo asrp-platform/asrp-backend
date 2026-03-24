@@ -74,7 +74,7 @@ class UserService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            await self.uow.user_repository.update(user_id, update_data)
+            await self.uow.user_repository.update(user_id, **update_data)
         return user
 
     async def get_user_avatar_url(self, user_id: int):
@@ -105,7 +105,7 @@ class UserService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            await self.uow.user_repository.update(user_id, {"avatar_path": None})
+            await self.uow.user_repository.update(user_id, avatar_path=None)
 
     async def change_password(
         self,
@@ -124,7 +124,7 @@ class UserService:
 
             user.password = new_password
             await self.uow._session.flush()  # noqa property's setter manual calling
-            await self.uow.user_repository.update(user.id, {"last_password_change": datetime.now(tz=timezone.utc)})
+            await self.uow.user_repository.update(user.id, last_password_change=datetime.now(tz=timezone.utc))
 
 
 class ProfessionalInformationService:
@@ -154,7 +154,7 @@ class ProfessionalInformationService:
             data = {**kwargs, "user_id": user.id}
 
             if professional_information is not None:
-                return await self.uow.professional_information_repository.update(professional_information.id, data)
+                return await self.uow.professional_information_repository.update(professional_information.id, **data)
             else:
                 return await self.uow.professional_information_repository.create(**data)
 
@@ -210,7 +210,7 @@ class ResidencyService:
     ) -> Residency:
         await self.check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
         async with self.uow:
-            return await self.uow.residency_repository.update(residency_id, update_data)
+            return await self.uow.residency_repository.update(residency_id, **update_data)
 
     async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
         await self.check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
@@ -302,10 +302,7 @@ class FellowshipService:
             fellowship_id=fellowship_id,
         )
         async with self.uow:
-            return await self.uow.fellowship_repository.update(
-                fellowship_id,
-                update_data,
-            )
+            return await self.uow.fellowship_repository.update(fellowship_id, **update_data)
 
     async def delete_user_fellowship(
         self,
@@ -420,16 +417,14 @@ class NameChangeRequestService:
 
             await self.uow.user_repository.update(
                 user_id,
-                {
-                    "firstname": name_change_request.firstname,
-                    "lastname": name_change_request.lastname,
-                    "middlename": name_change_request.middlename,
-                    "last_name_change": datetime.now(tz=timezone.utc),
-                },
+                firstname=name_change_request.firstname,
+                lastname=name_change_request.lastname,
+                middlename=name_change_request.middlename,
+                last_name_change=datetime.now(tz=timezone.utc),
             )
 
             await self.uow.name_change_request_repository.update(
-                name_change_request_id, {"status": NameChangeRequestStatusEnum.APPROVED}
+                name_change_request_id, status=NameChangeRequestStatusEnum.APPROVED
             )
 
     async def _reject_name_change_request(
@@ -440,7 +435,8 @@ class NameChangeRequestService:
         async with self.uow:
             await self.uow.name_change_request_repository.update(
                 name_change_request_id,
-                {"reason_rejecting": reason_rejecting, "status": NameChangeRequestStatusEnum.REJECTED},
+                reason_rejecting=reason_rejecting,
+                status=NameChangeRequestStatusEnum.REJECTED,
             )
 
 
@@ -484,7 +480,7 @@ class CommunicationPreferencesService:
         if not communication_preferences:
             return await self.uow.communication_preferences_repository.create(user_id=user_id, **update_data)
 
-        return await self.uow.communication_preferences_repository.update(communication_preferences.id, update_data)
+        return await self.uow.communication_preferences_repository.update(communication_preferences.id, **update_data)
 
 
 def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:

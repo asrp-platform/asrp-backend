@@ -28,7 +28,7 @@ class DirectorBoardMemberService:
 
     async def update_director_member(self, director_member_id: int, data: dict):
         async with self.uow:
-            return await self.uow.director_board_member_repository.update(director_member_id, data)
+            return await self.uow.director_board_member_repository.update(director_member_id, **data)
 
     async def delete_director_member(self, director_member_id: int) -> int:
         async with self.uow:
