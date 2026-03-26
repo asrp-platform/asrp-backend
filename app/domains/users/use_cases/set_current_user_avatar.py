@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, File
 
-from app.domains.memberships.use_cases.base import BaseUseCase
+from app.core.common.base_use_case import BaseUseCase
 from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
 from app.domains.users.models import User
 from app.domains.users.services import UserService, get_user_service
