@@ -7,23 +7,28 @@ from app.domains.feedback.services import (
     FeedbackAdditionalInfoServiceDep,
     get_feedback_additional_info_service,
 )
-from app.domains.memberships.infrastructure import MembershipUnitOfWork, get_membership_unit_of_work
+from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep, get_membership_service
+from app.domains.users.services import (
+    CommunicationPreferencesService,
+    CommunicationPreferencesServiceDep,
+    get_communication_preferences_service
+)
 
 
-class CreateMembershipUseCase:
+class CreateUserMembershipUseCase:
     def __init__(
         self,
-        uow: MembershipUnitOfWork,
+        uow: MembershipsUnitOfWork,
         membership_service: MembershipService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
-        # communication_preference_service: CommunicationPreferenceService
+        communication_preference_service: CommunicationPreferencesService
     ) -> None:
         self.uow = uow
         self.membership_service = membership_service
         self.feedback_additional_info_service = feedback_additional_info_service
-        # self.communication_preference_service = communication_preference_service
+        self.communication_preference_service = communication_preference_service
 
     async def execute(
         self,
@@ -42,21 +47,22 @@ class CreateMembershipUseCase:
 
             await self.feedback_additional_info_service.create_feedback_additional_info(
                 user_id,
-                **feedback_additional_info_data
+                **feedback_additional_info_data,
             )
 
-            # await self.communication_preference_service.create_communication_preference(
-            #     is_agrees_communications
-            # )
+            await self.communication_preference_service.get_or_create(
+                user_id,
+                is_agrees_communications,
+            )
 
 
 def get_create_membership_use_case(
-    uow: Annotated[MembershipUnitOfWork, Depends(get_membership_unit_of_work)],
+    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
     membership_service: Annotated[MembershipServiceDep, Depends(get_membership_service)],
     feedback_additional_info_service: Annotated[FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)],
-    # communication_preference_service: Annotated[CommunicationPreferenceServiceDep, Depends(get_communication_preference_service)],
-) -> CreateMembershipUseCase:
-    return CreateMembershipUseCase(uow, membership_service, feedback_additional_info_service)
+    communication_preference_service: Annotated[CommunicationPreferencesServiceDep, Depends(get_communication_preferences_service)],
+) -> CreateUserMembershipUseCase:
+    return CreateUserMembershipUseCase(uow, membership_service, feedback_additional_info_service, communication_preference_service)
 
 
-CreateMembershipUseCaseDep = Annotated[CreateMembershipUseCase, Depends(get_create_membership_use_case)]
+CreateMembershipUseCaseDep = Annotated[CreateUserMembershipUseCase, Depends(get_create_membership_use_case)]

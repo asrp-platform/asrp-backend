@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.auth.infrastructure import AuthUnitOfWork
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork
 from app.domains.feedback.infrastructure import FeedbackUnitOfWork
-from app.domains.memberships.infrastructure import MembershipUnitOfWork
+from app.domains.memberships.infrastructure import MembershipsUnitOfWork
 from app.domains.permissions.infrastructure import PermissionsUnitOfWork
 from app.domains.users.infrastructure import UserUnitOfWork
 
@@ -37,5 +37,5 @@ def contact_message_uow(test_session: AsyncSession) -> FeedbackUnitOfWork:
 
 
 @pytest.fixture()
-def membership_uow(test_session: AsyncSession) -> MembershipUnitOfWork:
-    return MembershipUnitOfWork(test_session)
+def membership_uow(test_session: AsyncSession) -> MembershipsUnitOfWork:
+    return MembershipsUnitOfWork(test_session)

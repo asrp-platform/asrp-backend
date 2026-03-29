@@ -5,13 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.domains.memberships.exceptions import MembershipAlreadyExistsError
-from app.domains.memberships.infrastructure import MembershipUnitOfWork, get_membership_unit_of_work
+from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.memberships.models import UserMembership
 
 
 class MembershipService:
-    def __init__(self, uow: MembershipUnitOfWork):
+    def __init__(self, uow: MembershipsUnitOfWork):
         self.uow = uow
 
     async def get_user_membership(self, user_id: int) -> UserMembership | None:
@@ -25,13 +25,13 @@ class MembershipService:
             membership_type_data: MembershipTypeEnum,
             **kwargs
     ):
-        membership = await self.uow.membership_repository.get_first_by_kwargs(user_id=user_id)
+        membership = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=user_id)
         if membership is not None:
             raise MembershipAlreadyExistsError("Membership for provided User already exists")
 
         membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type_data.value)
 
-        return await self.uow.membership_repository.create(
+        return await self.uow.user_membership_repository.create(
             user_id=user_id,
             membership_type_id=membership_type.id,
             **kwargs
@@ -39,20 +39,20 @@ class MembershipService:
 
 
 class MembershipTypeService:
-    def __init__(self, uow: MembershipUnitOfWork):
+    def __init__(self, uow: MembershipsUnitOfWork):
         self.uow = uow
 
 
 def get_membership_service(
-        uow: Annotated[MembershipUnitOfWork,
-        Depends(get_membership_unit_of_work)]
+        uow: Annotated[MembershipsUnitOfWork,
+        Depends(get_memberships_unit_of_work)]
 )-> MembershipService:
     return MembershipService(uow)
 
 
 def get_membership_type_service(
-        uow: Annotated[MembershipUnitOfWork,
-        Depends(get_membership_unit_of_work)]
+        uow: Annotated[MembershipsUnitOfWork,
+        Depends(get_memberships_unit_of_work)]
 )-> MembershipTypeService:
     return MembershipTypeService(uow)
 

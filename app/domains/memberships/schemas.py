@@ -1,7 +1,8 @@
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.domains.memberships.models import MembershipTypeEnum
+from app.domains.memberships.models import ApprovalStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
 
 
@@ -32,6 +33,22 @@ class MembershipDataSchema(BaseModel):
     membership_type: MembershipTypeEnum
     feedback_additional_info: FeedbackAdditionalInfoCreateSchema
     is_agrees_communications: bool
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class UserMembershipSchema(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    approval_status: ApprovalStatusEnum
+    current_period_end: datetime | None = None
+    auto_renewal: bool
+    has_access: bool
+    user_id: int
+    membership_type_id: int
 
     model_config = {
         "from_attributes": True,

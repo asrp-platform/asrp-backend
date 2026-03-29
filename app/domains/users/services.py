@@ -453,7 +453,7 @@ class CommunicationPreferencesService:
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
-    async def get_or_create(self, user_id: int) -> CommunicationPreferences:
+    async def get_or_create(self, user_id: int, is_agrees_communications: bool = False) -> CommunicationPreferences:
         """
         Retrieves communication settings for the user or creates them with default values.
         This ensures that the user always has the settings after calling the method.
@@ -468,7 +468,18 @@ class CommunicationPreferencesService:
         )
 
         if not communication_preferences:
-            communication_preferences = await self.uow.communication_preferences_repository.create(user_id=user_id)
+            create_data = {"user_id": user_id}
+            if is_agrees_communications:
+                create_data.update(
+                    {
+                        "newsletters": True,
+                        "events_meetings": True,
+                        "committees_leadership": True,
+                        "volunteer_opportunities": True,
+                    }
+                )
+
+            communication_preferences = await self.uow.communication_preferences_repository.create(**create_data)
 
         return communication_preferences
 

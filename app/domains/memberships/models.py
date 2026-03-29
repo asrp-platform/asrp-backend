@@ -78,4 +78,4 @@ class UserMembership(Base, UCIMixin):
     user: Mapped["User"] = relationship("User", back_populates="membership")
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
-    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="memberships")
+    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_memberships")

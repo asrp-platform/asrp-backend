@@ -1,32 +1,32 @@
 import pytest
 from faker import Faker
 
-from app.domains.memberships.infrastructure import MembershipUnitOfWork
+from app.domains.memberships.infrastructure import MembershipsUnitOfWork
 from app.domains.memberships.models import MembershipTypeEnum, UserMembership
 from app.domains.users.models import User
 
 
 @pytest.fixture(scope="function")
-async def membership(
+async def user_membership(
     test_user: User,
-    membership_uow: MembershipUnitOfWork,
-    membership_data: dict,
+    membership_uow: MembershipsUnitOfWork,
+    user_membership_data: dict,
 ) -> UserMembership:
     async with membership_uow:
         membership_type = await membership_uow.membership_type_repository.get_first_by_kwargs(
-            type=membership_data["membership_type"],
+            type=user_membership_data["membership_type"],
         )
 
-        membership = await membership_uow.membership_repository.create(
+        user_membership = await membership_uow.user_membership_repository.create(
             user_id=test_user.id,
             membership_type_id=membership_type.id,
-            **membership_data["membership"],
+            **user_membership_data["membership"],
         )
-        return membership
+        return user_membership
 
 
 @pytest.fixture(scope="function")
-def membership_data(faker: Faker):
+def user_membership_data(faker: Faker):
     return {
         "membership": {
             "primary_affiliation": faker.text(max_nb_chars=50),
@@ -44,5 +44,5 @@ def membership_data(faker: Faker):
             "interest_description": faker.text(max_nb_chars=100),
         },
 
-        "is_agrees_communications": True,
+        "is_agrees_communications": False,
     }
