@@ -26,7 +26,7 @@ class NewsService:
             news = await self.uow.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
                 raise NewsNotFoundError("News with provided ID not found")
-            await self.uow.news_repository.update(news_id, update_data)
+            await self.uow.news_repository.update(news_id, **update_data)
 
     async def get_news_by_id(self, news_id: int) -> News:
         async with self.uow:
@@ -40,7 +40,7 @@ class NewsService:
             news = await self.uow.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
                 raise NewsNotFoundError("News with provided ID not found")
-            await self.uow.news_repository.update(news_id, {"is_deleted": True})
+            await self.uow.news_repository.update(news_id, is_deleted=True)
 
 
 def get_news_service(

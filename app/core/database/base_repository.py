@@ -23,7 +23,7 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
-    def update(self, *args, **kwargs):
+    def update(self, object_id: int, **kwargs):
         pass
 
     @abstractmethod
@@ -109,11 +109,11 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
         await self.session.flush()
         return instances
 
-    async def update(self, object_id: int, update_data: dict[str | Any]) -> T:
+    async def update(self, object_id: int, **kwargs) -> T:
         result = (
             (
                 await self.session.execute(
-                    update(self.model).where(self.model.id == object_id).values(**update_data).returning(self.model)
+                    update(self.model).where(self.model.id == object_id).values(**kwargs).returning(self.model)
                 )
             )
             .scalars()

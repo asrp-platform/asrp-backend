@@ -164,11 +164,13 @@ async def test_create_name_change_request_when_cooldown_not_expired(
 ) -> None:
     async with user_uow:
         await user_uow.user_repository.update(
-            name_change_request.user_id, {"last_name_change": datetime.now(tz=timezone.utc)}
+            name_change_request.user_id,
+            last_name_change=datetime.now(tz=timezone.utc),
         )
 
         await user_uow.name_change_request_repository.update(
-            name_change_request.id, {"status": NameChangeRequestStatusEnum.APPROVED}
+            name_change_request.id,
+            status=NameChangeRequestStatusEnum.APPROVED,
         )
 
     response = await client.post(
