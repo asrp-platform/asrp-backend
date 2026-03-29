@@ -13,7 +13,7 @@ from app.domains.users.schemas import (
     CommunicationPreferencesViewSchema,
     UserSchema,
 )
-from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.retrieve_user_communication_preferences import (
     RetrieveCommunicationPreferencesRequest,
     RetrieveCommunicationPreferencesUseCaseDep,
@@ -22,7 +22,6 @@ from app.domains.users.use_cases.update_user_communication_preferences import (
     UpdateCommunicationPreferencesRequest,
     UpdateCommunicationPreferencesUseCaseDep,
 )
-from app.domains.users.services import UserServiceDep
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
