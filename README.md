@@ -37,6 +37,14 @@ Necessary envs:
 - `FERNET_KEY`
 - `ALGORITHM=HS256`
 
+- `S3_ACCESS_KEY=minio_admin`
+- `S3_SECRET_KEY=minio_admin`
+- `S3_BUCKET=uploads`
+- `S3_REGION=us-east-1`
+
+- `S3_ENDPOINT=http://localhost:9000`
+- `S3_PUBLIC_URL=http://localhost:9000`
+
 `SECRET_KEY` and `FERNET_KEY` must be generated manually
 
 #### DB_HOST
@@ -86,10 +94,10 @@ For local development set `DB_HOST` to `localhost`.
 
 ### Setup development environment using IDE
 
-#### Start and build database container
+#### Start and build database container (DEV)
 
 ```shell
-docker compose up -d asrp_database
+docker compose up -d asrp_database minio
 ```
 
 #### Install dependencies
@@ -158,15 +166,14 @@ http://localhost:8000/api/users/1
 ### Database
 
 
-### Media files storage
+### File storage
 
-the storage is accessible via `MEDIA_PATH_NAME/file_name`. For example:
+We use MinIO as a file storage. Minio web interface is accessible via
 
 ```
-http://localhost:8000/api/media/photo.jpeg
+http://localhost:9001/login
 ```
 
-Media storage is *media/* director
 
 ### Tests
 
