@@ -42,6 +42,20 @@ services:
     networks:
       - default
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_admin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
   nginx:
     image: nginx:latest
     container_name: nginx_server
@@ -76,6 +90,7 @@ volumes:
   postgres_data:
   etc-letsencrypt:
   www-html:
+  minio_data:
 
 
 networks:

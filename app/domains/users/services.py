@@ -1,13 +1,11 @@
-import os
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Annotated, Any, Literal
+from uuid import uuid4
 
 from fastapi import Depends
-from loguru import logger
 
 from app.core.common.exceptions import NotResourceOwnerError
-from app.core.config import BASE_DIR, settings
+from app.core.config import s3_storage, settings
 from app.domains.users.exceptions import (
     FellowshipNotFoundError,
     InvalidPasswordError,
@@ -37,8 +35,9 @@ from app.domains.users.models import (
 class UserService:
     def __init__(self, uow):
         self.uow = uow
+        self.file_storage = s3_storage
 
-    async def __check_resource_owner(self, user_id: int, *, current_user: User):
+    async def check_resource_owner(self, user_id: int, *, current_user: User):
         """
         Ensures:
         - user exists
@@ -69,25 +68,8 @@ class UserService:
         async with self.uow:
             return await self.uow.user_repository.get_first_by_kwargs(**kwargs)
 
-    async def set_user_avatar(self, user_id: int, current_user: User, avatar_path: Path):
-        await self.__check_resource_owner(user_id, current_user=current_user)
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
-            try:
-                os.remove(BASE_DIR / user.avatar_path)
-            except FileNotFoundError as e:
-                logger.error(f"Avatar deletion error\nTarget path: {BASE_DIR / user.avatar_path}\n Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
-
-            await self.uow.user_repository.update(user_id, {"avatar_path": avatar_path})
-
     async def update_user(self, user_id: int, current_user: User, update_data: dict) -> User:
-        await self.__check_resource_owner(user_id, current_user=current_user)
-
+        await self.check_resource_owner(user_id, current_user=current_user)
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
@@ -95,30 +77,42 @@ class UserService:
             await self.uow.user_repository.update(user_id, update_data)
         return user
 
-    async def delete_avatar(self, user_id: int, current_user: User) -> None:
-        await self.__check_resource_owner(user_id, current_user=current_user)
+    async def get_user_avatar_url(self, user_id: int):
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            try:
-                os.remove(BASE_DIR / user.avatar_path)
-            except FileNotFoundError as e:
-                logger.error(f"Avatar deletion error\nTarget path: {BASE_DIR / user.avatar_path}\n Error: {e}")
+            avatar_object_key = user.avatar_path
+        return await self.file_storage.get_presigned_object(avatar_object_key)
 
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
+    async def upload_avatar(self, user_id: int, file):
+        try:
+            filename = f"avatars/{uuid4()}.{file.filename.split('.')[-1]}"
+            file_content = await file.read()
+            upload_result = await self.file_storage.upload_file(
+                filename,
+                file_content,
+                "uploads",
+            )
+            async with self.uow:
+                await self.uow.user_repository.update(user_id, {"avatar_path": filename})
+            return upload_result
+        except Exception as e:
+            raise e
 
+    async def delete_user_avatar(self, user_id: int) -> None:
+        async with self.uow:
+            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
             await self.uow.user_repository.update(user_id, {"avatar_path": None})
 
     async def change_password(
         self,
         user_id: int,
-        current_user: User,
         old_password: str,
         new_password: str,
     ):
-        await self.__check_resource_owner(user_id, current_user=current_user)
         async with self.uow:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
