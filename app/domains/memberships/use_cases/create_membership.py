@@ -13,7 +13,7 @@ from app.domains.memberships.services import MembershipService, MembershipServic
 from app.domains.users.services import (
     CommunicationPreferencesService,
     CommunicationPreferencesServiceDep,
-    get_communication_preferences_service
+    get_communication_preferences_service,
 )
 
 

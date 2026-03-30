@@ -19,7 +19,7 @@ async def test_create_user_membership(
     membership_uow: MembershipsUnitOfWork
 ) -> None:
     response = await client.post(
-        "api/current-user/membership",
+        "api/users/current-user/membership",
         headers=auth_headers,
         json=user_membership_data
     )
@@ -30,10 +30,10 @@ async def test_create_user_membership(
             user_id=test_user.id
         )
 
-    assert communication_preferences.newsletters == False
-    assert communication_preferences.events_meetings == False
-    assert communication_preferences.committees_leadership == False
-    assert communication_preferences.volunteer_opportunities == False
+    assert not communication_preferences.newsletters
+    assert not communication_preferences.events_meetings
+    assert not communication_preferences.committees_leadership
+    assert not communication_preferences.volunteer_opportunities
 
     assert user_membership.approval_status == ApprovalStatusEnum.PENDING
     assert response.status_code == 201
@@ -49,7 +49,7 @@ async def test_create_user_membership_is_agrees_communications_true(
     user_membership_data["is_agrees_communications"] = True
 
     response = await client.post(
-        "api/current-user/membership",
+        "api/users/current-user/membership",
         headers=auth_headers,
         json=user_membership_data
     )
@@ -59,10 +59,12 @@ async def test_create_user_membership_is_agrees_communications_true(
             user_id=test_user.id
         )
 
-    assert communication_preferences.newsletters == True
-    assert communication_preferences.events_meetings == True
-    assert communication_preferences.committees_leadership == True
-    assert communication_preferences.volunteer_opportunities == True
+    assert communication_preferences.newsletters
+    assert communication_preferences.events_meetings
+    assert communication_preferences.committees_leadership
+    assert communication_preferences.volunteer_opportunities
+
+    assert response.status_code == 201
 
 
 async def test_create_user_membership_not_authenticated(
@@ -70,7 +72,7 @@ async def test_create_user_membership_not_authenticated(
     user_membership_data: dict
 ) -> None:
     response = await client.post(
-        "api/current-user/membership",
+        "api/users/current-user/membership",
         json=user_membership_data
     )
 
@@ -84,7 +86,7 @@ async def test_create_user_membership_already_exists(
     user_membership_data: dict
 ) -> None:
     response = await client.post(
-        "api/current-user/membership",
+        "api/users/current-user/membership",
         headers=auth_headers,
         json=user_membership_data
     )

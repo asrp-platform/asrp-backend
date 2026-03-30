@@ -6,8 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from app.domains.memberships.exceptions import MembershipAlreadyExistsError
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
-from app.domains.memberships.models import MembershipTypeEnum
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import MembershipTypeEnum, UserMembership
 
 
 class MembershipService:

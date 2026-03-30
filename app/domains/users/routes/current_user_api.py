@@ -4,7 +4,14 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi_exception_responses import Responses
 
 from app.core.common.exceptions import NotResourceOwnerError
-from app.domains.memberships.schemas import UserMembershipMockUpdateSchema, UserMembershipViewSchema
+from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
+from app.domains.memberships.exceptions import MembershipAlreadyExistsError
+from app.domains.memberships.schemas import (
+    MembershipDataSchema,
+    UserMembershipMockUpdateSchema,
+    UserMembershipViewSchema,
+)
+from app.domains.memberships.use_cases.create_membership import CreateMembershipUseCaseDep
 from app.domains.memberships.use_cases.update_user_membership_mock import (
     UpdateUserMembershipMockRequest,
     UpdateUserMembershipMockUseCaseDep,
@@ -186,6 +193,37 @@ async def get_current_user_membership(
     if membership is None:
         raise CurrentUserMembershipResponses.MEMBERSHIP_NOT_FOUND
     return membership
+
+
+class MembershipCreateResponses(Responses):
+    MEMBERSHIP_ALREADY_EXISTS = 409, "Membership for provided User already exists"
+    FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS = 409, "Additional Detail for provided User already exists"
+
+
+@router.post(
+    "/membership",
+    status_code=201,
+    responses=MembershipCreateResponses.responses,
+    summary="Create membership for a user"
+)
+async def create_membership(
+    membership_data: MembershipDataSchema,
+    current_user: CurrentUserDep,
+    create_membership_use_case: CreateMembershipUseCaseDep
+) -> None:
+    try:
+        await create_membership_use_case.execute(
+            user_id=current_user.id,
+            is_agrees_communications=membership_data.is_agrees_communications,
+            membership_type=membership_data.membership_type,
+            user_membership_data=membership_data.membership.model_dump(),
+            feedback_additional_info_data=membership_data.feedback_additional_info.model_dump()
+        )
+
+    except MembershipAlreadyExistsError:
+        raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
+    except FeedbackAdditionalInfoAlreadyExistsError:
+        raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
 
 
 @router.patch("/membership/mock", response_model=UserMembershipViewSchema)
