@@ -50,9 +50,9 @@ class CreateUserMembershipUseCase:
                 **feedback_additional_info_data,
             )
 
-            await self.communication_preference_service.get_or_create(
+            await self.communication_preference_service.update_or_create_preferences(
                 user_id,
-                is_agrees_communications,
+                is_agrees_communications=is_agrees_communications,
             )
 
 
