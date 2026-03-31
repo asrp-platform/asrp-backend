@@ -91,7 +91,7 @@ async def test_create_user_fellowship_professional_experience_current_position_a
     async with user_uow:
         await user_uow.fellowship_repository.update(
             fellowship.id,
-            {"current_position": True},
+            current_position = True,
         )
 
     fellowship_data["current_position"] = True
@@ -158,7 +158,7 @@ async def test_update_user_fellowship_professional_experience_current_position_a
     async with user_uow:
         await user_uow.job_repository.update(
             job.id,
-            {"current_position": True},
+            current_position = True,
         )
 
     fellowship_data["current_position"] = True

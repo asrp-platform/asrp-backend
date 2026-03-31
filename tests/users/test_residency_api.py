@@ -90,7 +90,7 @@ async def test_create_user_residency_professional_experience_current_position_al
     async with user_uow:
         await user_uow.residency_repository.update(
             residency.id,
-            {"current_position": True},
+            current_position = True,
         )
 
     residency_data["current_position"] = True
@@ -157,7 +157,7 @@ async def test_update_user_residency_professional_experience_current_position_al
     async with user_uow:
         await user_uow.fellowship_repository.update(
             fellowship.id,
-            {"current_position": True},
+            current_position = True,
         )
 
     residency_data["current_position"] = True

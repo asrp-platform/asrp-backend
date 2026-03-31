@@ -241,7 +241,7 @@ class ResidencyService(ProfessionalExperienceBaseService):
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
             await self._check_current_position_selected(user_id)
 
-            return await self.uow.residency_repository.update(residency_id, update_data)
+            return await self.uow.residency_repository.update(residency_id, **update_data)
 
     async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
         async with self.uow:
@@ -301,7 +301,7 @@ class FellowshipService(ProfessionalExperienceBaseService):
 
             return await self.uow.fellowship_repository.update(
                 fellowship_id,
-                update_data,
+                **update_data,
             )
 
     async def delete_user_fellowship(
@@ -359,7 +359,7 @@ class JobService(ProfessionalExperienceBaseService):
             await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
             await self._check_current_position_selected(user_id)
 
-            return await self.uow.job_repository.update(job_id, update_data)
+            return await self.uow.job_repository.update(job_id, **update_data)
 
     async def delete_user_job(
         self,
