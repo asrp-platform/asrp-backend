@@ -39,7 +39,7 @@ class CreateUserMembershipUseCase:
         feedback_additional_info_data: dict,
     ) -> None:
         async with self.uow:
-            await self.membership_service.create_membership(
+            await self.membership_service.create_user_membership(
                 user_id,
                 membership_type,
                 **user_membership_data,

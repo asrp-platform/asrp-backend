@@ -18,17 +18,17 @@ class MembershipService:
             stmt = select(UserMembership).options(joinedload(UserMembership.membership_type))
             return await self.uow.user_membership_repository.get_first_by_kwargs(stmt=stmt, user_id=user_id)
 
-    async def create_membership(
+    async def create_user_membership(
             self,
             user_id: int,
-            membership_type_data: MembershipTypeEnum,
+            membership_type: MembershipTypeEnum,
             **kwargs
     ):
         membership = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=user_id)
         if membership is not None:
             raise MembershipAlreadyExistsError("Membership for provided User already exists")
 
-        membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type_data.value)
+        membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
 
         return await self.uow.user_membership_repository.create(
             user_id=user_id,

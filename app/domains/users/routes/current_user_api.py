@@ -7,7 +7,7 @@ from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.memberships.exceptions import MembershipAlreadyExistsError
 from app.domains.memberships.schemas import (
-    MembershipDataSchema,
+    MembershipCreateSchema,
     UserMembershipMockUpdateSchema,
     UserMembershipViewSchema,
 )
@@ -207,17 +207,17 @@ class MembershipCreateResponses(Responses):
     summary="Create membership for a user"
 )
 async def create_membership(
-    membership_data: MembershipDataSchema,
+    user_membership_data: MembershipCreateSchema,
     current_user: CurrentUserDep,
     create_membership_use_case: CreateMembershipUseCaseDep
 ) -> None:
     try:
         await create_membership_use_case.execute(
             user_id=current_user.id,
-            is_agrees_communications=membership_data.is_agrees_communications,
-            membership_type=membership_data.membership_type,
-            user_membership_data=membership_data.membership.model_dump(),
-            feedback_additional_info_data=membership_data.feedback_additional_info.model_dump()
+            is_agrees_communications=user_membership_data.is_agrees_communications,
+            membership_type=user_membership_data.membership_type,
+            user_membership_data=user_membership_data.membership.model_dump(),
+            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump()
         )
 
     except MembershipAlreadyExistsError:

@@ -20,7 +20,7 @@ class MembershipTypeSchema(BaseModel):
     }
 
 
-class MembershipCreateSchema(BaseModel):
+class MembershipDataSchema(BaseModel):
     primary_affiliation: str
     job_title: str
     practice_setting: str
@@ -28,8 +28,8 @@ class MembershipCreateSchema(BaseModel):
     is_trained_in_us: bool
 
 
-class MembershipDataSchema(BaseModel):
-    membership: MembershipCreateSchema
+class MembershipCreateSchema(BaseModel):
+    membership: MembershipDataSchema
     membership_type: MembershipTypeEnum
     feedback_additional_info: FeedbackAdditionalInfoCreateSchema
     is_agrees_communications: bool
