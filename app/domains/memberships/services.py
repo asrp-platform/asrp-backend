@@ -37,11 +37,6 @@ class MembershipService:
         )
 
 
-class MembershipTypeService:
-    def __init__(self, uow: MembershipsUnitOfWork):
-        self.uow = uow
-
-
 def get_membership_service(
         uow: Annotated[MembershipsUnitOfWork,
         Depends(get_memberships_unit_of_work)]
@@ -49,12 +44,4 @@ def get_membership_service(
     return MembershipService(uow)
 
 
-def get_membership_type_service(
-        uow: Annotated[MembershipsUnitOfWork,
-        Depends(get_memberships_unit_of_work)]
-)-> MembershipTypeService:
-    return MembershipTypeService(uow)
-
-
 MembershipServiceDep = Annotated[MembershipService, Depends(get_membership_service)]
-MembershipTypeServiceDep = Annotated[MembershipTypeService, Depends(get_membership_type_service)]
