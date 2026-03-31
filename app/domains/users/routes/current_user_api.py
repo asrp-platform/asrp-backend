@@ -68,8 +68,7 @@ async def update_user_data(
     update_data: UpdateUserSchema,
 ) -> UserSchema:
     user = await user_service.update_user(
-        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_none=True)
-    )
+        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_unset=True))
     return UserSchema.from_orm(user)
 
 
