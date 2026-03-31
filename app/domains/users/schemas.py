@@ -66,9 +66,7 @@ class UpdateUserByAdminSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    firstname: Annotated[str | None, Field(min_length=2)] = None
-    middlename: str | None = None
-    lastname: Annotated[str | None, Field(min_length=2)] = None
+    model_config = {'extra': 'forbid'}
     preferred_name: str | None = None
     suffix: str | None = None
     credentials: str | None = None
@@ -83,7 +81,7 @@ class UpdateUserSchema(BaseModel):
     role: str | None = None
     phone_number: Annotated[str | None, Field()] = None
 
-    @field_validator('firstname', 'lastname', 'country', 'city', 'institution', 'role', mode='before')
+    @field_validator('country', 'city', 'institution', 'role')
     def forbid_null_for_required_fields(cls, value):
         if value is None:
             raise PydanticCustomError('field_null', 'This field cannot be null')
