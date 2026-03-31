@@ -22,6 +22,7 @@ class User(Base):
     firstname: Mapped[str] = mapped_column(nullable=False)
     middlename: Mapped[str] = mapped_column(nullable=True)
     lastname: Mapped[str] = mapped_column(nullable=False)
+    preferred_name: Mapped[str | None] = mapped_column(nullable=True)
     suffix: Mapped[str] = mapped_column(nullable=True)
     credentials: Mapped[str] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
