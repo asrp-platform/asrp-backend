@@ -60,6 +60,12 @@ class UserMembership(Base, UCIMixin):
     current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     auto_renewal: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
+    primary_affiliation: Mapped[str] = mapped_column(nullable=False)
+    job_title: Mapped[str] = mapped_column(nullable=False)
+    practice_setting: Mapped[str] = mapped_column(nullable=False)
+    subspecialty: Mapped[str] = mapped_column(nullable=False)
+    is_trained_in_us: Mapped[bool] = mapped_column(nullable=False)
+
     @property
     def has_access(self) -> bool:
         if self.approval_status != ApprovalStatusEnum.APPROVED:
@@ -69,7 +75,7 @@ class UserMembership(Base, UCIMixin):
         return self.current_period_end > datetime.now(tz=timezone.utc)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="memberships")
+    user: Mapped["User"] = relationship("User", back_populates="membership")
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_memberships")

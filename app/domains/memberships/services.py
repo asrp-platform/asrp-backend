@@ -4,8 +4,9 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from app.domains.memberships.exceptions import MembershipAlreadyExistsError
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import MembershipTypeEnum, UserMembership
 
 
 class MembershipService:
@@ -17,10 +18,29 @@ class MembershipService:
             stmt = select(UserMembership).options(joinedload(UserMembership.membership_type))
             return await self.uow.user_membership_repository.get_first_by_kwargs(stmt=stmt, user_id=user_id)
 
+    async def create_user_membership(
+            self,
+            user_id: int,
+            membership_type: MembershipTypeEnum,
+            **kwargs
+    ):
+        membership = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+        if membership is not None:
+            raise MembershipAlreadyExistsError("Membership for provided User already exists")
+
+        membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
+
+        return await self.uow.user_membership_repository.create(
+            user_id=user_id,
+            membership_type_id=membership_type.id,
+            **kwargs
+        )
+
 
 def get_membership_service(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
-) -> MembershipService:
+        uow: Annotated[MembershipsUnitOfWork,
+        Depends(get_memberships_unit_of_work)]
+)-> MembershipService:
     return MembershipService(uow)
 
 
