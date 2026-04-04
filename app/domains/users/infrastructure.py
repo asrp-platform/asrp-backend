@@ -52,7 +52,7 @@ class UserUnitOfWork(SQLAlchemyUnitOfWork):
         self.professional_information_repository = ProfessionalInformationRepository(self._session)
         self.residency_repository = ResidencyRepository(self._session)
         self.fellowship_repository = FellowshipRepository(self._session)
-        self.job_repository = FellowshipRepository(self._session)
+        self.job_repository = JobRepository(self._session)
         self.name_change_request_repository = NameChangeRequestRepository(self._session)
         self.communication_preferences_repository = CommunicationPreferencesRepository(self._session)
 

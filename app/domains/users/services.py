@@ -207,9 +207,6 @@ class ProfessionalExperienceBaseService:
 
 
 class ResidencyService(ProfessionalExperienceBaseService):
-    def __init__(self, uow):
-        self.uow = uow
-
     async def get_by_user_id(self, user_id: int) -> list[Residency]:
         async with self.uow:
             await self._check_resource_owner(user_id)
@@ -226,7 +223,9 @@ class ResidencyService(ProfessionalExperienceBaseService):
     async def create_user_residency(self, user_id: int, current_user_id: int, **kwargs) -> Residency:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
-            await self._check_current_position_selected(user_id)
+
+            if kwargs.get("current_position", None):
+                await self._check_current_position_selected(user_id)
 
             return await self.uow.residency_repository.create(user_id=user_id, **kwargs)
 
@@ -239,7 +238,9 @@ class ResidencyService(ProfessionalExperienceBaseService):
     ) -> Residency:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
-            await self._check_current_position_selected(user_id)
+
+            if update_data.get("current_position", None):
+                await self._check_current_position_selected(user_id)
 
             return await self.uow.residency_repository.update(residency_id, **update_data)
 
@@ -251,9 +252,6 @@ class ResidencyService(ProfessionalExperienceBaseService):
 
 
 class FellowshipService(ProfessionalExperienceBaseService):
-    def __init__(self, uow):
-        self.uow = uow
-
     async def get_by_user_id(self, user_id: int) -> list[Fellowship]:
         async with self.uow:
             await self._check_resource_owner(user_id)
@@ -281,7 +279,9 @@ class FellowshipService(ProfessionalExperienceBaseService):
     ) -> Fellowship:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
-            await self._check_current_position_selected(user_id)
+
+            if kwargs.get("current_position", None):
+                await self._check_current_position_selected(user_id)
 
             return await self.uow.fellowship_repository.create(
                 user_id=user_id,
@@ -297,7 +297,9 @@ class FellowshipService(ProfessionalExperienceBaseService):
     ) -> Fellowship:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
-            await self._check_current_position_selected(user_id)
+
+            if update_data.get("current_position", None):
+                await self._check_current_position_selected(user_id)
 
             return await self.uow.fellowship_repository.update(
                 fellowship_id,
@@ -317,9 +319,6 @@ class FellowshipService(ProfessionalExperienceBaseService):
 
 
 class JobService(ProfessionalExperienceBaseService):
-    def __init__(self, uow):
-        self.uow = uow
-
     async def get_by_user_id(self, user_id: int) -> list[Job]:
         async with self.uow:
             await self._check_resource_owner(user_id)
@@ -344,7 +343,9 @@ class JobService(ProfessionalExperienceBaseService):
     ) -> Job:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
-            await self._check_current_position_selected(user_id)
+
+            if kwargs.get("current_position", None):
+                await self._check_current_position_selected(user_id)
 
             return await self.uow.job_repository.create(user_id=user_id, **kwargs)
 
@@ -357,7 +358,9 @@ class JobService(ProfessionalExperienceBaseService):
     ) -> Job:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
-            await self._check_current_position_selected(user_id)
+
+            if update_data.get("current_position", None):
+                await self._check_current_position_selected(user_id)
 
             return await self.uow.job_repository.update(job_id, **update_data)
 
