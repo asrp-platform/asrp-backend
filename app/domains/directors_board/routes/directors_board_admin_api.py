@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, Response, UploadFile
 
 from app.core.common.responses import PermissionsResponses
 from app.core.config import settings
@@ -103,6 +103,25 @@ async def delete_director_member(
         raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
 
 
+@router.delete(
+    "/{director_member_id}/image",
+    responses=DeleteDirectorMemberResponses.responses,
+    summary="Delete image for a director board member",
+)
+async def delete_director_member_photo(
+    director_member_id: Annotated[int, Path(...)],
+    permissions: AdminPermissionsDep,
+    director_service: DirectorBoardMemberServiceDep,
+) -> Response:
+    if "director_board.update" not in permissions:
+        raise DeleteDirectorMemberResponses.PERMISSION_ERROR
+    try:
+        await director_service.delete_photo(director_member_id)
+        return Response(status_code=204)
+    except DirectionBoardMemberNotFoundError:
+        raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+
+
 class UploadImageResponses(PermissionsResponses):
     INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
@@ -116,15 +135,16 @@ class UploadImageResponses(PermissionsResponses):
 async def upload_director_member_photo(
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
+    director_service: DirectorBoardMemberServiceDep,
 ) -> dict:
     if "director_board.update" not in permissions:
         raise UploadImageResponses.PERMISSION_ERROR
     if not file.content_type.startswith("image/"):
         raise UploadImageResponses.INVALID_CONTENT_TYPE
 
-    relative_filepath = await save_file(file, settings.DIRECTORS_BOARD_UPLOADS_PATH)
+    filename = await director_service.upload_photo(file)
 
-    return {"path": relative_filepath.as_posix()}
+    return {"path": filename}
 
 
 class ReorderCardResponses(PermissionsResponses):
