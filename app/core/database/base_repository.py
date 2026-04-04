@@ -89,6 +89,21 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
         return (await self.session.execute(stmt)).scalar()
 
+    async def get_count_by_kwargs(self, **kwargs) -> int:
+        """Return count of records matching kwargs and not deleted."""
+        stmt = select(func.count()).select_from(self.model)
+
+        if kwargs:
+            try:
+                conditions = build_conditions(self.model, kwargs)
+            except ValueError as e:
+                raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
+            stmt = stmt.filter(*conditions)
+
+        stmt = stmt.filter_by(_deleted=False)
+
+        return (await self.session.execute(stmt)).scalar_one()
+
     async def get_first_by_kwargs(self, stmt=None, **kwargs) -> T:
         if stmt is None:
             stmt = select(self.model)

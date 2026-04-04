@@ -1,4 +1,9 @@
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError, TimeCooldownError
+from app.core.common.exceptions import (
+    InvalidOperationError,
+    NotFoundError,
+    ResourceAlreadyExistsError,
+    TimeCooldownError,
+)
 
 
 class InvalidPasswordError(Exception):
@@ -34,4 +39,8 @@ class PendingNameChangeRequestAlreadyExistsError(ResourceAlreadyExistsError):
 
 
 class NameChangeRequestCooldownNotExpiredError(TimeCooldownError):
+    pass
+
+
+class CannotDeleteLastResidencyError(InvalidOperationError):
     pass

@@ -4,6 +4,7 @@ from fastapi_exception_responses import Responses
 from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
+    CannotDeleteLastResidencyError,
     ProfessionalExperienceCurrentPositionExistsError,
     ResidencyNotFoundError,
     UserNotFoundError,
@@ -123,7 +124,7 @@ async def update_user_residency(
 
 
 class DeleteResidencyResponses(CreateUserResidencyResponses, GetSingleUserResidencyResponses):
-    pass
+    CANNOT_DELETE_LAST_RESIDENCY = 409, "Cannot delete last residency"
 
 
 @router.delete(
@@ -145,3 +146,5 @@ async def delete_user_residency(
         raise DeleteResidencyResponses.USER_NOT_FOUND
     except ResidencyNotFoundError:
         raise DeleteResidencyResponses.RESIDENCY_NOT_FOUND
+    except CannotDeleteLastResidencyError:
+        raise DeleteResidencyResponses.CANNOT_DELETE_LAST_RESIDENCY

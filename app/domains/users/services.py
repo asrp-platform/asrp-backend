@@ -7,6 +7,7 @@ from fastapi import Depends
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import s3_storage, settings
 from app.domains.users.exceptions import (
+    CannotDeleteLastResidencyError,
     FellowshipNotFoundError,
     InvalidPasswordError,
     JobNotFoundError,
@@ -242,6 +243,11 @@ class ResidencyService(ProfessionalExperienceBaseService):
     async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
+
+            remaining = await self.uow.residency_repository.get_count_by_kwargs(user_id=user_id)
+
+            if remaining <= 1:
+                raise CannotDeleteLastResidencyError("Cannot delete last residency for user")
 
             return await self.uow.residency_repository.mark_as_deleted(residency_id)
 
