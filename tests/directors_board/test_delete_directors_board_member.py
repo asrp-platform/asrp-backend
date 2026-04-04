@@ -12,6 +12,7 @@ async def test_delete_directors_board_member(
     directors_board_member_db: DirectorBoardMember,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
+    mock_s3_storage,
 ) -> None:
     response = await client.delete(
         f"/api/admin/directors-board/{directors_board_member_db.id}",
@@ -20,6 +21,7 @@ async def test_delete_directors_board_member(
 
     assert response.status_code == 200
     assert response.json() == directors_board_member_db.id
+    assert mock_s3_storage.delete_object.called
 
 
 async def test_delete_directors_board_member_no_permissions(

@@ -18,6 +18,7 @@ async def test_upload_director_member_photo(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     image_file,
+    mock_s3_storage,
 ) -> None:
     response = await client.post(
         "/api/admin/directors-board/images",
@@ -29,7 +30,8 @@ async def test_upload_director_member_photo(
 
     assert response.status_code == 201
     assert "path" in response.json()
-    assert response.json()["path"].endswith(".png")
+    assert response.json()["path"].startswith("directors_board/")
+    assert mock_s3_storage.upload_file.called
 
 
 async def test_upload_director_member_photo_no_permissions(

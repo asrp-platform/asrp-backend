@@ -1,10 +1,23 @@
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from faker import Faker
 
+from app.core.config import s3_storage
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork
 from app.domains.directors_board.models import DirectorBoardMember
+
+
+@pytest.fixture(autouse=True)
+def mock_s3_storage():
+    """
+    Automatically mocks s3_storage for all tests in this directory.
+    """
+    with patch("app.domains.directors_board.services.s3_storage", new_callable=AsyncMock) as mocked:
+        # Mock get_presigned_object to return a fake URL
+        mocked.get_presigned_object.return_value = "http://fake-s3-url.com/image.jpg"
+        yield mocked
 
 
 @pytest.fixture(scope="function")
