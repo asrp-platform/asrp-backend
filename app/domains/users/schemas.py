@@ -124,6 +124,10 @@ class ProfessionalExperienceMixin(BaseModel):
     country: str = Field(min_length=2)
     years_from_to: YearRange
 
+    model_config = {
+        "from_attributes": True,
+    }
+
 
 class ViewMixin(UCIMixinSchema):
     user_id: int
@@ -154,9 +158,7 @@ class ResidencyUpdateSchema(ResidencyCreateSchema):
 
 
 class ResidencyViewSchema(ViewMixin, ResidencyCreateSchema):
-    model_config = {
-        "from_attributes": True,
-    }
+    pass
 
 
 class FellowshipCreateSchema(ProfessionalExperienceMixin):
@@ -168,9 +170,7 @@ class FellowshipUpdateSchema(FellowshipCreateSchema):
 
 
 class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
-    model_config = {
-        "from_attributes": True,
-    }
+    pass
 
 
 class JobCreateSchema(ProfessionalExperienceMixin):
@@ -182,9 +182,7 @@ class JobUpdateSchema(JobCreateSchema):
 
 
 class JobViewSchema(ViewMixin, JobCreateSchema):
-    model_config = {
-        "from_attributes": True,
-    }
+    pass
 
 
 class NameChangeRequestCreateSchema(BaseModel):
