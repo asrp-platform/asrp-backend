@@ -224,7 +224,7 @@ class ResidencyService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
 
-            if kwargs.get("current_position", None):
+            if kwargs.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
             return await self.uow.residency_repository.create(user_id=user_id, **kwargs)
@@ -239,7 +239,7 @@ class ResidencyService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
 
-            if update_data.get("current_position", None):
+            if update_data.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
             return await self.uow.residency_repository.update(residency_id, **update_data)
@@ -280,7 +280,7 @@ class FellowshipService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
 
-            if kwargs.get("current_position", None):
+            if kwargs.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
             return await self.uow.fellowship_repository.create(
@@ -298,7 +298,7 @@ class FellowshipService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
 
-            if update_data.get("current_position", None):
+            if update_data.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
             return await self.uow.fellowship_repository.update(
@@ -344,7 +344,7 @@ class JobService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
 
-            if kwargs.get("current_position", None):
+            if kwargs.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
             return await self.uow.job_repository.create(user_id=user_id, **kwargs)
@@ -359,7 +359,7 @@ class JobService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
 
-            if update_data.get("current_position", None):
+            if update_data.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
             return await self.uow.job_repository.update(job_id, **update_data)
