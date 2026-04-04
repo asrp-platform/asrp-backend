@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from faker import Faker
 
-from app.core.config import s3_storage
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork
 from app.domains.directors_board.models import DirectorBoardMember
 

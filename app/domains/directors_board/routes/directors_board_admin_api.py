@@ -3,8 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Path, Response, UploadFile
 
 from app.core.common.responses import PermissionsResponses
-from app.core.config import settings
-from app.core.utils.save_file import save_file
 from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError, InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
     BoardMemberSchema,

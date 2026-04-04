@@ -5,12 +5,12 @@ from fastapi import Depends, UploadFile
 from sqlalchemy import func, select, update
 
 from app.core.config import s3_storage
+from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 from app.domains.directors_board.infrastructure import (
     DirectorsBoardMemberUnitOfWork,
     get_director_board_member_unit_of_work,
 )
 from app.domains.directors_board.models import DirectorBoardMember
-from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 
 class DirectorBoardMemberService:
     def __init__(self, uow):
