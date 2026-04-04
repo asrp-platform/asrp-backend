@@ -78,8 +78,31 @@ async def test_create_user_residency_success(
     assert data["user_id"] == test_user.id
 
 
+async def test_create_user_residency_not_current_position_professional_experience_current_position_already_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    fellowship: Fellowship,
+    residency_data: dict,
+):
+    async with user_uow:
+        await user_uow.fellowship_repository.update(
+            fellowship.id,
+            current_position=True,
+        )
+
+    response = await client.post(
+        f"/api/users/{test_user.id}/residencies",
+        headers=auth_headers,
+        json=residency_data,
+    )
+
+    assert response.status_code == 201
+
+
 @pytest.mark.asyncio
-async def test_create_user_residency_professional_experience_current_position_already_exists(
+async def test_create_user_residency_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
     user_uow: UserUnitOfWork,
     auth_headers: AuthHeaders,
@@ -144,15 +167,57 @@ async def test_update_user_residency_success(
     assert data["speciality"] == residency_data["speciality"]
 
 
+async def test_update_user_residency_current_position(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    residency: Residency,
+    residency_data: dict,
+):
+    async with user_uow:
+        await user_uow.residency_repository.update(
+            residency.id,
+            current_position = True,
+        )
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/residencies/{residency.id}",
+        headers=auth_headers,
+        json=residency_data,
+    )
+
+    assert response.status_code == 200
+
+
+async def test_update_user_residency_current_position_professional_experience_current_position_not_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    residency: Residency,
+    residency_data: dict,
+):
+    residency_data["current_position"] = True
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/residencies/{residency.id}",
+        headers=auth_headers,
+        json=residency_data,
+    )
+
+    assert response.status_code == 200
+
+
 @pytest.mark.asyncio
-async def test_update_user_residency_professional_experience_current_position_already_exists(
-        client: AsyncClient,
-        user_uow: UserUnitOfWork,
-        auth_headers: AuthHeaders,
-        test_user: User,
-        residency: Residency,
-        fellowship: Fellowship,
-        residency_data: dict,
+async def test_update_user_residency_current_position_professional_experience_current_position_already_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    residency: Residency,
+    fellowship: Fellowship,
+    residency_data: dict,
 ):
     async with user_uow:
         await user_uow.fellowship_repository.update(

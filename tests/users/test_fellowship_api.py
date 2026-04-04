@@ -80,7 +80,31 @@ async def test_create_user_fellowship_success(
 
 
 @pytest.mark.asyncio
-async def test_create_user_fellowship_professional_experience_current_position_already_exists(
+async def test_create_user_fellowship_not_current_position_professional_experience_current_position_already_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    fellowship: Fellowship,
+    fellowship_data: dict,
+):
+    async with user_uow:
+        await user_uow.fellowship_repository.update(
+            fellowship.id,
+            current_position = True,
+        )
+
+    response = await client.post(
+        f"/api/users/{test_user.id}/fellowships",
+        headers=auth_headers,
+        json=fellowship_data,
+    )
+
+    assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_create_user_fellowship_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
     user_uow: UserUnitOfWork,
     auth_headers: AuthHeaders,
@@ -146,14 +170,58 @@ async def test_update_user_fellowship_success(
 
 
 @pytest.mark.asyncio
-async def test_update_user_fellowship_professional_experience_current_position_already_exists(
-        client: AsyncClient,
-        user_uow: UserUnitOfWork,
-        auth_headers: AuthHeaders,
-        test_user: User,
-        fellowship: Fellowship,
-        job: Job,
-        fellowship_data: dict,
+async def test_update_user_fellowship_current_position(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    fellowship: Fellowship,
+    fellowship_data: dict,
+):
+    async with user_uow:
+        await user_uow.fellowship_repository.update(
+            fellowship.id,
+            current_position = True,
+        )
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/fellowships/{fellowship.id}",
+        headers=auth_headers,
+        json=fellowship_data,
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_update_user_fellowship_current_position_professional_experience_current_position_not_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    fellowship: Fellowship,
+    fellowship_data: dict,
+):
+    fellowship_data["current_position"] = True
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/fellowships/{fellowship.id}",
+        headers=auth_headers,
+        json=fellowship_data,
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_update_user_fellowship_current_position_professional_experience_current_position_already_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    fellowship: Fellowship,
+    job: Job,
+    fellowship_data: dict,
 ):
     async with user_uow:
         await user_uow.job_repository.update(

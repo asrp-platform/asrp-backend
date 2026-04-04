@@ -97,8 +97,30 @@ async def test_create_user_job_forbidden(
 
     assert response.status_code == 403
 
+async def test_create_user_job_not_current_position_professional_experience_current_position_already_exists(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    fellowship: Fellowship,
+    job_data: dict,
+):
+    async with user_uow:
+        await user_uow.fellowship_repository.update(
+            fellowship.id,
+            current_position = True,
+        )
 
-async def test_create_user_job_professional_experience_current_position_already_exists(
+    response = await client.post(
+        f"/api/users/{test_user.id}/jobs",
+        headers=auth_headers,
+        json=job_data,
+    )
+
+    assert response.status_code == 201
+
+
+async def test_create_user_job_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
     user_uow: UserUnitOfWork,
     auth_headers: AuthHeaders,
@@ -177,7 +199,48 @@ async def test_update_user_job_forbidden(
     assert response.status_code == 403
 
 
-async def test_update_user_job_professional_experience_current_position_already_exists(
+async def test_update_user_job_current_position(
+    client: AsyncClient,
+    user_uow: UserUnitOfWork,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    job: Job,
+    job_data: dict,
+):
+    async with user_uow:
+        await user_uow.job_repository.update(
+            job.id,
+            current_position = True,
+        )
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/jobs/{job.id}",
+        headers=auth_headers,
+        json=job_data,
+    )
+
+    assert response.status_code == 200
+
+
+async def test_update_user_job_current_position_professional_experience_current_position_not_exists(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    job: Job,
+    job_data: dict,
+):
+    job_data["current_position"] = True
+
+    response = await client.put(
+        f"/api/users/{test_user.id}/jobs/{job.id}",
+        headers=auth_headers,
+        json=job_data,
+    )
+
+    assert response.status_code == 200
+
+
+async def test_update_user_job_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
     user_uow: UserUnitOfWork,
     auth_headers: AuthHeaders,
