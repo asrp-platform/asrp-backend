@@ -10,7 +10,7 @@ from app.domains.directors_board.infrastructure import (
     get_director_board_member_unit_of_work,
 )
 from app.domains.directors_board.models import DirectorBoardMember
-
+from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 
 class DirectorBoardMemberService:
     def __init__(self, uow):
@@ -54,7 +54,10 @@ class DirectorBoardMemberService:
     async def delete_photo(self, director_member_id: int) -> None:
         async with self.uow:
             member = await self.uow.director_board_member_repository.get_first_by_kwargs(id=director_member_id)
-            if member and member.photo_url:
+            if not member:
+                raise DirectionBoardMemberNotFoundError()
+
+            if member.photo_url:
                 await self.file_storage.delete_object(member.photo_url)
                 await self.uow.director_board_member_repository.update(director_member_id, photo_url=None)
 
