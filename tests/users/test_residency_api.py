@@ -262,7 +262,21 @@ async def test_delete_user_residency_success(
     test_user: User,
     auth_headers: AuthHeaders,
     residency: Residency,
+    user_uow,
+    year_range: str,
 ):
+    # ensure there are at least two residencies so deleting one is allowed
+    async with user_uow:
+        await user_uow.residency_repository.create(
+            user_id=test_user.id,
+            institution="Another Institution",
+            speciality="Another Speciality",
+            city="City",
+            state="ST",
+            country="Country",
+            years_from_to=year_range,
+        )
+
     response = await client.delete(
         f"/api/users/{test_user.id}/residencies/{residency.id}",
         headers=auth_headers,
@@ -283,3 +297,18 @@ async def test_delete_user_residency_not_found(
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_user_residency_cannot_delete_last(
+    client: AsyncClient,
+    test_user: User,
+    auth_headers: AuthHeaders,
+    residency: Residency,
+):
+    response = await client.delete(
+        f"/api/users/{test_user.id}/residencies/{residency.id}",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 409
