@@ -122,7 +122,7 @@ class ProfessionalExperienceMixin(BaseModel):
     city: str = Field(min_length=2)
     state: str = Field(min_length=2)
     country: str = Field(min_length=2)
-    years_from_to: YearRange
+    years_from_to: YearRange = Field(default="2000-2006")
 
     model_config = {
         "from_attributes": True,
