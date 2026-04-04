@@ -5,13 +5,13 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
-from app.domains.memberships.exceptions import MembershipAlreadyExistsError
+from app.domains.memberships.exceptions import MembershipRequestAlreadyExistsError
 from app.domains.memberships.schemas import (
     MembershipCreateSchema,
     UserMembershipMockUpdateSchema,
     UserMembershipViewSchema,
 )
-from app.domains.memberships.use_cases.create_request_membership import CreateMembershipRequestUseCaseDep
+from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
 from app.domains.memberships.use_cases.update_user_membership_mock import (
     UpdateUserMembershipMockRequest,
     UpdateUserMembershipMockUseCaseDep,
@@ -210,17 +210,17 @@ async def create_membership_request(
     user_membership_data: MembershipCreateSchema,
     current_user: CurrentUserDep,
     create_membership_request_use_case: CreateMembershipRequestUseCaseDep,
-) -> None:
+):
     try:
-        await create_membership_request_use_case.execute(
+        return await create_membership_request_use_case.execute(
             user_id=current_user.id,
             is_agrees_communications=user_membership_data.is_agrees_communications,
             membership_type=user_membership_data.membership_type,
-            user_membership_data=user_membership_data.membership.model_dump(),
+            membership_request_data=user_membership_data.membership.model_dump(),
             feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump(),
         )
 
-    except MembershipAlreadyExistsError:
+    except MembershipRequestAlreadyExistsError:
         raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
     except FeedbackAdditionalInfoAlreadyExistsError:
         raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS

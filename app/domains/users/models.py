@@ -13,6 +13,7 @@ from app.domains.memberships.models import MembershipRequest
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
     from app.domains.news.models import News
+    from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 
 
@@ -65,6 +66,7 @@ class User(Base):
     feedback_additional_info: Mapped["FeedbackAdditionalInfo"] = relationship(
         "FeedbackAdditionalInfo", back_populates="user"
     )
+    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)

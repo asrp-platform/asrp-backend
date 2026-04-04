@@ -4,9 +4,9 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from app.domains.memberships.exceptions import MembershipAlreadyExistsError
+from app.domains.memberships.exceptions import MembershipRequestAlreadyExistsError, MembershipTypeNotFoundError
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
-from app.domains.memberships.models import MembershipRequest, MembershipTypeEnum
+from app.domains.memberships.models import MembershipRequest, MembershipType, MembershipTypeEnum
 
 
 class MembershipService:
@@ -18,10 +18,16 @@ class MembershipService:
             stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
             return await self.uow.user_membership_repository.get_first_by_kwargs(stmt=stmt, user_id=user_id)
 
-    async def create_user_membership(self, user_id: int, membership_type: MembershipTypeEnum, **kwargs):
-        membership = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=user_id)
-        if membership is not None:
-            raise MembershipAlreadyExistsError("Membership for provided User already exists")
+    async def get_membership_type(self, membership_type: MembershipTypeEnum) -> MembershipType:
+        membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
+        if membership_type is None:
+            raise MembershipTypeNotFoundError("Provided membership type not found")
+        return membership_type
+
+    async def create_membership_request(self, user_id: int, membership_type: MembershipTypeEnum, **kwargs):
+        membership_request = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+        if membership_request is not None:
+            raise MembershipRequestAlreadyExistsError("Membership for provided User already exists")
 
         membership_type = await self.uow.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
 

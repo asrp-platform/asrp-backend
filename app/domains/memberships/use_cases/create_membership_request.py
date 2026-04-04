@@ -10,6 +10,9 @@ from app.domains.feedback.services import (
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep, get_membership_service
+from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.services import PaymentServiceDep
+from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
 from app.domains.users.services import (
     CommunicationPreferencesService,
     CommunicationPreferencesServiceDep,
@@ -24,25 +27,27 @@ class CreateUserMembershipRequestUseCase:
         membership_service: MembershipService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
         communication_preference_service: CommunicationPreferencesService,
+        payment_service: PaymentServiceDep,
     ) -> None:
         self.uow = uow
         self.membership_service = membership_service
         self.feedback_additional_info_service = feedback_additional_info_service
         self.communication_preference_service = communication_preference_service
+        self.payment_service = payment_service
 
     async def execute(
         self,
         user_id: int,
         is_agrees_communications: bool,
         membership_type: MembershipTypeEnum,
-        user_membership_data: dict,
+        membership_request_data: dict,
         feedback_additional_info_data: dict,
-    ) -> None:
+    ) -> str:
         async with self.uow:
-            await self.membership_service.create_user_membership(
+            await self.membership_service.create_membership_request(
                 user_id,
                 membership_type,
-                **user_membership_data,
+                **membership_request_data,
             )
 
             await self.feedback_additional_info_service.create_feedback_additional_info(
@@ -55,6 +60,42 @@ class CreateUserMembershipRequestUseCase:
                 is_agrees_communications=is_agrees_communications,
             )
 
+            membership_type = await self.membership_service.get_membership_type(membership_type)
+            membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
+
+            membership_type_line_items = [
+                {
+                    "price_data": {
+                        "currency": "usd",
+                        "unit_amount": membership_type_price_cents,
+                        "product_data": {
+                            "name": membership_type.name,
+                            "description": membership_type.description,
+                        },
+                    },
+                    "quantity": 1,
+                }
+            ]
+            checkout_session = await create_checkout_session(membership_type_line_items)
+
+            provider_data = {
+                "checkout_session_id": checkout_session.id,
+                "checkout_session_status": checkout_session.status,
+                "payment_status": checkout_session.payment_status,
+                "url": checkout_session.url,
+            }
+
+            await self.payment_service.create_payment(
+                provider=PaymentProvider.STRIPE,
+                amount=membership_type_price_cents,
+                status=PaymentStatusEnum.PENDING,
+                purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+                user_id=user_id,
+                provider_data=provider_data,
+            )
+
+        return checkout_session.url
+
 
 def get_create_membership_request_use_case(
     uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
@@ -65,9 +106,10 @@ def get_create_membership_request_use_case(
     communication_preference_service: Annotated[
         CommunicationPreferencesServiceDep, Depends(get_communication_preferences_service)
     ],
+    payment_service: PaymentServiceDep,
 ) -> CreateUserMembershipRequestUseCase:
     return CreateUserMembershipRequestUseCase(
-        uow, membership_service, feedback_additional_info_service, communication_preference_service
+        uow, membership_service, feedback_additional_info_service, communication_preference_service, payment_service
     )
 
 

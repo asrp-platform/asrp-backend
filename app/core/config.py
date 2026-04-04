@@ -65,6 +65,8 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     DIRECTORS_BOARD_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "directors_board_uploads"
     BYLAWS_PATH: Path = MEDIA_STORAGE_PATH / "bylaws"
 
+    STRIPE_API_KEY: str
+
     FRONTEND_DOMAIN_HTTP: str
     FRONTEND_DOMAIN: str
 
