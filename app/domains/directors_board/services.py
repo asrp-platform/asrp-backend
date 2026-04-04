@@ -11,31 +11,38 @@ from app.domains.directors_board.infrastructure import (
     get_director_board_member_unit_of_work,
 )
 from app.domains.directors_board.models import DirectorBoardMember
+from app.domains.directors_board.schemas import BoardMemberSchema
+
 
 class DirectorBoardMemberService:
     def __init__(self, uow):
         self.uow: DirectorsBoardMemberUnitOfWork = uow
         self.file_storage = s3_storage
 
-    async def get_all_directors(self):
+    async def get_all_directors(self) -> tuple[list[BoardMemberSchema], int]:
         async with self.uow:
             members, count = await self.uow.director_board_member_repository.list()
+            schemas = []
             for member in members:
-                if member.photo_url:
-                    member.photo_url = await self.file_storage.get_presigned_object(member.photo_url)
-            return members, count
+                schema = BoardMemberSchema.model_validate(member)
+                if schema.photo_url:
+                    schema.photo_url = await self.file_storage.get_presigned_object(schema.photo_url)
+                schemas.append(schema)
+            return schemas, count
 
-    async def create_director_member(self, **kwargs):
-        max_order = (
-            await self.uow._session.execute(select(func.coalesce(func.max(DirectorBoardMember.order), 0)))
-        ).scalar_one_or_none()
-        insert_data = {**kwargs, "order": max_order + 1}
+    async def create_director_member(self, **kwargs) -> BoardMemberSchema:
         async with self.uow:
-            return await self.uow.director_board_member_repository.create(**insert_data)
+            max_order = (
+                await self.uow._session.execute(select(func.coalesce(func.max(DirectorBoardMember.order), 0)))
+            ).scalar_one_or_none()
+            insert_data = {**kwargs, "order": max_order + 1}
+            director = await self.uow.director_board_member_repository.create(**insert_data)
+            return BoardMemberSchema.model_validate(director)
 
-    async def update_director_member(self, director_member_id: int, data: dict):
+    async def update_director_member(self, director_member_id: int, data: dict) -> BoardMemberSchema:
         async with self.uow:
-            return await self.uow.director_board_member_repository.update(director_member_id, **data)
+            updated_director_member = await self.uow.director_board_member_repository.update(director_member_id, **data)
+            return BoardMemberSchema.model_validate(updated_director_member)
 
     async def delete_director_member(self, director_member_id: int) -> int:
         async with self.uow:

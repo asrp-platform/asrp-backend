@@ -28,7 +28,7 @@ async def get_all_director_members(
     if "director_board.view" not in permissions:
         raise ViewDirectorResponses.PERMISSION_ERROR
     data, count = await director_service.get_all_directors()
-    return [BoardMemberSchema.from_orm(permission) for permission in data]
+    return data
 
 
 class CreateDirectorResponses(PermissionsResponses):
@@ -48,8 +48,7 @@ async def create_director_member(
 ) -> BoardMemberSchema:
     if "director_board.create" not in permissions:
         raise CreateDirectorResponses.PERMISSION_ERROR
-    director = await director_service.create_director_member(**data.model_dump())
-    return BoardMemberSchema.from_orm(director)
+    return await director_service.create_director_member(**data.model_dump())
 
 
 class UpdateDirectorMemberResponses(PermissionsResponses):
@@ -71,8 +70,7 @@ async def update_director_member(
         raise UpdateDirectorMemberResponses.PERMISSION_ERROR
     try:
         update_data_dict = update_data.model_dump(exclude_unset=True)
-        updated_director_member = await director_service.update_director_member(director_member_id, update_data_dict)
-        return BoardMemberSchema.from_orm(updated_director_member)
+        return await director_service.update_director_member(director_member_id, update_data_dict)
 
     except DirectionBoardMemberNotFoundError:
         raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
