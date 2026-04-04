@@ -11,7 +11,7 @@ from app.domains.memberships.schemas import (
     UserMembershipMockUpdateSchema,
     UserMembershipViewSchema,
 )
-from app.domains.memberships.use_cases.create_membership import CreateMembershipUseCaseDep
+from app.domains.memberships.use_cases.create_request_membership import CreateMembershipRequestUseCaseDep
 from app.domains.memberships.use_cases.update_user_membership_mock import (
     UpdateUserMembershipMockRequest,
     UpdateUserMembershipMockUseCaseDep,
@@ -183,7 +183,7 @@ class CurrentUserMembershipResponses(Responses):
 
 
 @router.get(
-    "/membership",
+    "/membership-requests",
     response_model=UserMembershipViewSchema,
     responses=CurrentUserMembershipResponses.responses,
 )
@@ -201,23 +201,23 @@ class MembershipCreateResponses(Responses):
 
 
 @router.post(
-    "/membership",
+    "/membership-requests",
     status_code=201,
     responses=MembershipCreateResponses.responses,
-    summary="Create membership for a user"
+    summary="Create a membership request for current user",
 )
-async def create_membership(
+async def create_membership_request(
     user_membership_data: MembershipCreateSchema,
     current_user: CurrentUserDep,
-    create_membership_use_case: CreateMembershipUseCaseDep
+    create_membership_request_use_case: CreateMembershipRequestUseCaseDep,
 ) -> None:
     try:
-        await create_membership_use_case.execute(
+        await create_membership_request_use_case.execute(
             user_id=current_user.id,
             is_agrees_communications=user_membership_data.is_agrees_communications,
             membership_type=user_membership_data.membership_type,
             user_membership_data=user_membership_data.membership.model_dump(),
-            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump()
+            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump(),
         )
 
     except MembershipAlreadyExistsError:
@@ -237,7 +237,7 @@ async def update_current_user_membership_mock(
     """
     request = UpdateUserMembershipMockRequest(
         user_id=user.id,
-        approval_status=update_data.approval_status,
+        status=update_data.status,
         current_period_end=update_data.current_period_end,
         auto_renewal=update_data.auto_renewal,
         membership_type=update_data.membership_type,

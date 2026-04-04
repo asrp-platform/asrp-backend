@@ -10,7 +10,7 @@ from starlette.exceptions import HTTPException
 
 from app.core.config import settings
 from app.domains.memberships.exceptions import MembershipAccessDeniedError
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import MembershipRequest
 from app.domains.memberships.services import MembershipServiceDep
 from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionServiceDep
@@ -109,13 +109,13 @@ async def get_users_permissions(
 async def get_current_user_membership(
     user: Annotated[User, Depends(get_current_user)],
     membership_service: MembershipServiceDep,
-) -> UserMembership | None:
+) -> MembershipRequest | None:
     return await membership_service.get_user_membership(user.id)
 
 
 async def ensure_active_membership(
-    membership: Annotated[UserMembership | None, Depends(get_current_user_membership)],
-) -> UserMembership:
+    membership: Annotated[MembershipRequest | None, Depends(get_current_user_membership)],
+) -> MembershipRequest:
     if membership is None or not membership.has_access:
         raise MembershipAccessDeniedError("Active membership required to access this content")
     return membership
@@ -125,5 +125,5 @@ RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 AdminUserDep = Annotated[User, Depends(get_admin_user)]
 AdminPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]
-CurrentUserMembershipDep = Annotated[UserMembership | None, Depends(get_current_user_membership)]
-ActiveMembershipDep = Annotated[UserMembership, Depends(ensure_active_membership)]
+CurrentUserMembershipDep = Annotated[MembershipRequest | None, Depends(get_current_user_membership)]
+ActiveMembershipDep = Annotated[MembershipRequest, Depends(ensure_active_membership)]

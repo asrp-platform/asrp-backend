@@ -17,13 +17,13 @@ from app.domains.users.services import (
 )
 
 
-class CreateUserMembershipUseCase:
+class CreateUserMembershipRequestUseCase:
     def __init__(
         self,
         uow: MembershipsUnitOfWork,
         membership_service: MembershipService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
-        communication_preference_service: CommunicationPreferencesService
+        communication_preference_service: CommunicationPreferencesService,
     ) -> None:
         self.uow = uow
         self.membership_service = membership_service
@@ -56,13 +56,21 @@ class CreateUserMembershipUseCase:
             )
 
 
-def get_create_membership_use_case(
+def get_create_membership_request_use_case(
     uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
     membership_service: Annotated[MembershipServiceDep, Depends(get_membership_service)],
-    feedback_additional_info_service: Annotated[FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)],
-    communication_preference_service: Annotated[CommunicationPreferencesServiceDep, Depends(get_communication_preferences_service)],
-) -> CreateUserMembershipUseCase:
-    return CreateUserMembershipUseCase(uow, membership_service, feedback_additional_info_service, communication_preference_service)
+    feedback_additional_info_service: Annotated[
+        FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)
+    ],
+    communication_preference_service: Annotated[
+        CommunicationPreferencesServiceDep, Depends(get_communication_preferences_service)
+    ],
+) -> CreateUserMembershipRequestUseCase:
+    return CreateUserMembershipRequestUseCase(
+        uow, membership_service, feedback_additional_info_service, communication_preference_service
+    )
 
 
-CreateMembershipUseCaseDep = Annotated[CreateUserMembershipUseCase, Depends(get_create_membership_use_case)]
+CreateMembershipRequestUseCaseDep = Annotated[
+    CreateUserMembershipRequestUseCase, Depends(get_create_membership_request_use_case)
+]

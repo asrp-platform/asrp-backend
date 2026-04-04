@@ -9,20 +9,20 @@ from sqlalchemy.orm import joinedload
 from app.core.common.base_use_case import BaseUseCase
 from app.domains.memberships.exceptions import MembershipTypeNotFoundError
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
-from app.domains.memberships.models import ApprovalStatusEnum, MembershipTypeEnum, UserMembership
+from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum, MembershipTypeEnum
 
 
 @dataclass
 class UpdateUserMembershipMockRequest:
     user_id: int
-    approval_status: ApprovalStatusEnum = ApprovalStatusEnum.PENDING
+    status: MembershipRequestStatusEnum = MembershipRequestStatusEnum.SUBMITTED
     current_period_end: datetime | None = None
     auto_renewal: bool = True
     membership_type: MembershipTypeEnum = MembershipTypeEnum.ACTIVE
     updated_fields: set[str] = field(default_factory=set)
 
 
-class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockRequest, UserMembership]):
+class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockRequest, MembershipRequest]):
     """
     Use case for updating or creating a user's membership for testing/mocking.
     """
@@ -30,7 +30,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
     def __init__(self, uow: MembershipsUnitOfWork):
         self.uow = uow
 
-    async def execute(self, request: UpdateUserMembershipMockRequest) -> UserMembership:
+    async def execute(self, request: UpdateUserMembershipMockRequest) -> MembershipRequest:
         async with self.uow:
             membership = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=request.user_id)
 
@@ -50,7 +50,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
                 await self.uow.user_membership_repository.session.flush()
 
             # Re-fetch with joinedload to ensure response serialization works
-            stmt = select(UserMembership).options(joinedload(UserMembership.membership_type))
+            stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
             return await self.uow.user_membership_repository.get_first_by_kwargs(stmt=stmt, user_id=request.user_id)
 
     async def _build_update_data(self, request: UpdateUserMembershipMockRequest) -> dict:
@@ -73,9 +73,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
             membership_type = MembershipTypeEnum.ACTIVE
 
         return {
-            "approval_status": request.approval_status
-            if "approval_status" in request.updated_fields
-            else ApprovalStatusEnum.PENDING,
+            "status": request.status if "status" in request.updated_fields else MembershipRequestStatusEnum.SUBMITTED,
             "current_period_end": request.current_period_end
             if "current_period_end" in request.updated_fields
             else None,

@@ -10,7 +10,7 @@ from app.core.config import DB_URL
 from app.core.database.setup_db import Base
 from app.domains.directors_board.models import DirectorBoardMember  # noqa
 from app.domains.feedback.models import ContactMessage  # noqa
-from app.domains.memberships.models import MembershipType, UserMembership  # noqa
+from app.domains.memberships.models import MembershipRequest, MembershipType  # noqa
 from app.domains.news.models import News  # noqa
 from app.domains.permissions.models import Permission, UserPermission  # noqa
 from app.domains.users.models import User  # noqa

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_repository import SQLAlchemyRepository
 from app.core.database.setup_db import session_getter
 from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
-from app.domains.memberships.models import MembershipType, UserMembership
+from app.domains.memberships.models import MembershipRequest, MembershipType
 from app.domains.users.infrastructure import UserRepository
 
 
@@ -15,7 +15,7 @@ class MembershipTypeRepository(SQLAlchemyRepository):
 
 
 class UserMembershipRepository(SQLAlchemyRepository):
-    model = UserMembership
+    model = MembershipRequest
 
 
 class MembershipsUnitOfWork(SQLAlchemyUnitOfWork):

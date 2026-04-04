@@ -2,7 +2,7 @@ import pytest
 from faker import Faker
 
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork
-from app.domains.memberships.models import MembershipTypeEnum, UserMembership
+from app.domains.memberships.models import MembershipRequest, MembershipTypeEnum
 from app.domains.users.models import User
 
 
@@ -11,7 +11,7 @@ async def user_membership(
     test_user: User,
     membership_uow: MembershipsUnitOfWork,
     user_membership_data: dict,
-) -> UserMembership:
+) -> MembershipRequest:
     async with membership_uow:
         membership_type = await membership_uow.membership_type_repository.get_first_by_kwargs(
             type=user_membership_data["membership_type"],
@@ -33,16 +33,12 @@ def user_membership_data(faker: Faker):
             "job_title": faker.text(max_nb_chars=50),
             "practice_setting": faker.text(max_nb_chars=50),
             "subspecialty": faker.text(max_nb_chars=50),
-            "is_trained_in_us": faker.pybool(),
         },
-
         "membership_type": MembershipTypeEnum.TRAINEE.value,
-
         "feedback_additional_info": {
             "hear_about_asrp": faker.text(max_nb_chars=50),
             "tg_username": f"@{faker.pystr(min_chars=5, max_chars=32)}",
             "interest_description": faker.text(max_nb_chars=100),
         },
-
         "is_agrees_communications": False,
     }
