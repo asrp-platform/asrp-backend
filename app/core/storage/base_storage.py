@@ -59,6 +59,11 @@ class S3BaseStorage:
             )
             return url
 
+    async def delete_object(self, object_key: str, bucket_name: str | None = None) -> None:
+        bucket = bucket_name or self.bucket_name
+        async with self.get_client() as client:
+            await client.delete_object(Bucket=bucket, Key=object_key)
+
     async def __ensure_bucket_exists(self, bucket_name: str | None = None):
         bucket = bucket_name or self.bucket_name
         async with self.get_client() as client:
