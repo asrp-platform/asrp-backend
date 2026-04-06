@@ -5,6 +5,7 @@ from app.domains.users.infrastructure import UserUnitOfWork
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
+    Job,
     NameChangeRequest,
     ProfessionalInformation,
     Residency,
@@ -58,6 +59,7 @@ async def fellowship(
     async with user_uow:
         fellowship = await user_uow.fellowship_repository.create(
             user_id=test_user.id,
+            current_position=False,
             institution="Mayo Clinic",
             speciality="Surgical Oncology",
             city="Rochester",
@@ -74,6 +76,7 @@ def fellowship_data(
     year_range: str,
 ) -> dict:
     return {
+        "current_position": False,
         "institution": faker.company(),
         "speciality": faker.job(),
         "city": faker.city(),
@@ -92,6 +95,7 @@ async def residency(
     async with user_uow:
         residency = await user_uow.residency_repository.create(
             user_id=test_user.id,
+            current_position=False,
             institution="Johns Hopkins Hospital",
             speciality="Anatomic Pathology",
             city="Baltimore",
@@ -108,6 +112,43 @@ def residency_data(
     year_range: str,
 ) -> dict:
     return {
+        "current_position": False,
+        "institution": faker.company(),
+        "speciality": faker.job(),
+        "city": faker.city(),
+        "state": faker.state(),
+        "country": faker.country(),
+        "years_from_to": year_range,
+    }
+
+
+@pytest.fixture(scope="function")
+async def job(
+    user_uow: UserUnitOfWork,
+    test_user: User,
+    year_range: str,
+) -> Job:
+    async with user_uow:
+        job = await user_uow.job_repository.create(
+            user_id=test_user.id,
+            current_position=False,
+            institution="John Doe Hospital",
+            speciality="Anatomic Pathology",
+            city="New York",
+            state="NY",
+            country="USA",
+            years_from_to=year_range,
+        )
+    return job
+
+
+@pytest.fixture(scope="function")
+def job_data(
+    faker: Faker,
+    year_range: str,
+) -> dict:
+    return {
+        "current_position": False,
         "institution": faker.company(),
         "speciality": faker.job(),
         "city": faker.city(),

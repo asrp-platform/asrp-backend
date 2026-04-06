@@ -3,7 +3,11 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
-from app.domains.users.exceptions import ResidencyNotFoundError, UserNotFoundError
+from app.domains.users.exceptions import (
+    ProfessionalExperienceCurrentPositionExistsError,
+    ResidencyNotFoundError,
+    UserNotFoundError,
+)
 from app.domains.users.schemas import ResidencyCreateSchema, ResidencyUpdateSchema, ResidencyViewSchema
 from app.domains.users.services import ResidencyServiceDep
 
@@ -55,6 +59,7 @@ async def get_single_user_residency(
 
 class CreateUserResidencyResponses(GetUserResidenciesResponses):
     NOT_RESOURCE_OWNER = 403, "Not resource owner"
+    PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS = 409, "Current position already exists in professional experience"
 
 
 @router.post(
@@ -74,10 +79,15 @@ async def create_residency_for_user(
             user_id, current_user.id, **residency_creation_data.model_dump()
         )
         return ResidencyViewSchema.model_validate(user_residency)
+
     except NotResourceOwnerError:
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
+
     except UserNotFoundError:
         raise CreateUserResidencyResponses.USER_NOT_FOUND
+
+    except ProfessionalExperienceCurrentPositionExistsError:
+        raise CreateUserResidencyResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
 
 
 class UpdateResidencyResponses(CreateUserResidencyResponses):
@@ -101,10 +111,15 @@ async def update_user_residency(
             user_id, current_user.id, residency_id, residency_update_data.model_dump()
         )
         return ResidencyViewSchema.model_validate(user_residency)
+
     except NotResourceOwnerError:
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
+
     except UserNotFoundError:
         raise CreateUserResidencyResponses.USER_NOT_FOUND
+
+    except ProfessionalExperienceCurrentPositionExistsError:
+        raise UpdateResidencyResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
 
 
 class DeleteResidencyResponses(CreateUserResidencyResponses, GetSingleUserResidencyResponses):

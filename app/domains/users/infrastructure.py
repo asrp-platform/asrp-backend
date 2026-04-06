@@ -9,6 +9,7 @@ from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
+    Job,
     NameChangeRequest,
     ProfessionalInformation,
     Residency,
@@ -32,6 +33,10 @@ class FellowshipRepository(SQLAlchemyRepository):
     model = Fellowship
 
 
+class JobRepository(SQLAlchemyRepository):
+    model = Job
+
+
 class NameChangeRequestRepository(SQLAlchemyRepository):
     model = NameChangeRequest
 
@@ -47,6 +52,7 @@ class UserUnitOfWork(SQLAlchemyUnitOfWork):
         self.professional_information_repository = ProfessionalInformationRepository(self._session)
         self.residency_repository = ResidencyRepository(self._session)
         self.fellowship_repository = FellowshipRepository(self._session)
+        self.job_repository = JobRepository(self._session)
         self.name_change_request_repository = NameChangeRequestRepository(self._session)
         self.communication_preferences_repository = CommunicationPreferencesRepository(self._session)
 

@@ -5,6 +5,7 @@ from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
     FellowshipNotFoundError,
+    ProfessionalExperienceCurrentPositionExistsError,
     UserNotFoundError,
 )
 from app.domains.users.schemas import (
@@ -70,6 +71,7 @@ async def get_single_user_fellowship(
 
 class CreateUserFellowshipResponses(GetUserFellowshipsResponses):
     NOT_RESOURCE_OWNER = 403, "Not resource owner"
+    PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS = 409, "Current position already exists in professional experience"
 
 
 @router.post(
@@ -97,6 +99,9 @@ async def create_fellowship_for_user(
 
     except UserNotFoundError:
         raise CreateUserFellowshipResponses.USER_NOT_FOUND
+
+    except ProfessionalExperienceCurrentPositionExistsError:
+        raise CreateUserFellowshipResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
 
 
 class UpdateFellowshipResponses(CreateUserFellowshipResponses):
@@ -129,6 +134,9 @@ async def update_user_fellowship(
 
     except UserNotFoundError:
         raise UpdateFellowshipResponses.USER_NOT_FOUND
+
+    except ProfessionalExperienceCurrentPositionExistsError:
+        raise UpdateFellowshipResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
 
 
 class DeleteFellowshipResponses(

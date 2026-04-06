@@ -57,6 +57,7 @@ class User(Base):
     )
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
     residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
+    jobs: Mapped[list["Job"]] = relationship("Job", back_populates="user")
     name_change_requests: Mapped[list["NameChangeRequest"]] = relationship("NameChangeRequest", back_populates="user")
     communication_preferences: Mapped["CommunicationPreferences"] = relationship(
         "CommunicationPreferences", back_populates="user", uselist=False
@@ -93,32 +94,35 @@ class ProfessionalInformation(Base, UCIMixin):
     user: Mapped["User"] = relationship("User", back_populates="professional_information")
 
 
-class Residency(Base, UCIMixin):
-    __tablename__ = "users_residency"
-
+class ProfessionalExperienceMixin:
+    current_position: Mapped[bool] = mapped_column(nullable=False, default=False, server_default=text("false"))
     institution: Mapped[str] = mapped_column(nullable=False)
     speciality: Mapped[str] = mapped_column(nullable=False)
     city: Mapped[str] = mapped_column(nullable=False)
     state: Mapped[str] = mapped_column(nullable=False)
     country: Mapped[str] = mapped_column(nullable=False)
     years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+
+class Residency(Base, UCIMixin, ProfessionalExperienceMixin):
+    __tablename__ = "users_residency"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="residencies")
 
 
-class Fellowship(Base, UCIMixin):
+class Fellowship(Base, UCIMixin, ProfessionalExperienceMixin):
     __tablename__ = "users_fellowship"
-
-    institution: Mapped[str] = mapped_column(nullable=False)
-    speciality: Mapped[str] = mapped_column(nullable=False)
-    city: Mapped[str] = mapped_column(nullable=False)
-    state: Mapped[str] = mapped_column(nullable=False)
-    country: Mapped[str] = mapped_column(nullable=False)
-    years_from_to: Mapped[str] = mapped_column(nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="fellowships")
+
+
+class Job(Base, UCIMixin, ProfessionalExperienceMixin):
+    __tablename__ = "users_job"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="jobs")
 
 
 class NameChangeRequestStatusEnum(Enum):
