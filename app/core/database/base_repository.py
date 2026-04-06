@@ -85,13 +85,15 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
     async def get_count(self) -> int:
         stmt = select(func.count()).select_from(self.model)
+        stmt = stmt.filter_by(_deleted=False)
+
         return (await self.session.execute(stmt)).scalar()
 
     async def get_first_by_kwargs(self, stmt=None, **kwargs) -> T:
         if stmt is None:
             stmt = select(self.model)
 
-        stmt = stmt.filter_by(**kwargs)
+        stmt = stmt.filter_by(_deleted=False, **kwargs)
         return (await self.session.execute(stmt)).scalars().first()
 
     async def get_all_by_kwargs(self, **kwargs) -> Sequence[T]:
