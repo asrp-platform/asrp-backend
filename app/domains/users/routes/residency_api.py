@@ -140,11 +140,5 @@ async def delete_user_residency(
 ) -> int:
     try:
         return await service.delete_user_residency(user_id, current_user.id, residency_id)
-    except NotResourceOwnerError:
-        raise DeleteResidencyResponses.NOT_RESOURCE_OWNER
-    except UserNotFoundError:
-        raise DeleteResidencyResponses.USER_NOT_FOUND
-    except ResidencyNotFoundError:
-        raise DeleteResidencyResponses.RESIDENCY_NOT_FOUND
     except CannotDeleteLastResidencyError:
         raise DeleteResidencyResponses.CANNOT_DELETE_LAST_RESIDENCY
