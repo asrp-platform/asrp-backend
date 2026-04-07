@@ -89,20 +89,25 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
         return (await self.session.execute(stmt)).scalar()
 
-    async def get_count_by_kwargs(self, **kwargs) -> int:
-        """Return count of records matching kwargs and not deleted."""
-        stmt = select(func.count()).select_from(self.model)
+    async def get_count_by_kwargs(self, stmt=None, **kwargs) -> int:
+        if stmt is None:
+            count_stmt = select(func.count()).select_from(self.model)
 
-        if kwargs:
+            if kwargs:
+                try:
+                    conditions = build_conditions(self.model, kwargs)
+                except ValueError as e:
+                    raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
+                count_stmt = count_stmt.filter(*conditions)
+
+            count_stmt = count_stmt.filter_by(_deleted=False)
+        else:
             try:
-                conditions = build_conditions(self.model, kwargs)
-            except ValueError as e:
-                raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
-            stmt = stmt.filter(*conditions)
+                count_stmt = stmt.with_only_columns(func.count()).order_by(None)
+            except Exception:
+                count_stmt = select(func.count()).select_from(self.model).filter_by(_deleted=False)
 
-        stmt = stmt.filter_by(_deleted=False)
-
-        return (await self.session.execute(stmt)).scalar_one()
+        return (await self.session.execute(count_stmt)).scalar_one()
 
     async def get_first_by_kwargs(self, stmt=None, **kwargs) -> T:
         if stmt is None:
