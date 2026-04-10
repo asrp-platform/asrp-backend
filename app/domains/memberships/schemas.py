@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.domains.memberships.models import ApprovalStatusEnum, MembershipTypeEnum
+from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
 
 
@@ -25,7 +25,6 @@ class MembershipDataSchema(BaseModel):
     job_title: str
     practice_setting: str
     subspecialty: str
-    is_trained_in_us: bool
 
 
 class MembershipCreateSchema(BaseModel):
@@ -43,7 +42,7 @@ class UserMembershipSchema(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime
-    approval_status: ApprovalStatusEnum
+    status: MembershipRequestStatusEnum
     current_period_end: datetime | None = None
     auto_renewal: bool
     has_access: bool
@@ -60,13 +59,13 @@ class UserMembershipViewSchema(UserMembershipSchema):
 
 
 class UserMembershipMockUpdateSchema(BaseModel):
-    approval_status: ApprovalStatusEnum = Field(
-        default=ApprovalStatusEnum.PENDING,
+    status: MembershipRequestStatusEnum = Field(
+        default=MembershipRequestStatusEnum.SUBMITTED,
         description="Approval status of the membership",
     )
     current_period_end: datetime | None = Field(None, description="End date of the current period")
     auto_renewal: bool = Field(True, description="Whether auto-renewal is enabled")
     membership_type: MembershipTypeEnum = Field(
         default=MembershipTypeEnum.ACTIVE,
-        description="Type of the membership",
+        description="Membership type",
     )

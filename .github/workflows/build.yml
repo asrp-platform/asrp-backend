@@ -63,6 +63,9 @@ jobs:
           DB_USER=test
           DB_NAME=test
           DB_HOST=localhost
+
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+
           EOF
 
           echo ".env written (secrets hidden)"
@@ -133,6 +136,9 @@ jobs:
           DB_USER=test
           DB_NAME=test
           DB_HOST=localhost
+
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+
           EOF
 
       - name: Start DB with docker compose

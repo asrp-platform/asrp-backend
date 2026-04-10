@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -38,44 +38,64 @@ class MembershipType(Base):
     description: Mapped[str] = mapped_column(nullable=True)
     is_purchasable: Mapped[bool] = mapped_column(nullable=False, default=True, server_default=text("true"))
 
-    user_memberships: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="membership_type")
-
-
-class ApprovalStatusEnum(Enum):
-    APPROVED = "APPROVED"
-    PENDING = "PENDING"
-    REJECTED = "REJECTED"
-
-
-class UserMembership(Base, UCIMixin):
-    __tablename__ = "users_memberships"
-
-    approval_status: Mapped[ApprovalStatusEnum] = mapped_column(
-        SQLAEnum(ApprovalStatusEnum, name="approval_status_enum"),
-        nullable=False,
-        default=ApprovalStatusEnum.PENDING,
-        server_default=text("'PENDING'"),
+    membership_requests: Mapped[list["MembershipRequest"]] = relationship(
+        "MembershipRequest", back_populates="membership_type"
     )
 
-    current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    auto_renewal: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+
+class MembershipRequestStatusEnum(str, Enum):
+    SUBMITTED = "SUBMITTED"
+    PAYMENT_PENDING = "PAYMENT_PENDING"
+    PAID = "PAID"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    PAYMENT_FAILED = "PAYMENT_FAILED"
+    PAYMENT_EXPIRED = "PAYMENT_EXPIRED"
+
+
+class MembershipRequest(Base, UCIMixin):
+    __tablename__ = "membership_requests"
+
+    status: Mapped[MembershipRequestStatusEnum] = mapped_column(
+        SQLAEnum(MembershipRequestStatusEnum, name="membership_request_status_enum"),
+        nullable=False,
+        default=MembershipRequestStatusEnum.SUBMITTED,
+        server_default=text("'SUBMITTED'"),
+    )
 
     primary_affiliation: Mapped[str] = mapped_column(nullable=False)
     job_title: Mapped[str] = mapped_column(nullable=False)
     practice_setting: Mapped[str] = mapped_column(nullable=False)
     subspecialty: Mapped[str] = mapped_column(nullable=False)
-    is_trained_in_us: Mapped[bool] = mapped_column(nullable=False)
 
-    @property
-    def has_access(self) -> bool:
-        if self.approval_status != ApprovalStatusEnum.APPROVED:
-            return False
-        if self.current_period_end is None:
-            return True
-        return self.current_period_end > datetime.now(tz=timezone.utc)
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_comment: Mapped[str | None] = mapped_column(nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="membership")
+    user: Mapped["User"] = relationship("User", back_populates="membership_request")
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
-    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_memberships")
+    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="membership_requests")
+
+    # class ApprovalStatusEnum(Enum):
+    #     APPROVED = "APPROVED"
+    #     PENDING = "PENDING"
+    #     REJECTED = "REJECTED"
+
+    # approval_status: Mapped[ApprovalStatusEnum] = mapped_column(
+    #     SQLAEnum(ApprovalStatusEnum, name="approval_status_enum"),
+    #     nullable=False,
+    #     default=ApprovalStatusEnum.PENDING,
+    #     server_default=text("'PENDING'"),
+    # )
+    #
+    # current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    # auto_renewal: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+
+    # @property
+    # def has_access(self) -> bool:
+    #     if self.approval_status != ApprovalStatusEnum.APPROVED:
+    #         return False
+    #     if self.current_period_end is None:
+    #         return True
+    #     return self.current_period_end > datetime.now(tz=timezone.utc)

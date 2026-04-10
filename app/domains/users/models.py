@@ -8,11 +8,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import MembershipRequest
 
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
     from app.domains.news.models import News
+    from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 
 
@@ -48,7 +49,7 @@ class User(Base):
     email_confirmed: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
-    membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="user")
+    membership_request: Mapped["MembershipRequest"] = relationship("MembershipRequest", back_populates="user")
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
@@ -62,7 +63,10 @@ class User(Base):
     communication_preferences: Mapped["CommunicationPreferences"] = relationship(
         "CommunicationPreferences", back_populates="user", uselist=False
     )
-    feedback_additional_info: Mapped["FeedbackAdditionalInfo"] = relationship("FeedbackAdditionalInfo", back_populates="user")
+    feedback_additional_info: Mapped["FeedbackAdditionalInfo"] = relationship(
+        "FeedbackAdditionalInfo", back_populates="user"
+    )
+    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)

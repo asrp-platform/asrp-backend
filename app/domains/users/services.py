@@ -29,11 +29,6 @@ from app.domains.users.models import (
     User,
 )
 
-"""
-Не использую HTTPExceptions в сервисах, так как
-это сделало бы сервисы зависимыми от фреймворка
-"""
-
 
 class UserService:
     def __init__(self, uow):
@@ -541,10 +536,10 @@ class CommunicationPreferencesService:
         return communication_preferences
 
     async def update_or_create_preferences(
-            self,
-            user_id: int,
-            update_data: dict | None = None,
-            is_agrees_communications: bool = False,
+        self,
+        user_id: int,
+        update_data: dict | None = None,
+        is_agrees_communications: bool = False,
     ) -> CommunicationPreferences:
         if update_data is None:
             update_data = {}
