@@ -60,7 +60,7 @@ class AuthService:
             return
 
         token = self.cryptographer.create_token(email)
-        link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
+        link = f"{settings.FRONTEND_DOMAIN}/password-reset/confirm/?token={token.decode()}"
         message = f"""
         Hello,
 
