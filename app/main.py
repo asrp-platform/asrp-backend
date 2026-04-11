@@ -19,6 +19,7 @@ from app.domains.feedback.routes.contact_messages_api import router as contact_m
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.news.api import router as news_router
+from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
 from app.domains.users.routes.current_user_api import router as current_user_router
 from app.domains.users.routes.fellowship_api import router as fellowship_router
@@ -94,6 +95,7 @@ app.include_router(professional_info_router, prefix="/api")
 app.include_router(residency_router, prefix="/api")
 app.include_router(fellowship_router, prefix="/api")
 app.include_router(job_router, prefix="/api")
+app.include_router(webhooks_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")

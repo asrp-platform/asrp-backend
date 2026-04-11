@@ -72,6 +72,16 @@ services:
     networks:
       - default
 
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: stripe_cli
+    depends_on:
+      - asrp_backend
+    environment:
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      STRIPE_DEVICE_NAME: docker-stripe-cli
+    command: listen --forward-to http://host.docker.internal:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
+
   certbot:
     image: certbot/certbot
     depends_on:

@@ -16,7 +16,7 @@ COPY pyproject.toml poetry.lock ./
 
 RUN poetry install --without dev --no-root
 
-COPY compose/backend/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ./compose/backend/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 COPY ./alembic ./

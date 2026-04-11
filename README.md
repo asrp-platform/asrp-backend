@@ -174,6 +174,20 @@ We use MinIO as a file storage. Minio web interface is accessible via
 http://localhost:9001/login
 ```
 
+### Stripe CLI
+
+If backend is running as a docker-container command in `local.yml` need must be:
+
+```yml
+listen --forward-to http://asrp_backend:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
+```
+
+If backend runs on a host mush be set as a `host.docker.internal`:
+
+```yml
+listen --forward-to http://host.docker.internal:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
+```
+
 
 ### Tests
 

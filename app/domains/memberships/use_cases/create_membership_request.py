@@ -76,23 +76,29 @@ class CreateUserMembershipRequestUseCase:
                     "quantity": 1,
                 }
             ]
-            checkout_session = await create_checkout_session(membership_type_line_items)
-
-            provider_data = {
-                "checkout_session_id": checkout_session.id,
-                "checkout_session_status": checkout_session.status,
-                "payment_status": checkout_session.payment_status,
-                "url": checkout_session.url,
-            }
-
-            await self.payment_service.create_payment(
+            payment = await self.payment_service.create_payment(
                 provider=PaymentProvider.STRIPE,
                 amount=membership_type_price_cents,
                 status=PaymentStatusEnum.PENDING,
                 purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
                 user_id=user_id,
-                provider_data=provider_data,
+                provider_data=None,
             )
+            await self.uow._session.flush()
+
+            payment_metadata = {"payment_id": str(payment.id)}
+
+            checkout_session = await create_checkout_session(membership_type_line_items, metadata=payment_metadata)
+
+            provider_data = {
+                "payment_id": str(payment.id),
+                "checkout_session_id": checkout_session.id,
+                "checkout_session_status": checkout_session.status,
+                "payment_intent_status": checkout_session.payment_status,
+                "url": checkout_session.url,
+            }
+
+            await self.payment_service.update_payment(payment.id, provider_data=provider_data)
 
         return checkout_session.url
 

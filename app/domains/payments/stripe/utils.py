@@ -10,13 +10,16 @@ stripe.api_key = settings.STRIPE_API_KEY
 
 async def create_checkout_session(
     line_items: list[dict],
-    # success_url: str,
+    metadata: dict = None,
     mode: str = "payment",
 ) -> Session:
+    metadata = metadata or {}
     session = stripe.checkout.Session.create(
         mode=mode,
         success_url="https://example.com/success",
         line_items=line_items,
+        metadata=metadata,
+        payment_intent_data={"metadata": metadata},
     )
     return session
 
