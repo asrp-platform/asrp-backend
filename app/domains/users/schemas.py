@@ -66,7 +66,6 @@ class UpdateUserByAdminSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    model_config = {'extra': 'forbid'}
     preferred_name: str | None = None
     suffix: str | None = None
     credentials: str | None = None
@@ -82,9 +81,13 @@ class UpdateUserSchema(BaseModel):
     phone_number: Annotated[str | None, Field()] = None
 
     @field_validator('country', 'city', 'institution', 'role')
-    def forbid_null_for_required_fields(cls, value):
+    def forbid_null_for_required_fields(cls, value, info):
         if value is None:
-            raise PydanticCustomError('field_null', 'This field cannot be null')
+            raise PydanticCustomError(
+                'field_null',
+                '{field_name} cannot be null',
+                {'field_name': info.field_name}
+            )
         return value
 
     @field_validator('preferred_name', mode='before')
@@ -104,6 +107,8 @@ class UpdateUserSchema(BaseModel):
         except phonenumbers.NumberParseException:
             raise PydanticCustomError("phone_number.unparsable", "Invalid phone number format")
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+
+    model_config = {'extra': 'forbid'}
 
 
 class ChangePasswordSchema(BaseModel):
