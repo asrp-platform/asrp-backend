@@ -12,3 +12,9 @@ class ResourceAlreadyExistsError(Exception):
 
 class TimeCooldownError(Exception):
     pass
+
+
+class InvalidOperationError(Exception):
+    """Raised when an attempted operation is invalid in the current domain state."""
+
+    pass

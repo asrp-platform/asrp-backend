@@ -83,11 +83,21 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
         return data, count
 
-    async def get_count(self) -> int:
-        stmt = select(func.count()).select_from(self.model)
-        stmt = stmt.filter_by(_deleted=False)
+    async def get_count(self, stmt=None, **kwargs) -> int:
+        if stmt is None:
+            stmt = select(self.model)
 
-        return (await self.session.execute(stmt)).scalar()
+        if kwargs:
+            try:
+                conditions = build_conditions(self.model, kwargs)
+            except ValueError as e:
+                raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
+            stmt = stmt.filter(*conditions)
+
+        stmt = stmt.filter(self.model._deleted.is_(False))
+        count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
+
+        return (await self.session.execute(count_stmt)).scalar_one()
 
     async def get_first_by_kwargs(self, stmt=None, **kwargs) -> T:
         if stmt is None:
