@@ -44,8 +44,6 @@ class UserMembershipSchema(BaseModel):
     updated_at: datetime
     status: MembershipRequestStatusEnum
     current_period_end: datetime | None = None
-    auto_renewal: bool
-    has_access: bool
     user_id: int
     membership_type_id: int
 
@@ -64,7 +62,7 @@ class UserMembershipMockUpdateSchema(BaseModel):
         description="Approval status of the membership",
     )
     current_period_end: datetime | None = Field(None, description="End date of the current period")
-    auto_renewal: bool = Field(True, description="Whether auto-renewal is enabled")
+    # auto_renewal: bool = Field(True, description="Whether auto-renewal is enabled")
     membership_type: MembershipTypeEnum = Field(
         default=MembershipTypeEnum.ACTIVE,
         description="Membership type",

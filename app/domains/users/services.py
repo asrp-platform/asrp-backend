@@ -94,7 +94,7 @@ class UserService:
                 "uploads",
             )
             async with self.uow:
-                await self.uow.user_repository.update(user_id, {"avatar_path": filename})
+                await self.uow.user_repository.update(user_id, avatar_path=filename)
             return upload_result
         except Exception as e:
             raise e

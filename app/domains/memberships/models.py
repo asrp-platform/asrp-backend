@@ -76,26 +76,3 @@ class MembershipRequest(Base, UCIMixin):
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="membership_requests")
-
-    # class ApprovalStatusEnum(Enum):
-    #     APPROVED = "APPROVED"
-    #     PENDING = "PENDING"
-    #     REJECTED = "REJECTED"
-
-    # approval_status: Mapped[ApprovalStatusEnum] = mapped_column(
-    #     SQLAEnum(ApprovalStatusEnum, name="approval_status_enum"),
-    #     nullable=False,
-    #     default=ApprovalStatusEnum.PENDING,
-    #     server_default=text("'PENDING'"),
-    # )
-    #
-    # current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    # auto_renewal: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
-
-    # @property
-    # def has_access(self) -> bool:
-    #     if self.approval_status != ApprovalStatusEnum.APPROVED:
-    #         return False
-    #     if self.current_period_end is None:
-    #         return True
-    #     return self.current_period_end > datetime.now(tz=timezone.utc)

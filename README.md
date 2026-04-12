@@ -73,12 +73,21 @@ print(Fernet.generate_key().decode())
 
 #### Secret Key generation
 
-
 ```python
 import secrets
 
 print(secrets.token_urlsafe(64))
 ```
+
+#### Stripe Api Key
+
+Ask team lead to get restricted stripe api key
+
+
+#### Stripe Webhook Secret
+
+STRIPE_WEBHOOK_SECRET can be retrieved from the stripe-cli docker container. Check the container logs after it started
+
 
 ### Start and build containers
 
