@@ -1,17 +1,16 @@
-import os
 from abc import ABC, abstractmethod
 from typing import Annotated
 
 from fastapi import Depends, UploadFile
 
-from app.core.config import BASE_DIR, settings
-from app.core.utils.save_file import save_file
+from app.core.config import s3_storage, settings
 from app.domains.legal_documents.types import LegalDocument
 
 
 class LegalDocumentsServiceBase(ABC):
     def __init__(self, document: LegalDocument):
         self.document = document
+        self.file_storage = s3_storage
 
     @abstractmethod
     async def upsert(self, file: UploadFile) -> str:
@@ -38,26 +37,21 @@ class LegalDocumentsServiceBase(ABC):
 
 class LegalDocumentsServicePublic(LegalDocumentsServiceBase):
     async def upsert(self, file: UploadFile) -> str:
-        saved_path = await save_file(file, self.document.storage_path, filename=self.document.filename)
-        return saved_path.as_posix()
+        file = await file.read()
+        await self.file_storage.upload_file(self.document.filename, file)
 
     async def delete(self) -> None:
-        filepath = BASE_DIR / self.document.storage_path / self.document.filename
-        if filepath.exists():
-            os.remove(filepath)
+        await self.file_storage.delete_object(self.document.filename)
 
     async def get_path(self) -> str | None:
-        filepath = BASE_DIR / self.document.storage_path / self.document.filename
-        if filepath.exists():
-            return (self.document.storage_path / self.document.filename).as_posix()
-        return None
+        return await self.file_storage.get_presigned_object(self.document.filename)
 
 
 # --- Bylaws Specific Configuration ---
 
 def get_bylaws_document() -> LegalDocument:
     return LegalDocument(
-        filename="bylaws.pdf",
+        filename="legal_documents/bylaws.pdf",
         storage_path=settings.BYLAWS_PATH
     )
 
