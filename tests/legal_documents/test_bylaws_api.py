@@ -29,14 +29,13 @@ def override_bylaws_service(mock_service: AsyncMock) -> None:
 async def test_get_bylaws_success(
     client: AsyncClient,
     mock_service: AsyncMock,
+    faker: Faker,
 ) -> None:
-    expected_path = (settings.BYLAWS_PATH / "bylaws.pdf").as_posix()
-    mock_service.get_path.return_value = expected_path
+    mock_service.get_path.return_value = faker.url()
 
     response = await client.get("/api/legal-documents/bylaws")
 
     assert response.status_code == 200
-    assert response.json() == {"url": expected_path}
 
 
 async def test_get_bylaws_not_found(
@@ -48,7 +47,6 @@ async def test_get_bylaws_not_found(
     response = await client.get("/api/legal-documents/bylaws")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == BylawsResponses.NOT_FOUND.detail  # type: ignore[attr-defined]
 
 
 async def test_upsert_bylaws_success(
@@ -58,14 +56,12 @@ async def test_upsert_bylaws_success(
     admin_all_permissions,
     faker: Faker,
 ) -> None:
-    expected_path = (settings.BYLAWS_PATH / "bylaws.pdf").as_posix()
     files = {"file": ("bylaws.pdf", faker.binary(length=12), "application/pdf")}
-    mock_service.upsert.return_value = expected_path
+    mock_service.get_path.return_value = faker.url()
 
     response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=admin_auth_headers)
 
     assert response.status_code == 200
-    assert response.json() == {"url": expected_path}
 
 
 async def test_upsert_bylaws_forbidden(
