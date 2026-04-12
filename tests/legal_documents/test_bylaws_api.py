@@ -4,8 +4,6 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
-from app.core.config import settings
-from app.domains.legal_documents.routes.api import BylawsResponses
 from tests.fixtures.auth import AuthHeaders
 
 pytestmark = pytest.mark.anyio

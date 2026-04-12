@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, UploadFile
 
-from app.core.config import s3_storage, settings
+from app.core.config import s3_storage
 from app.domains.legal_documents.types import LegalDocument
 
 
@@ -52,7 +52,6 @@ class LegalDocumentsServicePublic(LegalDocumentsServiceBase):
 def get_bylaws_document() -> LegalDocument:
     return LegalDocument(
         filename="legal_documents/bylaws.pdf",
-        storage_path=settings.BYLAWS_PATH
     )
 
 
