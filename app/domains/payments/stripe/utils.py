@@ -11,12 +11,14 @@ stripe.api_key = settings.STRIPE_API_KEY
 async def create_checkout_session(
     line_items: list[dict],
     metadata: dict = None,
+    *,
+    success_url: str,
     mode: str = "payment",
 ) -> Session:
     metadata = metadata or {}
     session = stripe.checkout.Session.create(
         mode=mode,
-        success_url="https://example.com/success",
+        success_url=success_url,
         line_items=line_items,
         metadata=metadata,
         payment_intent_data={"metadata": metadata},
@@ -26,8 +28,6 @@ async def create_checkout_session(
 
 def to_stripe_amount(amount: Decimal, currency: str = "usd") -> int:
     currency = currency.lower()
-
-    # Для твоего текущего кейса USD
     if currency == "usd":
         return int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 

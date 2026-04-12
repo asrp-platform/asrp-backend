@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from app.core.config import settings
 from app.domains.feedback.services import (
     FeedbackAdditionalInfoService,
     FeedbackAdditionalInfoServiceDep,
@@ -84,11 +85,16 @@ class CreateUserMembershipRequestUseCase:
                 user_id=user_id,
                 provider_data=None,
             )
+            # Needed to get payment id
             await self.uow._session.flush()
 
             payment_metadata = {"payment_id": str(payment.id)}
 
-            checkout_session = await create_checkout_session(membership_type_line_items, metadata=payment_metadata)
+            checkout_session = await create_checkout_session(
+                membership_type_line_items,
+                metadata=payment_metadata,
+                success_url=f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+            )
 
             provider_data = {
                 "payment_id": str(payment.id),
