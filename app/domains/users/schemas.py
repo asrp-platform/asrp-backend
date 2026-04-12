@@ -35,6 +35,7 @@ class UserSchema(BaseModel):
     firstname: str
     middlename: str | None
     lastname: str
+    preferred_name: str | None
     suffix: str | None
     credentials: str | None
     email: str
@@ -65,9 +66,7 @@ class UpdateUserByAdminSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    firstname: Annotated[str | None, Field(min_length=2)] = None
-    middlename: str | None = None
-    lastname: Annotated[str | None, Field(min_length=2)] = None
+    preferred_name: str | None = None
     suffix: str | None = None
     credentials: str | None = None
     description: str | None = None
@@ -81,6 +80,22 @@ class UpdateUserSchema(BaseModel):
     role: str | None = None
     phone_number: Annotated[str | None, Field()] = None
 
+    @field_validator('country', 'city', 'institution', 'role')
+    def forbid_null_for_required_fields(cls, value, info):
+        if value is None:
+            raise PydanticCustomError(
+                'field_null',
+                '{field_name} cannot be null',
+                {'field_name': info.field_name}
+            )
+        return value
+
+    @field_validator('preferred_name', mode='before')
+    def normalize_preferred_name(cls, value):
+        if value == "":
+            return None
+        return value
+
     @field_validator("phone_number")
     def validate_phone_number(cls, value):
         if value is None or value.strip() == "":
@@ -92,6 +107,8 @@ class UpdateUserSchema(BaseModel):
         except phonenumbers.NumberParseException:
             raise PydanticCustomError("phone_number.unparsable", "Invalid phone number format")
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+
+    model_config = {'extra': 'forbid'}
 
 
 class ChangePasswordSchema(BaseModel):
