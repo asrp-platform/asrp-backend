@@ -52,7 +52,7 @@ class S3BaseStorage:
             url = await client.generate_presigned_url(
                 "get_object",
                 Params={
-                    "Bucket": "uploads",
+                    "Bucket": bucket,
                     "Key": object_key,
                 },
                 ExpiresIn=int(timedelta(hours=1).total_seconds()),
