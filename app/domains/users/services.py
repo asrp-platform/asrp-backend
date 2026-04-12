@@ -157,18 +157,19 @@ class ProfessionalInformationService:
             else:
                 return await self.uow.professional_information_repository.create(**data)
 
+
 class ProfessionalExperienceBaseService:
     def __init__(self, uow):
         self.uow = uow
 
     async def _check_resource_owner(
-            self,
-            user_id: int,
-            *,
-            current_user_id: int = None,
-            residency_id: int = None,
-            fellowship_id: int = None,
-            job_id: int = None,
+        self,
+        user_id: int,
+        *,
+        current_user_id: int = None,
+        residency_id: int = None,
+        fellowship_id: int = None,
+        job_id: int = None,
     ) -> None:
         user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
@@ -244,7 +245,7 @@ class ResidencyService(ProfessionalExperienceBaseService):
         async with self.uow:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
 
-            remaining = await self.uow.residency_repository.get_count_by_kwargs(user_id=user_id)
+            remaining = await self.uow.residency_repository.get_count(user_id=user_id)
 
             if remaining <= 1:
                 raise CannotDeleteLastResidencyError("Cannot delete last residency for user")

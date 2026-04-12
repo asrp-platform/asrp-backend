@@ -83,29 +83,19 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
         return data, count
 
-    async def get_count(self) -> int:
-        stmt = select(func.count()).select_from(self.model)
-        stmt = stmt.filter_by(_deleted=False)
-
-        return (await self.session.execute(stmt)).scalar()
-
-    async def get_count_by_kwargs(self, stmt=None, **kwargs) -> int:
+    async def get_count(self, stmt=None, **kwargs) -> int:
         if stmt is None:
-            count_stmt = select(func.count()).select_from(self.model)
+            stmt = select(self.model)
 
-            if kwargs:
-                try:
-                    conditions = build_conditions(self.model, kwargs)
-                except ValueError as e:
-                    raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
-                count_stmt = count_stmt.filter(*conditions)
-
-            count_stmt = count_stmt.filter_by(_deleted=False)
-        else:
+        if kwargs:
             try:
-                count_stmt = stmt.with_only_columns(func.count()).order_by(None)
-            except Exception:
-                count_stmt = select(func.count()).select_from(self.model).filter_by(_deleted=False)
+                conditions = build_conditions(self.model, kwargs)
+            except ValueError as e:
+                raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
+            stmt = stmt.filter(*conditions)
+
+        stmt = stmt.filter(self.model._deleted.is_(False))
+        count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
 
         return (await self.session.execute(count_stmt)).scalar_one()
 
