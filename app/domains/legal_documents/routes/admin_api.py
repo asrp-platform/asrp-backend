@@ -3,7 +3,9 @@ from typing import Annotated
 from fastapi import APIRouter, File, UploadFile
 
 from app.core.common.responses import PermissionsResponses
+from app.domains.legal_documents.schemas import ViewLegalDocumentSchema
 from app.domains.legal_documents.services import BylawsServiceDep
+from app.domains.legal_documents.use_cases.upsert_legal_document import UpsertLegalDocumentUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 
 router = APIRouter(prefix="/legal-documents", tags=["Admin: Legal Documents"])
@@ -19,18 +21,18 @@ class BylawsAdminResponses(PermissionsResponses):
     responses=BylawsAdminResponses.responses,
 )
 async def upsert_bylaws(
-    service: BylawsServiceDep,
+    use_case: UpsertLegalDocumentUseCaseDep,
     permissions: AdminPermissionsDep,
     file: Annotated[UploadFile, File(...)],
-) -> dict:
+) -> ViewLegalDocumentSchema:
     if "legal_documents.update" not in permissions:
         raise BylawsAdminResponses.PERMISSION_ERROR
 
     if file.content_type != "application/pdf":
         raise BylawsAdminResponses.INVALID_CONTENT_TYPE
 
-    path = await service.upsert(file)
-    return {"url": path}
+    path = await use_case.execute(file)
+    return ViewLegalDocumentSchema(url=path)
 
 
 @router.delete(

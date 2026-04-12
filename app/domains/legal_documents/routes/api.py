@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
 
+from app.domains.legal_documents.schemas import ViewLegalDocumentSchema
 from app.domains.legal_documents.services import BylawsPublicServiceDep
 
 router = APIRouter(prefix="/legal-documents", tags=["Legal Documents"])
@@ -17,8 +18,8 @@ class BylawsResponses(Responses):
 )
 async def get_bylaws(
     service: BylawsPublicServiceDep,
-) -> dict:
+) -> ViewLegalDocumentSchema:
     path = await service.get_path()
     if not path:
         raise BylawsResponses.NOT_FOUND
-    return {"url": path}
+    return ViewLegalDocumentSchema(url=path)
