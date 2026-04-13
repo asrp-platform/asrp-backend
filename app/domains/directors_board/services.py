@@ -37,15 +37,11 @@ class DirectorBoardMemberService:
             ).scalar_one_or_none()
             insert_data = {**kwargs, "order": max_order + 1}
             director = await self.uow.director_board_member_repository.create(**insert_data)
-            await self.uow._session.flush()
-            await self.uow._session.refresh(director)
             return BoardMemberSchema.model_validate(director)
 
     async def update_director_member(self, director_member_id: int, data: dict) -> BoardMemberSchema:
         async with self.uow:
             updated_director_member = await self.uow.director_board_member_repository.update(director_member_id, **data)
-            await self.uow._session.flush()
-            await self.uow._session.refresh(updated_director_member)
             return BoardMemberSchema.model_validate(updated_director_member)
 
     async def delete_director_member(self, director_member_id: int) -> int:
