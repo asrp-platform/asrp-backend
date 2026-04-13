@@ -68,12 +68,9 @@ async def update_director_member(
 ) -> BoardMemberSchema:
     if "director_board.update" not in permissions:
         raise UpdateDirectorMemberResponses.PERMISSION_ERROR
-    try:
-        update_data_dict = update_data.model_dump(exclude_unset=True)
-        return await director_service.update_director_member(director_member_id, update_data_dict)
-
-    except DirectionBoardMemberNotFoundError:
-        raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+    
+    update_data_dict = update_data.model_dump(exclude_unset=True)
+    return await director_service.update_director_member(director_member_id, update_data_dict)
 
 
 class DeleteDirectorMemberResponses(PermissionsResponses):
@@ -92,15 +89,13 @@ async def delete_director_member(
 ) -> int:
     if "director_board.delete" not in permissions:
         raise DeleteDirectorMemberResponses.PERMISSION_ERROR
-    try:
-        deleted_id = await director_service.delete_director_member(director_member_id)
-        return deleted_id
-    except DirectionBoardMemberNotFoundError:
-        raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+
+    return await director_service.delete_director_member(director_member_id)
 
 
 @router.delete(
     "/{director_member_id}/image",
+    status_code=204,
     responses=DeleteDirectorMemberResponses.responses,
     summary="Delete image for a director board member",
 )
@@ -108,14 +103,11 @@ async def delete_director_member_photo(
     director_member_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
-) -> Response:
+) -> None:
     if "director_board.update" not in permissions:
         raise DeleteDirectorMemberResponses.PERMISSION_ERROR
-    try:
-        await director_service.delete_photo(director_member_id)
-        return Response(status_code=204)
-    except DirectionBoardMemberNotFoundError:
-        raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+    
+    await director_service.delete_photo(director_member_id)
 
 
 class UploadImageResponses(PermissionsResponses):
