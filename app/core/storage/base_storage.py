@@ -52,7 +52,7 @@ class S3BaseStorage:
             url = await client.generate_presigned_url(
                 "get_object",
                 Params={
-                    "Bucket": "uploads",
+                    "Bucket": self.bucket_name,
                     "Key": object_key,
                 },
                 ExpiresIn=int(timedelta(hours=1).total_seconds()),
@@ -62,7 +62,10 @@ class S3BaseStorage:
     async def delete_object(self, object_key: str, bucket_name: str | None = None) -> None:
         bucket = bucket_name or self.bucket_name
         async with self.get_client() as client:
-            await client.delete_object(Bucket=bucket, Key=object_key)
+            try:
+                await client.delete_object(Bucket=bucket, Key=object_key)
+            except client.exceptions.NoSuchBucket:
+                pass
 
     async def __ensure_bucket_exists(self, bucket_name: str | None = None):
         bucket = bucket_name or self.bucket_name
