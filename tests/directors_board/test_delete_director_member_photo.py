@@ -14,9 +14,6 @@ async def test_delete_director_member_photo(
     admin_all_permissions,
     mock_s3_storage,
 ) -> None:
-    # Ensure member has a photo
-    assert directors_board_member_db.photo_url is not None
-
     response = await client.delete(
         f"/api/admin/directors-board/{directors_board_member_db.id}/image",
         headers=admin_auth_headers,
@@ -24,6 +21,7 @@ async def test_delete_director_member_photo(
 
     assert response.status_code == 204
     assert mock_s3_storage.delete_object.called
+    assert directors_board_member_db.photo_url is None
 
 
 async def test_delete_director_member_photo_no_permissions(
