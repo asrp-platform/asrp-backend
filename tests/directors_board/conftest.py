@@ -8,7 +8,7 @@ from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitO
 from app.domains.directors_board.models import DirectorBoardMember
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_s3_storage():
     """
     Automatically mocks s3_storage for all tests in this directory.
