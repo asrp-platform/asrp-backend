@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from faker import Faker
 
-from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork
+from app.domains.directors_board.infrastructure import DirectorsBoardMemberTransactionManagerBase
 from app.domains.directors_board.models import DirectorBoardMember
 
 
@@ -18,7 +18,9 @@ async def directors_board_member_data(faker: Faker) -> dict[str, Any]:
 
 @pytest.fixture(scope="function")
 async def directors_board_member_db(
-    faker: Faker, directors_board_uow: DirectorsBoardMemberUnitOfWork, directors_board_member_data: dict[str, Any]
+    faker: Faker,
+    directors_board_uow: DirectorsBoardMemberTransactionManagerBase,
+    directors_board_member_data: dict[str, Any],
 ) -> DirectorBoardMember:
     creation_data = {
         "role": faker.job(),

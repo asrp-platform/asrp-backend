@@ -6,13 +6,13 @@ from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionsService
 from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
-from tests.fixtures.uow import PermissionsUnitOfWork
+from tests.fixtures.uow import PermissionsTransactionManagerBase
 
 pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture(scope="function")
-def service(permissions_uow: PermissionsUnitOfWork) -> PermissionsService:
+def service(permissions_uow: PermissionsTransactionManagerBase) -> PermissionsService:
     return PermissionsService(permissions_uow)
 
 

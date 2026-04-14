@@ -1,41 +1,41 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.auth.infrastructure import AuthUnitOfWork
-from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork
-from app.domains.feedback.infrastructure import FeedbackUnitOfWork
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork
-from app.domains.permissions.infrastructure import PermissionsUnitOfWork
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.auth.infrastructure import AuthTransactionManagerBase
+from app.domains.directors_board.infrastructure import DirectorsBoardMemberTransactionManagerBase
+from app.domains.feedback.infrastructure import FeedbackTransactionManagerBase
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
+from app.domains.permissions.infrastructure import PermissionsTransactionManagerBase
+from app.domains.users.infrastructure import UserTransactionManagerBase
 
 pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture()
-def auth_uow(test_session: AsyncSession) -> AuthUnitOfWork:
-    return AuthUnitOfWork(test_session)
+def auth_uow(test_session: AsyncSession) -> AuthTransactionManagerBase:
+    return AuthTransactionManagerBase(test_session)
 
 
 @pytest.fixture()
-def user_uow(test_session: AsyncSession) -> UserUnitOfWork:
-    return UserUnitOfWork(test_session)
+def user_uow(test_session: AsyncSession) -> UserTransactionManagerBase:
+    return UserTransactionManagerBase(test_session)
 
 
 @pytest.fixture()
-def permissions_uow(test_session: AsyncSession) -> PermissionsUnitOfWork:
-    return PermissionsUnitOfWork(test_session)
+def permissions_uow(test_session: AsyncSession) -> PermissionsTransactionManagerBase:
+    return PermissionsTransactionManagerBase(test_session)
 
 
 @pytest.fixture()
-def directors_board_uow(test_session: AsyncSession) -> DirectorsBoardMemberUnitOfWork:
-    return DirectorsBoardMemberUnitOfWork(test_session)
+def directors_board_uow(test_session: AsyncSession) -> DirectorsBoardMemberTransactionManagerBase:
+    return DirectorsBoardMemberTransactionManagerBase(test_session)
 
 
 @pytest.fixture()
-def contact_message_uow(test_session: AsyncSession) -> FeedbackUnitOfWork:
-    return FeedbackUnitOfWork(test_session)
+def contact_message_uow(test_session: AsyncSession) -> FeedbackTransactionManagerBase:
+    return FeedbackTransactionManagerBase(test_session)
 
 
 @pytest.fixture()
-def membership_uow(test_session: AsyncSession) -> MembershipsUnitOfWork:
-    return MembershipsUnitOfWork(test_session)
+def membership_uow(test_session: AsyncSession) -> MembershipsTransactionManagerBase:
+    return MembershipsTransactionManagerBase(test_session)

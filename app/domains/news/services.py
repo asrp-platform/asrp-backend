@@ -3,13 +3,13 @@ from typing import Annotated, Any
 from fastapi import Depends
 
 from app.domains.news.exceptions import NewsNotFoundError
-from app.domains.news.infrastructure import NewsUnitOfWork, get_news_unit_of_work
+from app.domains.news.infrastructure import NewsTransactionManagerBase, get_news_unit_of_work
 from app.domains.news.models import News
 
 
 class NewsService:
     def __init__(self, uow):
-        self.uow: NewsUnitOfWork = uow
+        self.uow: NewsTransactionManagerBase = uow
 
     async def get_all_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
@@ -44,7 +44,7 @@ class NewsService:
 
 
 def get_news_service(
-    uow: Annotated[NewsUnitOfWork, Depends(get_news_unit_of_work)],
+    uow: Annotated[NewsTransactionManagerBase, Depends(get_news_unit_of_work)],
 ) -> NewsService:
     return NewsService(uow)
 

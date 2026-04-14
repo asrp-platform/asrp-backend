@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends
 from sqlalchemy import select
@@ -9,13 +9,18 @@ from app.domains.memberships.exceptions import (
     MembershipRequestNotFoundError,
     MembershipTypeNotFoundError,
 )
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipRequest, MembershipType, MembershipTypeEnum
 
 
 class MembershipService:
-    def __init__(self, uow: MembershipsUnitOfWork):
+    def __init__(self, uow: MembershipsTransactionManagerBase):
         self.uow = uow
+
+    async def get_membership_requests(
+        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+    ):
+        return await self.uow.membership_request_repository.list(limit, offset, order_by, filters)
 
     async def get_user_membership_request(self, user_id: int) -> MembershipRequest | None:
         async with self.uow:
@@ -53,7 +58,7 @@ class MembershipService:
 
 
 def get_membership_service(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
+    uow: Annotated[MembershipsTransactionManagerBase, Depends(get_memberships_unit_of_work)],
 ) -> MembershipService:
     return MembershipService(uow)
 

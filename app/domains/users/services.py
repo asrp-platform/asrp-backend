@@ -18,7 +18,7 @@ from app.domains.users.exceptions import (
     ResidencyNotFoundError,
     UserNotFoundError,
 )
-from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
+from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
@@ -379,7 +379,7 @@ class JobService(ProfessionalExperienceBaseService):
 
 
 class NameChangeRequestService:
-    def __init__(self, uow: UserUnitOfWork):
+    def __init__(self, uow: UserTransactionManagerBase):
         self.uow = uow
 
     async def check_resource_existence(
@@ -572,40 +572,42 @@ class CommunicationPreferencesService:
         return await self.uow.communication_preferences_repository.update(communication_preferences.id, **update_data)
 
 
-def get_user_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> UserService:
+def get_user_service(uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)]) -> UserService:
     return UserService(uow)
 
 
 def get_professional_information_service(
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
 ) -> ProfessionalInformationService:
     return ProfessionalInformationService(uow)
 
 
-def get_residency_service(uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)]) -> ResidencyService:
+def get_residency_service(
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+) -> ResidencyService:
     return ResidencyService(uow)
 
 
 def get_fellowship_service(
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
 ) -> FellowshipService:
     return FellowshipService(uow)
 
 
 def get_job_service(
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
 ) -> JobService:
     return JobService(uow)
 
 
 def get_name_change_request_service(
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
 ) -> NameChangeRequestService:
     return NameChangeRequestService(uow)
 
 
 def get_communication_preferences_service(
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
 ) -> CommunicationPreferencesService:
     return CommunicationPreferencesService(uow)
 

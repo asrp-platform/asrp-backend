@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy import func, select, update
 
 from app.domains.directors_board.infrastructure import (
-    DirectorsBoardMemberUnitOfWork,
+    DirectorsBoardMemberTransactionManagerBase,
     get_director_board_member_unit_of_work,
 )
 from app.domains.directors_board.models import DirectorBoardMember
@@ -12,7 +12,7 @@ from app.domains.directors_board.models import DirectorBoardMember
 
 class DirectorBoardMemberService:
     def __init__(self, uow):
-        self.uow: DirectorsBoardMemberUnitOfWork = uow
+        self.uow: DirectorsBoardMemberTransactionManagerBase = uow
 
     async def get_all_directors(self):
         async with self.uow:
@@ -49,7 +49,7 @@ class DirectorBoardMemberService:
 
 
 def get_director_board_member_service(
-    uow: Annotated[DirectorsBoardMemberUnitOfWork, Depends(get_director_board_member_unit_of_work)],
+    uow: Annotated[DirectorsBoardMemberTransactionManagerBase, Depends(get_director_board_member_unit_of_work)],
 ) -> DirectorBoardMemberService:
     return DirectorBoardMemberService(uow)
 

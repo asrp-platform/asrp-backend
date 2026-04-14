@@ -1,7 +1,7 @@
 import pytest
 from faker import Faker
 
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
@@ -24,7 +24,7 @@ def year_range(faker: Faker) -> str:
 
 @pytest.fixture(scope="function")
 async def professional_information(
-    user_uow: UserUnitOfWork, test_user: User, faker: Faker, year_range: str
+    user_uow: UserTransactionManagerBase, test_user: User, faker: Faker, year_range: str
 ) -> ProfessionalInformation:
     prof_info = await user_uow.professional_information_repository.create(
         user_id=test_user.id,
@@ -52,7 +52,7 @@ def professional_information_data(faker: Faker, year_range: str) -> dict:
 
 @pytest.fixture(scope="function")
 async def fellowship(
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     test_user: User,
     year_range: str,
 ) -> Fellowship:
@@ -88,7 +88,7 @@ def fellowship_data(
 
 @pytest.fixture(scope="function")
 async def residency(
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     test_user: User,
     year_range: str,
 ) -> Residency:
@@ -124,7 +124,7 @@ def residency_data(
 
 @pytest.fixture(scope="function")
 async def job(
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     test_user: User,
     year_range: str,
 ) -> Job:
@@ -161,7 +161,7 @@ def job_data(
 @pytest.fixture(scope="function")
 async def name_change_request(
     faker: Faker,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     test_user: User,
 ) -> NameChangeRequest:
     async with user_uow:
@@ -202,7 +202,7 @@ def name_change_request_reject_data(faker: Faker) -> dict:
 @pytest.fixture(scope="function")
 async def communication_preferences(
     faker: Faker,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     test_user: User,
 ) -> CommunicationPreferences:
     async with user_uow:

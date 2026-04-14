@@ -6,7 +6,7 @@ from faker import Faker
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet
 from app.domains.shared.deps import create_access_token, create_refresh_token
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import User
 
 pytestmark = pytest.mark.anyio
@@ -22,7 +22,7 @@ AuthHeaders = dict[str, str]
 @pytest.fixture(scope="function")
 async def user_factory(
     faker: Faker,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
 ) -> UserFactory:
     async def _factory(**overrides) -> User:
         user_data = {
@@ -102,7 +102,7 @@ def user_data(user_registration_data) -> dict[str, Any]:
 
 @pytest.fixture(scope="function")
 async def test_user_with_data(
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     user_data: dict[str | Any],
 ) -> [User, dict]:
     user_creation_data = user_data.copy()

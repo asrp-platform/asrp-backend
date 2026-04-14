@@ -1,7 +1,7 @@
 import pytest
 from faker import Faker
 
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
 from app.domains.memberships.models import MembershipRequest, MembershipTypeEnum
 from app.domains.users.models import User
 
@@ -9,7 +9,7 @@ from app.domains.users.models import User
 @pytest.fixture(scope="function")
 async def user_membership(
     test_user: User,
-    membership_uow: MembershipsUnitOfWork,
+    membership_uow: MembershipsTransactionManagerBase,
     user_membership_data: dict,
 ) -> MembershipRequest:
     async with membership_uow:

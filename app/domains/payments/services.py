@@ -2,13 +2,13 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 
-from app.domains.payments.infrastructure import PaymentUnitOfWork, get_payment_unit_of_work
+from app.domains.payments.infrastructure import PaymentTransactionManagerBase, get_payment_unit_of_work
 from app.domains.payments.models import Payment, ProcessedWebhookEvent
 
 
 class PaymentService:
     def __init__(self, uow):
-        self.uow: PaymentUnitOfWork = uow
+        self.uow: PaymentTransactionManagerBase = uow
 
     async def create_payment(self, **kwargs) -> Payment:
         return await self.uow.payment_repository.create(**kwargs)
@@ -36,7 +36,7 @@ class PaymentService:
 
 
 def get_payment_service(
-    uow: Annotated[PaymentUnitOfWork, Depends(get_payment_unit_of_work)],
+    uow: Annotated[PaymentTransactionManagerBase, Depends(get_payment_unit_of_work)],
 ) -> PaymentService:
     return PaymentService(uow)
 

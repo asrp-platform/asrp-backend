@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.shared.deps import create_access_token
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import Fellowship, Job, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
@@ -14,7 +14,7 @@ async def test_get_user_fellowships_success(
     client: AsyncClient,
     test_user: User,
     fellowship: Fellowship,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
 ):
     response = await client.get(f"/api/users/{test_user.id}/fellowships")
 
@@ -82,7 +82,7 @@ async def test_create_user_fellowship_success(
 @pytest.mark.asyncio
 async def test_create_user_fellowship_not_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -91,7 +91,7 @@ async def test_create_user_fellowship_not_current_position_professional_experien
     async with user_uow:
         await user_uow.fellowship_repository.update(
             fellowship.id,
-            current_position = True,
+            current_position=True,
         )
 
     response = await client.post(
@@ -106,7 +106,7 @@ async def test_create_user_fellowship_not_current_position_professional_experien
 @pytest.mark.asyncio
 async def test_create_user_fellowship_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -115,7 +115,7 @@ async def test_create_user_fellowship_current_position_professional_experience_c
     async with user_uow:
         await user_uow.fellowship_repository.update(
             fellowship.id,
-            current_position = True,
+            current_position=True,
         )
 
     fellowship_data["current_position"] = True
@@ -172,7 +172,7 @@ async def test_update_user_fellowship_success(
 @pytest.mark.asyncio
 async def test_update_user_fellowship_current_position(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -181,7 +181,7 @@ async def test_update_user_fellowship_current_position(
     async with user_uow:
         await user_uow.fellowship_repository.update(
             fellowship.id,
-            current_position = True,
+            current_position=True,
         )
 
     response = await client.put(
@@ -196,7 +196,7 @@ async def test_update_user_fellowship_current_position(
 @pytest.mark.asyncio
 async def test_update_user_fellowship_current_position_professional_experience_current_position_not_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -216,7 +216,7 @@ async def test_update_user_fellowship_current_position_professional_experience_c
 @pytest.mark.asyncio
 async def test_update_user_fellowship_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -226,7 +226,7 @@ async def test_update_user_fellowship_current_position_professional_experience_c
     async with user_uow:
         await user_uow.job_repository.update(
             job.id,
-            current_position = True,
+            current_position=True,
         )
 
     fellowship_data["current_position"] = True

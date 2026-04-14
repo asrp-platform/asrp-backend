@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from httpx import AsyncClient
 
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import NameChangeRequest, NameChangeRequestStatusEnum, User
 from tests.fixtures.auth import AuthHeaders
 
@@ -157,7 +157,7 @@ async def test_create_name_change_request_when_active_request_already_exists(
 
 async def test_create_name_change_request_when_cooldown_not_expired(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     name_change_request: NameChangeRequest,
     auth_headers: AuthHeaders,
     name_change_request_data: dict,

@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.core.common.base_use_case import BaseUseCase
 from app.domains.memberships.exceptions import MembershipTypeNotFoundError
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum, MembershipTypeEnum
 
 
@@ -27,7 +27,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
     Use case for updating or creating a user's membership for testing/mocking.
     """
 
-    def __init__(self, uow: MembershipsUnitOfWork):
+    def __init__(self, uow: MembershipsTransactionManagerBase):
         self.uow = uow
 
     async def execute(self, request: UpdateUserMembershipMockRequest) -> MembershipRequest:
@@ -91,7 +91,7 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
 
 
 def get_update_user_membership_mock_use_case(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
+    uow: Annotated[MembershipsTransactionManagerBase, Depends(get_memberships_unit_of_work)],
 ) -> UpdateUserMembershipMockUseCase:
     return UpdateUserMembershipMockUseCase(uow)
 

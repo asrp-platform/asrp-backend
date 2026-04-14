@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from stripe import Event
 
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
 
@@ -11,7 +11,7 @@ from app.domains.memberships.services import MembershipService, MembershipServic
 class ProcessCheckoutSessionCompletedUseCase:
     def __init__(
         self,
-        uow: MembershipsUnitOfWork,
+        uow: MembershipsTransactionManagerBase,
         membership_service: MembershipService,
     ) -> None:
         self.__uow = uow
@@ -37,7 +37,7 @@ class ProcessCheckoutSessionCompletedUseCase:
 
 
 def get_use_case(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
+    uow: Annotated[MembershipsTransactionManagerBase, Depends(get_memberships_unit_of_work)],
     membership_service: MembershipServiceDep,
 ) -> ProcessCheckoutSessionCompletedUseCase:
     return ProcessCheckoutSessionCompletedUseCase(uow, membership_service)

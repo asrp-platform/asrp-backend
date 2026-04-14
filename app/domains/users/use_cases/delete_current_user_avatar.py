@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.base_use_case import BaseUseCase
-from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
+from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
 from app.domains.users.models import User
 from app.domains.users.services import UserService, get_user_service
 
@@ -25,7 +25,7 @@ class DeleteCurrentUserAvatarUseCase(BaseUseCase[DeleteCurrentUserAvatarRequest,
 
 
 def get_delete_current_user_avatar_use_case(
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> DeleteCurrentUserAvatarUseCase:
     return DeleteCurrentUserAvatarUseCase(uow, service)

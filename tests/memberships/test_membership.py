@@ -1,9 +1,9 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
 
@@ -15,8 +15,8 @@ async def test_create_user_membership(
     test_user: User,
     auth_headers: AuthHeaders,
     user_membership_data: dict,
-    user_uow: UserUnitOfWork,
-    membership_uow: MembershipsUnitOfWork,
+    user_uow: UserTransactionManagerBase,
+    membership_uow: MembershipsTransactionManagerBase,
 ) -> None:
     response = await client.post(
         "api/users/current-user/membership-requests", headers=auth_headers, json=user_membership_data
@@ -42,7 +42,7 @@ async def test_create_user_membership_is_agrees_communications_true(
     test_user: User,
     auth_headers: AuthHeaders,
     user_membership_data: dict,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
 ) -> None:
     user_membership_data["is_agrees_communications"] = True
 

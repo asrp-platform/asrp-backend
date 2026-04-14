@@ -6,7 +6,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet, settings
-from app.domains.auth.infrastructure import AuthUnitOfWork, get_auth_unit_of_work
+from app.domains.auth.infrastructure import AuthTransactionManagerBase, get_auth_unit_of_work
 from app.domains.auth.schemas import RegisterFormData
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
@@ -21,7 +21,7 @@ class RegisterResponses(Responses):
 
 class AuthService:
     def __init__(self, uow):
-        self.uow: AuthUnitOfWork = uow
+        self.uow: AuthTransactionManagerBase = uow
         self.cryptographer = Cryptographer(fernet)
         self.email_provider = get_email_service(GmailPlugin)
 
@@ -104,7 +104,7 @@ class AuthService:
         return self.cryptographer.verify_token(token, lifetime_seconds)
 
 
-def get_auth_service(uow: Annotated[AuthUnitOfWork, Depends(get_auth_unit_of_work)]) -> AuthService:
+def get_auth_service(uow: Annotated[AuthTransactionManagerBase, Depends(get_auth_unit_of_work)]) -> AuthService:
     return AuthService(uow)
 
 

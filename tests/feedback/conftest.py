@@ -3,7 +3,7 @@ import random
 import pytest
 from faker import Faker
 
-from app.domains.feedback.infrastructure import FeedbackUnitOfWork
+from app.domains.feedback.infrastructure import FeedbackTransactionManagerBase
 from app.domains.feedback.models import ContactMessage, ContactMessageTypeEnum
 
 
@@ -94,6 +94,6 @@ def get_involved_committees_message_data(faker: Faker) -> dict:
 
 @pytest.fixture(scope="function")
 async def contact_message_db(
-    contact_message_uow: FeedbackUnitOfWork, get_involved_committees_message_data: dict
+    contact_message_uow: FeedbackTransactionManagerBase, get_involved_committees_message_data: dict
 ) -> ContactMessage:
     return await contact_message_uow.contact_message_repository.create(**get_involved_committees_message_data)

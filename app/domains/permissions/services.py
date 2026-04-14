@@ -6,7 +6,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.domains.permissions.infrastructure import PermissionsUnitOfWork, get_permissions_unit_of_work
+from app.domains.permissions.infrastructure import PermissionsTransactionManagerBase, get_permissions_unit_of_work
 from app.domains.permissions.models import Permission
 from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
@@ -16,7 +16,7 @@ privileges_logger = logger.bind(name="privileges")
 
 class PermissionsService:
     def __init__(self, uow):
-        self.uow: PermissionsUnitOfWork = uow
+        self.uow: PermissionsTransactionManagerBase = uow
 
     async def get_all_permissions(self):
         async with self.uow:
@@ -86,7 +86,7 @@ class PermissionsService:
 
 
 def get_permissions_service(
-    uow: Annotated[PermissionsUnitOfWork, Depends(get_permissions_unit_of_work)],
+    uow: Annotated[PermissionsTransactionManagerBase, Depends(get_permissions_unit_of_work)],
 ) -> PermissionsService:
     return PermissionsService(uow)
 

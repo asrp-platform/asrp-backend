@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.shared.deps import create_access_token
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import Fellowship, Residency, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
@@ -80,7 +80,7 @@ async def test_create_user_residency_success(
 
 async def test_create_user_residency_not_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -104,7 +104,7 @@ async def test_create_user_residency_not_current_position_professional_experienc
 @pytest.mark.asyncio
 async def test_create_user_residency_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
@@ -113,7 +113,7 @@ async def test_create_user_residency_current_position_professional_experience_cu
     async with user_uow:
         await user_uow.residency_repository.update(
             residency.id,
-            current_position = True,
+            current_position=True,
         )
 
     residency_data["current_position"] = True
@@ -169,7 +169,7 @@ async def test_update_user_residency_success(
 
 async def test_update_user_residency_current_position(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
@@ -178,7 +178,7 @@ async def test_update_user_residency_current_position(
     async with user_uow:
         await user_uow.residency_repository.update(
             residency.id,
-            current_position = True,
+            current_position=True,
         )
 
     response = await client.put(
@@ -192,7 +192,7 @@ async def test_update_user_residency_current_position(
 
 async def test_update_user_residency_current_position_professional_experience_current_position_not_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
@@ -212,7 +212,7 @@ async def test_update_user_residency_current_position_professional_experience_cu
 @pytest.mark.asyncio
 async def test_update_user_residency_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserUnitOfWork,
+    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
@@ -222,7 +222,7 @@ async def test_update_user_residency_current_position_professional_experience_cu
     async with user_uow:
         await user_uow.fellowship_repository.update(
             fellowship.id,
-            current_position = True,
+            current_position=True,
         )
 
     residency_data["current_position"] = True

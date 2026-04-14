@@ -4,16 +4,16 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
-from app.domains.auth.infrastructure import AuthUnitOfWork
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.auth.infrastructure import AuthTransactionManagerBase
+from app.domains.users.infrastructure import UserTransactionManagerBase
 
 pytestmark = pytest.mark.anyio
 
 
 async def test_register(
     client: AsyncClient,
-    auth_uow: AuthUnitOfWork,
-    user_uow: UserUnitOfWork,
+    auth_uow: AuthTransactionManagerBase,
+    user_uow: UserTransactionManagerBase,
     user_registration_data,
 ) -> None:
     response = await client.post("api/auth/register", json=user_registration_data)
@@ -25,8 +25,8 @@ async def test_register(
 
 async def test_email_already_in_use(
     client: AsyncClient,
-    auth_uow: AuthUnitOfWork,
-    user_uow: UserUnitOfWork,
+    auth_uow: AuthTransactionManagerBase,
+    user_uow: UserTransactionManagerBase,
     user_data: dict[str | Any],
 ) -> None:
     user_creation_data = user_data.copy()
@@ -47,7 +47,7 @@ async def test_email_already_in_use(
 async def test_password_dont_match(
     client: AsyncClient,
     faker: Faker,
-    auth_uow: AuthUnitOfWork,
+    auth_uow: AuthTransactionManagerBase,
     user_registration_data,
 ) -> None:
     response = await client.post("api/auth/register", json={**user_registration_data, "repeat_password": faker.pystr()})

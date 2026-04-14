@@ -5,14 +5,14 @@ from fastapi import Depends
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
-from app.domains.feedback.infrastructure import FeedbackUnitOfWork, get_feedback_unit_of_work
+from app.domains.feedback.infrastructure import FeedbackTransactionManagerBase, get_feedback_unit_of_work
 from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.feedback.schemas import CreateContactMessageSchema
 
 
 class FeedbackService:
     def __init__(self, uow):
-        self.uow: FeedbackUnitOfWork = uow
+        self.uow: FeedbackTransactionManagerBase = uow
         self.email_provider = get_email_service(GmailPlugin)
 
     async def create_contact_message(self, data: CreateContactMessageSchema):
@@ -50,31 +50,33 @@ class FeedbackService:
 
 class FeedbackAdditionalInfoService:
     def __init__(self, uow):
-        self.uow: FeedbackUnitOfWork = uow
+        self.uow: FeedbackTransactionManagerBase = uow
 
-    async def create_feedback_additional_info(
-            self,
-            user_id: int,
-            **kwargs
-    ) -> FeedbackAdditionalInfo:
-        feedback_additional_info = await self.uow.feedback_additional_info_repository.get_first_by_kwargs(user_id=user_id)
+    async def create_feedback_additional_info(self, user_id: int, **kwargs) -> FeedbackAdditionalInfo:
+        feedback_additional_info = await self.uow.feedback_additional_info_repository.get_first_by_kwargs(
+            user_id=user_id
+        )
         if feedback_additional_info is not None:
-            raise FeedbackAdditionalInfoAlreadyExistsError("Additional detail for User with provided ID is already exists")
+            raise FeedbackAdditionalInfoAlreadyExistsError(
+                "Additional detail for User with provided ID is already exists"
+            )
 
         return await self.uow.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
 
 
 def get_feedback_additional_info_service(
-    uow: Annotated[FeedbackUnitOfWork, Depends(get_feedback_unit_of_work)],
-) ->FeedbackAdditionalInfoService:
+    uow: Annotated[FeedbackTransactionManagerBase, Depends(get_feedback_unit_of_work)],
+) -> FeedbackAdditionalInfoService:
     return FeedbackAdditionalInfoService(uow)
 
 
 def get_feedback_service(
-    uow: Annotated[FeedbackUnitOfWork, Depends(get_feedback_unit_of_work)],
+    uow: Annotated[FeedbackTransactionManagerBase, Depends(get_feedback_unit_of_work)],
 ) -> FeedbackService:
     return FeedbackService(uow)
 
 
 FeedbackServiceDep = Annotated[FeedbackService, Depends(get_feedback_service)]
-FeedbackAdditionalInfoServiceDep = Annotated[FeedbackAdditionalInfoService, Depends(get_feedback_additional_info_service)]
+FeedbackAdditionalInfoServiceDep = Annotated[
+    FeedbackAdditionalInfoService, Depends(get_feedback_additional_info_service)
+]

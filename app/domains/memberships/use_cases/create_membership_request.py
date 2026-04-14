@@ -8,7 +8,7 @@ from app.domains.feedback.services import (
     FeedbackAdditionalInfoServiceDep,
     get_feedback_additional_info_service,
 )
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
+from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
@@ -24,7 +24,7 @@ from app.domains.users.services import (
 class CreateUserMembershipRequestUseCase:
     def __init__(
         self,
-        uow: MembershipsUnitOfWork,
+        uow: MembershipsTransactionManagerBase,
         membership_service: MembershipService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
         communication_preference_service: CommunicationPreferencesService,
@@ -115,7 +115,7 @@ class CreateUserMembershipRequestUseCase:
 
 
 def get_create_membership_request_use_case(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
+    uow: Annotated[MembershipsTransactionManagerBase, Depends(get_memberships_unit_of_work)],
     membership_service: MembershipServiceDep,
     feedback_additional_info_service: Annotated[
         FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)
