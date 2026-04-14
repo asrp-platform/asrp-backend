@@ -109,7 +109,7 @@ async def get_current_user_membership(
     user: Annotated[User, Depends(get_current_user)],
     membership_service: MembershipServiceDep,
 ) -> MembershipRequest | None:
-    return await membership_service.get_user_membership(user.id)
+    return await membership_service.get_user_membership_request(user.id)
 
 
 RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]

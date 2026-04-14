@@ -17,7 +17,7 @@ async def user_membership(
             type=user_membership_data["membership_type"],
         )
 
-        user_membership = await membership_uow.user_membership_repository.create(
+        user_membership = await membership_uow.membership_request_repository.create(
             user_id=test_user.id,
             membership_type_id=membership_type.id,
             **user_membership_data["membership"],

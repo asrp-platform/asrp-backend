@@ -23,7 +23,7 @@ class MembershipsUnitOfWork(SQLAlchemyUnitOfWork):
         super().__init__(session)
         self.user_repository = UserRepository(self._session)
         self.membership_type_repository = MembershipTypeRepository(self._session)
-        self.user_membership_repository = UserMembershipRepository(self._session)
+        self.membership_request_repository = UserMembershipRepository(self._session)
 
 
 def get_memberships_unit_of_work(session: Annotated[AsyncSession, Depends(session_getter)]) -> MembershipsUnitOfWork:

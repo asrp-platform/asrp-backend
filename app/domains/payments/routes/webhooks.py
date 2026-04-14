@@ -4,6 +4,8 @@ from starlette.requests import Request
 
 from app.core.config import settings
 from app.domains.payments.models import PaymentStatusEnum
+from app.domains.payments.use_cases.process_async_payment_event import ProcessCheckoutSessionAsyncPaymentUseCaseDep
+from app.domains.payments.use_cases.process_checkout_session_completed import ProcessCheckoutSessionCompletedUseCaseDep
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCaseDep
 
 stripe.api_key = settings.STRIPE_API_KEY
@@ -16,6 +18,8 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 async def stripe_webhook(
     request: Request,
     process_payment_use_case: ProcessPaymentUseCaseDep,
+    process_checkout_session_completed_use_case: ProcessCheckoutSessionCompletedUseCaseDep,
+    process_checkout_session_async_payment_use_case: ProcessCheckoutSessionAsyncPaymentUseCaseDep,
     stripe_signature: str | None = Header(default=None, alias="Stripe-Signature"),
 ):
     payload = await request.body()
@@ -39,14 +43,13 @@ async def stripe_webhook(
     if event_type == "payment_intent.succeeded":
         await process_payment_use_case.execute(event, payment_status=PaymentStatusEnum.SUCCEEDED)
 
-    elif event_type == "checkout.session.async_payment_succeeded":
-        pass
-
     elif event_type == "payment_intent.payment_failed":
         # Тут обрабатываем неуспешную попытку оплаты
         await process_payment_use_case.execute(event, payment_status=PaymentStatusEnum.FAILED)
 
-    elif event_type == "checkout.session.async_payment_failed" or event_type == "checkout.session.completed":
-        pass
-        # Здесь выдаем membership (продукт)
-        # session = data_object
+    elif event_type == "checkout.session.completed":
+        # Если сессия умерла (пользователь забросил ее), то checkout.session.completed не будет
+        await process_checkout_session_completed_use_case.execute(event)
+
+    elif event_type in {"checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed"}:
+        await process_checkout_session_async_payment_use_case.execute(event)

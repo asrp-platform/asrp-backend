@@ -9,7 +9,7 @@ from app.core.common.responses import PaginatedResponse
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.memberships.exceptions import MembershipRequestAlreadyExistsError
 from app.domains.memberships.schemas import (
-    MembershipCreateSchema,
+    MembershipRequestCreateSchema,
     UserMembershipMockUpdateSchema,
     UserMembershipViewSchema,
 )
@@ -68,7 +68,8 @@ async def update_user_data(
     update_data: UpdateUserSchema,
 ) -> UserSchema:
     user = await user_service.update_user(
-        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_unset=True))
+        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_unset=True)
+    )
     return UserSchema.from_orm(user)
 
 
@@ -211,17 +212,17 @@ class MembershipCreateResponses(Responses):
     summary="Create a membership request for current user",
 )
 async def create_membership_request(
-    user_membership_data: MembershipCreateSchema,
+    membership_request_data: MembershipRequestCreateSchema,
     current_user: CurrentUserDep,
     create_membership_request_use_case: CreateMembershipRequestUseCaseDep,
 ):
     try:
         return await create_membership_request_use_case.execute(
             user_id=current_user.id,
-            is_agrees_communications=user_membership_data.is_agrees_communications,
-            membership_type=user_membership_data.membership_type,
-            membership_request_data=user_membership_data.membership.model_dump(),
-            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump(),
+            is_agrees_communications=membership_request_data.is_agrees_communications,
+            membership_type=membership_request_data.membership_type,
+            membership_request_data=membership_request_data.membership.model_dump(),
+            feedback_additional_info_data=membership_request_data.feedback_additional_info.model_dump(),
         )
 
     except MembershipRequestAlreadyExistsError:

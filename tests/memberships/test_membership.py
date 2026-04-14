@@ -23,7 +23,7 @@ async def test_create_user_membership(
     )
 
     async with membership_uow:
-        user_membership = await membership_uow.user_membership_repository.get_first_by_kwargs(user_id=test_user.id)
+        user_membership = await membership_uow.membership_request_repository.get_first_by_kwargs(user_id=test_user.id)
         communication_preferences = await user_uow.communication_preferences_repository.get_first_by_kwargs(
             user_id=test_user.id
         )
@@ -33,7 +33,7 @@ async def test_create_user_membership(
     assert not communication_preferences.committees_leadership
     assert not communication_preferences.volunteer_opportunities
 
-    assert user_membership.status == MembershipRequestStatusEnum.SUBMITTED
+    assert user_membership.status == MembershipRequestStatusEnum.PAYMENT_PENDING
     assert response.status_code == 201
 
 

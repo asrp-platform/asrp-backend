@@ -27,16 +27,14 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "SUBMITTED",
                 "PAYMENT_PENDING",
                 "PAID",
                 "APPROVED",
                 "REJECTED",
                 "PAYMENT_FAILED",
-                "PAYMENT_EXPIRED",
                 name="membership_request_status_enum",
             ),
-            server_default=sa.text("'SUBMITTED'"),
+            server_default=sa.text("'PAYMENT_PENDING'"),
             nullable=False,
         ),
         sa.Column("primary_affiliation", sa.String(), nullable=False),

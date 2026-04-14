@@ -9,8 +9,8 @@ from app.domains.feedback.services import (
     get_feedback_additional_info_service,
 )
 from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
-from app.domains.memberships.models import MembershipTypeEnum
-from app.domains.memberships.services import MembershipService, MembershipServiceDep, get_membership_service
+from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
+from app.domains.memberships.services import MembershipService, MembershipServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
@@ -45,9 +45,10 @@ class CreateUserMembershipRequestUseCase:
         feedback_additional_info_data: dict,
     ) -> str:
         async with self.uow:
-            await self.membership_service.create_membership_request(
+            membership_request = await self.membership_service.create_membership_request(
                 user_id,
                 membership_type,
+                status=MembershipRequestStatusEnum.PAYMENT_PENDING,
                 **membership_request_data,
             )
 
@@ -88,7 +89,11 @@ class CreateUserMembershipRequestUseCase:
             # Needed to get payment id
             await self.uow._session.flush()
 
-            payment_metadata = {"payment_id": str(payment.id)}
+            payment_metadata = {
+                "membership_request_id": membership_request.id,
+                "payment_id": str(payment.id),
+                "payment_purpose": PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+            }
 
             checkout_session = await create_checkout_session(
                 membership_type_line_items,
@@ -111,7 +116,7 @@ class CreateUserMembershipRequestUseCase:
 
 def get_create_membership_request_use_case(
     uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
-    membership_service: Annotated[MembershipServiceDep, Depends(get_membership_service)],
+    membership_service: MembershipServiceDep,
     feedback_additional_info_service: Annotated[
         FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)
     ],

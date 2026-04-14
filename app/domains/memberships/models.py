@@ -44,13 +44,11 @@ class MembershipType(Base):
 
 
 class MembershipRequestStatusEnum(str, Enum):
-    SUBMITTED = "SUBMITTED"
     PAYMENT_PENDING = "PAYMENT_PENDING"
     PAID = "PAID"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     PAYMENT_FAILED = "PAYMENT_FAILED"
-    PAYMENT_EXPIRED = "PAYMENT_EXPIRED"
 
 
 class MembershipRequest(Base, UCIMixin):
@@ -59,8 +57,8 @@ class MembershipRequest(Base, UCIMixin):
     status: Mapped[MembershipRequestStatusEnum] = mapped_column(
         SQLAEnum(MembershipRequestStatusEnum, name="membership_request_status_enum"),
         nullable=False,
-        default=MembershipRequestStatusEnum.SUBMITTED,
-        server_default=text("'SUBMITTED'"),
+        default=MembershipRequestStatusEnum.PAYMENT_PENDING,
+        server_default=text("'PAYMENT_PENDING'"),
     )
 
     primary_affiliation: Mapped[str] = mapped_column(nullable=False)

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query
 from fastapi_exception_responses import Responses
 from starlette.responses import Response
 
+from app.core.config import settings
 from app.domains.auth.schemas import (
     AccessToken,
     ChangePasswordSchema,
@@ -64,7 +65,18 @@ async def login(
 
     # Optional adding access_token into Headers
     response.headers["Authorization"] = f"Bearer {access_token}"
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
+    max_age_seconds = (
+        (settings.REFRESH_TOKEN_LIFETIME_DAYS if remember else settings.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS)
+        * 24
+        * 60
+        * 60
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=max_age_seconds,
+    )
 
     return JWTTokenResponse(access_token=access_token, refresh_token=refresh_token)
 

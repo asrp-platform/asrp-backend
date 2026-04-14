@@ -15,7 +15,7 @@ from app.domains.memberships.models import MembershipRequest, MembershipRequestS
 @dataclass
 class UpdateUserMembershipMockRequest:
     user_id: int
-    status: MembershipRequestStatusEnum = MembershipRequestStatusEnum.SUBMITTED
+    status: MembershipRequestStatusEnum = MembershipRequestStatusEnum.PAYMENT_PENDING
     current_period_end: datetime | None = None
     auto_renewal: bool = True
     membership_type: MembershipTypeEnum = MembershipTypeEnum.ACTIVE
@@ -32,13 +32,13 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
 
     async def execute(self, request: UpdateUserMembershipMockRequest) -> MembershipRequest:
         async with self.uow:
-            membership = await self.uow.user_membership_repository.get_first_by_kwargs(user_id=request.user_id)
+            membership = await self.uow.membership_request_repository.get_first_by_kwargs(user_id=request.user_id)
 
             update_data = await self._build_update_data(request)
 
             if membership:
                 if update_data:
-                    await self.uow.user_membership_repository.update(membership.id, **update_data)
+                    await self.uow.membership_request_repository.update(membership.id, **update_data)
             else:
                 new_data = await self._build_create_data(request)
                 new_data.update(
@@ -46,12 +46,12 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
                         "user_id": request.user_id,
                     }
                 )
-                await self.uow.user_membership_repository.create(**new_data)
-                await self.uow.user_membership_repository.session.flush()
+                await self.uow.membership_request_repository.create(**new_data)
+                await self.uow.membership_request_repository.session.flush()
 
             # Re-fetch with joinedload to ensure response serialization works
             stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
-            return await self.uow.user_membership_repository.get_first_by_kwargs(stmt=stmt, user_id=request.user_id)
+            return await self.uow.membership_request_repository.get_first_by_kwargs(stmt=stmt, user_id=request.user_id)
 
     async def _build_update_data(self, request: UpdateUserMembershipMockRequest) -> dict:
         update_data = {}
@@ -73,7 +73,9 @@ class UpdateUserMembershipMockUseCase(BaseUseCase[UpdateUserMembershipMockReques
             membership_type = MembershipTypeEnum.ACTIVE
 
         return {
-            "status": request.status if "status" in request.updated_fields else MembershipRequestStatusEnum.SUBMITTED,
+            "status": request.status
+            if "status" in request.updated_fields
+            else MembershipRequestStatusEnum.PAYMENT_PENDING,
             "current_period_end": request.current_period_end
             if "current_period_end" in request.updated_fields
             else None,
