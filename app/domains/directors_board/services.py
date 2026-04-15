@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import uuid4
 
 from fastapi import Depends, UploadFile
-from sqlalchemy import func, select, update
+from sqlalchemy import update
 
 from app.core.config import s3_storage
 from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
@@ -38,9 +38,7 @@ class DirectorBoardMemberService:
 
     async def create_director_member(self, **kwargs) -> BoardMemberSchema:
         async with self.uow:
-            max_order = (
-                await self.uow._session.execute(select(func.coalesce(func.max(DirectorBoardMember.order), 0)))
-            ).scalar_one_or_none()
+            max_order = await self.uow.director_board_member_repository.get_max_order()
             insert_data = {**kwargs, "order": max_order + 1}
             director = await self.uow.director_board_member_repository.create(**insert_data)
             return BoardMemberSchema.model_validate(director)
