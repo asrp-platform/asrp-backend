@@ -65,6 +65,9 @@ class DirectorBoardMemberService:
             filename = f"directors_board/{uuid4().hex}.{ext}"
             content = await file.read()
             await self.file_storage.upload_file(object_name=filename, file=content)
+            
+            await self.uow.director_board_member_repository.update(director_member_id, photo_url=filename)
+            
             return filename
 
     async def delete_photo(self, director_member_id: int) -> None:
