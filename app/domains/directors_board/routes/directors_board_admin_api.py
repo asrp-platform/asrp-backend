@@ -115,12 +115,13 @@ class UploadImageResponses(PermissionsResponses):
 
 
 @router.post(
-    "/images",
+    "/{director_member_id}/image",
     status_code=201,
     responses=UploadImageResponses.responses,
     summary="Upload image for a director member",
 )
 async def upload_director_member_photo(
+    director_member_id: Annotated[int, Path(...)],
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
@@ -130,7 +131,7 @@ async def upload_director_member_photo(
     if not file.content_type.startswith("image/"):
         raise UploadImageResponses.INVALID_CONTENT_TYPE
 
-    filename = await director_service.upload_photo(file)
+    filename = await director_service.upload_photo(director_member_id, file)
 
     return {"path": filename}
 

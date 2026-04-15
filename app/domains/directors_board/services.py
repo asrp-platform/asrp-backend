@@ -57,12 +57,15 @@ class DirectorBoardMemberService:
                 await self.file_storage.delete_object(member.photo_url)
             return await self.uow.director_board_member_repository.mark_as_deleted(director_member_id)
 
-    async def upload_photo(self, file: UploadFile) -> str:
-        ext = file.filename.split(".")[-1]
-        filename = f"directors_board/{uuid4().hex}.{ext}"
-        content = await file.read()
-        await self.file_storage.upload_file(object_name=filename, file=content)
-        return filename
+    async def upload_photo(self, director_member_id: int, file: UploadFile) -> str:
+        async with self.uow:
+            await self._get_member_or_fail(director_member_id)
+
+            ext = file.filename.split(".")[-1]
+            filename = f"directors_board/{uuid4().hex}.{ext}"
+            content = await file.read()
+            await self.file_storage.upload_file(object_name=filename, file=content)
+            return filename
 
     async def delete_photo(self, director_member_id: int) -> None:
         async with self.uow:
