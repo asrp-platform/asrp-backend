@@ -48,8 +48,8 @@ class UserSchema(BaseModel):
     professional_interests: str | None
     telegram_username: str | None
     created_at: datetime
-    institution: str
-    role: str
+    institution: str | None
+    role: str | None
     avatar_path: str | None
     phone_number: str | None
     pending: bool
@@ -80,17 +80,13 @@ class UpdateUserSchema(BaseModel):
     role: str | None = None
     phone_number: Annotated[str | None, Field()] = None
 
-    @field_validator('country', 'city', 'institution', 'role')
+    @field_validator("country", "city", "institution", "role")
     def forbid_null_for_required_fields(cls, value, info):
         if value is None:
-            raise PydanticCustomError(
-                'field_null',
-                '{field_name} cannot be null',
-                {'field_name': info.field_name}
-            )
+            raise PydanticCustomError("field_null", "{field_name} cannot be null", {"field_name": info.field_name})
         return value
 
-    @field_validator('preferred_name', mode='before')
+    @field_validator("preferred_name", mode="before")
     def normalize_preferred_name(cls, value):
         if value == "":
             return None
@@ -108,7 +104,7 @@ class UpdateUserSchema(BaseModel):
             raise PydanticCustomError("phone_number.unparsable", "Invalid phone number format")
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
 
-    model_config = {'extra': 'forbid'}
+    model_config = {"extra": "forbid"}
 
 
 class ChangePasswordSchema(BaseModel):
