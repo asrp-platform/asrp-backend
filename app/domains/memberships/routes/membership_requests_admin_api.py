@@ -1,13 +1,13 @@
 from fastapi import APIRouter
 
-from app.domains.shared.deps import AdminUserDep
+from app.domains.memberships.services import MembershipServiceDep
 
 router = APIRouter(prefix="/membership-requests", tags=["Admin: Membership"])
 
 
 @router.get("/")
 async def get_membership_requests(
-    admin: AdminUserDep,
-    # service: Me
+    # admin: AdminUserDep,
+    service: MembershipServiceDep,
 ):
-    pass
+    return await service.get_membership_requests()

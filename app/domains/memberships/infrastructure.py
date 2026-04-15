@@ -14,7 +14,7 @@ class MembershipTypeRepository(SQLAlchemyRepository):
     model = MembershipType
 
 
-class UserMembershipRepository(SQLAlchemyRepository):
+class MembershipRequestsRepository(SQLAlchemyRepository):
     model = MembershipRequest
 
 
@@ -23,7 +23,7 @@ class MembershipsTransactionManagerBase(SQLAlchemyTransactionManagerBase):
         super().__init__(session)
         self.user_repository = UserRepository(self._session)
         self.membership_type_repository = MembershipTypeRepository(self._session)
-        self.membership_request_repository = UserMembershipRepository(self._session)
+        self.membership_request_repository = MembershipRequestsRepository(self._session)
 
 
 def get_memberships_unit_of_work(

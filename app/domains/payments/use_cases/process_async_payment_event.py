@@ -3,16 +3,19 @@ from typing import Annotated
 from fastapi import Depends
 from stripe import Event
 
+from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipServiceDep
-from app.domains.payments.infrastructure import PaymentUOWDep
 from app.domains.payments.models import PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.shared.transaction_managers import TransactionManagerDep
 
 
 class ProcessCheckoutSessionAsyncPaymentUseCase:
-    def __init__(self, uow, payment_service: PaymentService, membership_service):
-        self.__uow = uow
+    def __init__(
+        self, transaction_manager: BaseTransactionManager, payment_service: PaymentService, membership_service
+    ):
+        self.__transaction_manager = transaction_manager
         self.__payment_service = payment_service
         self.__membership_service = membership_service
 
@@ -41,7 +44,7 @@ class ProcessCheckoutSessionAsyncPaymentUseCase:
         else:
             return
 
-        async with self.__uow:
+        async with self.__transaction_manager:
             processed_webhook_event = await self.__payment_service.get_processed_webhook_event_by_kwargs(
                 event_id=event["id"],
             )
@@ -84,12 +87,12 @@ class ProcessCheckoutSessionAsyncPaymentUseCase:
 
 
 def get_process_checkout_session_async_payment_use_case(
-    uow: PaymentUOWDep,
+    transaction_manager: TransactionManagerDep,
     payment_service: PaymentServiceDep,
     membership_service: MembershipServiceDep,
 ) -> ProcessCheckoutSessionAsyncPaymentUseCase:
     return ProcessCheckoutSessionAsyncPaymentUseCase(
-        uow,
+        transaction_manager,
         payment_service,
         membership_service,
     )

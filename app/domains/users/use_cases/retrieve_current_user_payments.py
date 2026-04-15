@@ -2,16 +2,15 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 
-from app.core.database.base_transaction_manager import SQLAlchemyTransactionManagerBase
-from app.domains.payments.infrastructure import PaymentTransactionManagerBase, get_payment_unit_of_work
 from app.domains.payments.services import PaymentServiceDep
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
 
 class RetrieveCurrentUserPaymentsUseCase:
-    def __init__(self, uow: SQLAlchemyTransactionManagerBase, payment_service: PaymentServiceDep):
+    def __init__(self, transaction_manager, payment_service: PaymentServiceDep):
+        self.__transaction_manager = transaction_manager
         self.__payment_service = payment_service
-        self.__uow = uow
 
     async def execute(
         self,
@@ -21,7 +20,7 @@ class RetrieveCurrentUserPaymentsUseCase:
         order_by: str = None,
         filters: dict[str, Any] = None,
     ):
-        async with self.__uow:
+        async with self.__transaction_manager:
             return await self.__payment_service.get_user_payments(
                 user_id=current_user.id, limit=limit, offset=offset, order_by=order_by, filters=filters
             )
@@ -29,9 +28,9 @@ class RetrieveCurrentUserPaymentsUseCase:
 
 def get_retrieve_current_user_payments_use_case(
     payment_service: PaymentServiceDep,
-    uow: Annotated[PaymentTransactionManagerBase, Depends(get_payment_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> RetrieveCurrentUserPaymentsUseCase:
-    return RetrieveCurrentUserPaymentsUseCase(uow, payment_service)
+    return RetrieveCurrentUserPaymentsUseCase(transaction_manager, payment_service)
 
 
 RetrieveCurrentUserPaymentsUseCaseDep = Annotated[

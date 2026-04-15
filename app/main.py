@@ -18,6 +18,7 @@ from app.domains.feedback.routes.contact_messages_admin_api import router as con
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
+from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.news.api import router as news_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
@@ -98,11 +99,12 @@ app.include_router(job_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 
 
-app.include_router(users_admin_router, prefix="/api/admin")
+app.include_router(users_admin_router, prefix="/api/ad`min")
 app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 app.include_router(contact_messages_admin_router, prefix="/api/admin")
+app.include_router(membership_requests_admin_router, prefix="/api/admin")
 
 
 if DEV_MODE:
