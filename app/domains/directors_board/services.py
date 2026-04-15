@@ -19,6 +19,12 @@ class DirectorBoardMemberService:
         self.uow: DirectorsBoardMemberUnitOfWork = uow
         self.file_storage = s3_storage
 
+    async def _get_member_or_fail(self, director_member_id: int) -> DirectorBoardMember:
+        member = await self.uow.director_board_member_repository.get_first_by_kwargs(id=director_member_id)
+        if not member:
+            raise DirectionBoardMemberNotFoundError()
+        return member
+
     async def get_all_directors(self) -> tuple[list[BoardMemberSchema], int]:
         async with self.uow:
             members, count = await self.uow.director_board_member_repository.list()
@@ -46,8 +52,8 @@ class DirectorBoardMemberService:
 
     async def delete_director_member(self, director_member_id: int) -> int:
         async with self.uow:
-            member = await self.uow.director_board_member_repository.get_first_by_kwargs(id=director_member_id)
-            if member and member.photo_url:
+            member = await self._get_member_or_fail(director_member_id)
+            if member.photo_url:
                 await self.file_storage.delete_object(member.photo_url)
             return await self.uow.director_board_member_repository.mark_as_deleted(director_member_id)
 
@@ -60,9 +66,7 @@ class DirectorBoardMemberService:
 
     async def delete_photo(self, director_member_id: int) -> None:
         async with self.uow:
-            member = await self.uow.director_board_member_repository.get_first_by_kwargs(id=director_member_id)
-            if not member:
-                raise DirectionBoardMemberNotFoundError()
+            member = await self._get_member_or_fail(director_member_id)
 
             if member.photo_url:
                 await self.file_storage.delete_object(member.photo_url)
