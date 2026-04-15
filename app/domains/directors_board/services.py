@@ -12,11 +12,16 @@ from app.domains.directors_board.infrastructure import (
 )
 from app.domains.directors_board.models import DirectorBoardMember
 
-
+ 
 class DirectorBoardMemberService:
     def __init__(self, uow):
         self.uow: DirectorsBoardMemberUnitOfWork = uow
         self.file_storage = s3_storage
+
+    async def get_photo_url(self, photo_url: str | None) -> str | None:
+        if not photo_url:
+            return None
+        return await self.file_storage.get_presigned_object(photo_url)
 
     async def _get_member_or_fail(self, director_member_id: int) -> DirectorBoardMember:
         member = await self.uow.director_board_member_repository.get_first_by_kwargs(id=director_member_id)
