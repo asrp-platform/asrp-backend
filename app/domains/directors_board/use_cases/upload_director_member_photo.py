@@ -4,7 +4,10 @@ from typing import Annotated
 from fastapi import Depends, UploadFile
 
 from app.core.common.base_use_case import BaseUseCase
-from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork, get_director_board_member_unit_of_work
+from app.domains.directors_board.infrastructure import (
+    DirectorsBoardMemberUnitOfWork,
+    get_director_board_member_unit_of_work,
+)
 from app.domains.directors_board.services import DirectorBoardMemberService, get_director_board_member_service
 
 
@@ -28,9 +31,9 @@ class UploadDirectorMemberPhotoUseCase(BaseUseCase[UploadPhotoRequest, UploadPho
     async def execute(self, request_data: UploadPhotoRequest) -> UploadPhotoResponse:
         # Сервис сам управляет транзакцией внутри upload_photo
         filename = await self.service.upload_photo(request_data.director_member_id, request_data.file)
-        
+
         url = await self.service.get_photo_url(filename)
-        
+
         return UploadPhotoResponse(path=filename, presigned_url=url)
 
 
