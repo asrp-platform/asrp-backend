@@ -62,10 +62,9 @@ class S3BaseStorage:
     async def delete_object(self, object_key: str, bucket_name: str | None = None) -> None:
         bucket = bucket_name or self.bucket_name
         async with self.get_client() as client:
-            try:
+            from contextlib import suppress
+            with suppress(client.exceptions.NoSuchBucket):
                 await client.delete_object(Bucket=bucket, Key=object_key)
-            except client.exceptions.NoSuchBucket:
-                pass
 
     async def __ensure_bucket_exists(self, bucket_name: str | None = None):
         bucket = bucket_name or self.bucket_name
