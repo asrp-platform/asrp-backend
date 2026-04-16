@@ -9,27 +9,13 @@ from tests.fixtures.auth import AuthHeaders
 pytestmark = pytest.mark.anyio
 
 
-@pytest.fixture(scope="function")
-def mock_service() -> AsyncMock:
-    return AsyncMock()
-
-
-@pytest.fixture(scope="function", autouse=True)
-def override_bylaws_service(mock_service: AsyncMock) -> None:
-    from app.domains.legal_documents.services import get_bylaws_service
-    from app.main import app
-
-    app.dependency_overrides[get_bylaws_service] = lambda: mock_service
-    yield
-    app.dependency_overrides.clear()
-
-
 async def test_get_bylaws_success(
     client: AsyncClient,
     mock_service: AsyncMock,
     faker: Faker,
+    override_bylaws_service,
 ) -> None:
-    mock_service.get_path.return_value = faker.url()
+    mock_service.get_url.return_value = faker.url()
 
     response = await client.get("/api/legal-documents/bylaws")
 
@@ -40,7 +26,7 @@ async def test_get_bylaws_not_found(
     client: AsyncClient,
     mock_service: AsyncMock,
 ) -> None:
-    mock_service.get_path.return_value = None
+    mock_service.get_url.return_value = None
 
     response = await client.get("/api/legal-documents/bylaws")
 
@@ -55,7 +41,7 @@ async def test_upsert_bylaws_success(
     faker: Faker,
 ) -> None:
     files = {"file": ("bylaws.pdf", faker.binary(length=12), "application/pdf")}
-    mock_service.get_path.return_value = faker.url()
+    mock_service.get_url.return_value = faker.url()
 
     response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=admin_auth_headers)
 
@@ -77,7 +63,6 @@ async def test_upsert_bylaws_forbidden(
 
 async def test_upsert_bylaws_invalid_type(
     client: AsyncClient,
-    mock_service: AsyncMock,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     faker: Faker,
@@ -94,6 +79,7 @@ async def test_delete_bylaws_success(
     mock_service: AsyncMock,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
+    override_bylaws_service,
 ) -> None:
     response = await client.delete("/api/admin/legal-documents/bylaws", headers=admin_auth_headers)
 

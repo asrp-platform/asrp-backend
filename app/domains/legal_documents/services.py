@@ -8,7 +8,6 @@ from app.domains.legal_documents.types import LegalDocument
 from app.domains.shared.types import FileData
 
 
-
 class LegalDocumentsService:
     def __init__(self, document: LegalDocument):
         self.document = document
