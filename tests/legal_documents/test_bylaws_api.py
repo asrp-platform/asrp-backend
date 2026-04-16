@@ -40,6 +40,7 @@ async def test_upsert_bylaws_success(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     faker: Faker,
+    override_bylaws_service,
 ) -> None:
     files = {"file": ("bylaws.pdf", faker.binary(length=12), "application/pdf")}
     mock_service.upsert.return_value = None
