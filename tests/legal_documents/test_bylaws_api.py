@@ -42,6 +42,7 @@ async def test_upsert_bylaws_success(
     faker: Faker,
 ) -> None:
     files = {"file": ("bylaws.pdf", faker.binary(length=12), "application/pdf")}
+    mock_service.upsert.return_value = None
     mock_service.get_url.return_value = faker.url()
 
     response = await client.put("/api/admin/legal-documents/bylaws", files=files, headers=admin_auth_headers)

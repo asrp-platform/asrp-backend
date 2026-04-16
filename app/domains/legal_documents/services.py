@@ -13,7 +13,7 @@ class LegalDocumentsService:
         self.document = document
         self.file_storage = s3_storage
 
-    async def upsert(self, file_data: FileData) -> str:
+    async def upsert(self, file_data: FileData) -> None:
         if file_data.content_type != self.document.mime_type:
             raise InvalidMimeTypeError
 
