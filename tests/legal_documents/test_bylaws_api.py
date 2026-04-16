@@ -25,6 +25,7 @@ async def test_get_bylaws_success(
 async def test_get_bylaws_not_found(
     client: AsyncClient,
     mock_service: AsyncMock,
+    override_bylaws_service,
 ) -> None:
     mock_service.get_url.return_value = None
 
