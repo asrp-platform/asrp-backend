@@ -18,3 +18,6 @@ class InvalidOperationError(Exception):
     """Raised when an attempted operation is invalid in the current domain state."""
 
     pass
+
+class InvalidMimeTypeError(Exception):
+    pass
