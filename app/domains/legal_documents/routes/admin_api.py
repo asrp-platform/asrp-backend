@@ -2,11 +2,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, UploadFile
 
+from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.common.responses import PermissionsResponses
 from app.domains.legal_documents.schemas import ViewLegalDocumentSchema
 from app.domains.legal_documents.services import BylawsServiceDep
-from app.domains.legal_documents.use_cases.upsert_legal_document import UpsertLegalDocumentUseCaseDep
+from app.domains.legal_documents.use_cases.upsert_bylaws import UpsertBylawsUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
+from app.domains.shared.types import FileData
 
 router = APIRouter(prefix="/legal-documents", tags=["Admin: Legal Documents"])
 
@@ -21,18 +23,24 @@ class BylawsAdminResponses(PermissionsResponses):
     responses=BylawsAdminResponses.responses,
 )
 async def upsert_bylaws(
-    use_case: UpsertLegalDocumentUseCaseDep,
+    use_case: UpsertBylawsUseCaseDep,
     permissions: AdminPermissionsDep,
     file: Annotated[UploadFile, File(...)],
 ) -> ViewLegalDocumentSchema:
     if "legal_documents.update" not in permissions:
         raise BylawsAdminResponses.PERMISSION_ERROR
 
-    if file.content_type != "application/pdf":
-        raise BylawsAdminResponses.INVALID_CONTENT_TYPE
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
 
-    path = await use_case.execute(file)
-    return ViewLegalDocumentSchema(url=path)
+    try:
+        path = await use_case.execute(file_data)
+        return ViewLegalDocumentSchema(url=path)
+    except InvalidMimeTypeError:
+        raise BylawsAdminResponses.INVALID_CONTENT_TYPE
 
 
 @router.delete(
