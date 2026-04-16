@@ -19,7 +19,7 @@ class BylawsResponses(Responses):
 async def get_bylaws(
     service: BylawsServiceDep,
 ) -> ViewLegalDocumentSchema:
-    path = await service.get_url()
-    if not path:
+    url = await service.get_url()
+    if not url:
         raise BylawsResponses.NOT_FOUND
-    return ViewLegalDocumentSchema(url=path)
+    return ViewLegalDocumentSchema(url=url)

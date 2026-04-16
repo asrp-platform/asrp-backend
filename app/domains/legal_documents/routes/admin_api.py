@@ -37,8 +37,8 @@ async def upsert_bylaws(
     )
 
     try:
-        path = await use_case.execute(file_data)
-        return ViewLegalDocumentSchema(url=path)
+        url = await use_case.execute(file_data)
+        return ViewLegalDocumentSchema(url=url)
     except InvalidMimeTypeError:
         raise BylawsAdminResponses.INVALID_CONTENT_TYPE
 
