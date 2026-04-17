@@ -67,7 +67,7 @@ def refresh_token(test_user: User):
 
 @pytest.fixture
 async def admin_user(user_factory: UserFactory) -> User:
-    return await user_factory(stuff=True)
+    return await user_factory(admin=True)
 
 
 @pytest.fixture

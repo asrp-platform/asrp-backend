@@ -73,7 +73,7 @@ async def get_name_change_requests(
     ordering: OrderingParamsDep = None,
     filters: Annotated[NameChangeRequestsFilters, Depends()] = None,
 ) -> PaginatedResponse[NameChangeRequestViewSchema]:
-    if "name_change_request.view" not in permissions:
+    if "name_change_requests.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
@@ -112,11 +112,11 @@ async def update_user_by_admin(
     permissions: AdminPermissionsDep,
     update_data: UpdateUserByAdminSchema,
 ):
-    if update_data.stuff is True and "admin.create" not in permissions:
+    if update_data.admin is True and "admin.create" not in permissions:
         raise UpdateUserByAdminResponses.CANT_GRANT_ADMIN_ROLE
-    if update_data.stuff is not True and "admin.delete" not in permissions:
+    if update_data.admin is not True and "admin.delete" not in permissions:
         raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
-    if update_data.stuff and admin.id == user_id:
+    if update_data.admin and admin.id == user_id:
         raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
 
     try:
@@ -184,7 +184,7 @@ async def get_pending_name_change_request(
     permissions: AdminPermissionsDep,
     service: NameChangeRequestServiceDep,
 ) -> NameChangeRequestViewSchema:
-    if "name_change_request.view" not in permissions:
+    if "name_change_requests.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:
@@ -211,7 +211,7 @@ async def update_name_change_request(
     permissions: AdminPermissionsDep,
     service: NameChangeRequestServiceDep,
 ) -> None:
-    if "name_change_request.update" not in permissions:
+    if "name_change_requests.update" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
     try:

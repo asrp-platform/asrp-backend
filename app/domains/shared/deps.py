@@ -90,7 +90,7 @@ async def get_admin_user(
     access_token: Annotated[HTTPAuthorizationCredentials, Depends(access_token_header)],
 ) -> User | None:
     user = await get_current_user(user_service, access_token)
-    if not user.stuff:
+    if not user.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     return user
 

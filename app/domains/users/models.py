@@ -29,7 +29,7 @@ class User(Base):
     credentials: Mapped[str] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=True, unique=True)
-    stuff: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
+    admin: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
     description: Mapped[str] = mapped_column(String(512), nullable=True)
     country: Mapped[str] = mapped_column(nullable=False)
     state: Mapped[str] = mapped_column(nullable=True)
@@ -110,21 +110,21 @@ class ProfessionalExperienceMixin:
 
 
 class Residency(Base, UCIMixin, ProfessionalExperienceMixin):
-    __tablename__ = "users_residency"
+    __tablename__ = "users_residencies"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="residencies")
 
 
 class Fellowship(Base, UCIMixin, ProfessionalExperienceMixin):
-    __tablename__ = "users_fellowship"
+    __tablename__ = "users_fellowships"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="fellowships")
 
 
 class Job(Base, UCIMixin, ProfessionalExperienceMixin):
-    __tablename__ = "users_job"
+    __tablename__ = "users_jobs"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="jobs")

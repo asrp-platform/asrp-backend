@@ -27,7 +27,7 @@ async def get_all_director_members(
     director_service: DirectorBoardMemberServiceDep,
     permissions: AdminPermissionsDep,
 ) -> list[BoardMemberSchema]:
-    if "director_board.view" not in permissions:
+    if "directors_board.view" not in permissions:
         raise ViewDirectorResponses.PERMISSION_ERROR
     data, count = await director_service.get_all_directors()
     return [BoardMemberSchema.from_orm(permission) for permission in data]
@@ -48,7 +48,7 @@ async def create_director_member(
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
 ) -> BoardMemberSchema:
-    if "director_board.create" not in permissions:
+    if "directors_board.create" not in permissions:
         raise CreateDirectorResponses.PERMISSION_ERROR
     director = await director_service.create_director_member(**data.model_dump())
     return BoardMemberSchema.from_orm(director)
@@ -69,7 +69,7 @@ async def update_director_member(
     director_service: DirectorBoardMemberServiceDep,
     update_data: UpdateBoardMemberSchema,
 ) -> BoardMemberSchema:
-    if "director_board.update" not in permissions:
+    if "directors_board.update" not in permissions:
         raise UpdateDirectorMemberResponses.PERMISSION_ERROR
     try:
         update_data_dict = update_data.model_dump(exclude_unset=True)
@@ -94,7 +94,7 @@ async def delete_director_member(
     permissions: AdminPermissionsDep,
     director_service: DirectorBoardMemberServiceDep,
 ) -> int:
-    if "director_board.delete" not in permissions:
+    if "directors_board.delete" not in permissions:
         raise DeleteDirectorMemberResponses.PERMISSION_ERROR
     try:
         deleted_id = await director_service.delete_director_member(director_member_id)
@@ -117,7 +117,7 @@ async def upload_director_member_photo(
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
 ) -> dict:
-    if "director_board.update" not in permissions:
+    if "directors_board.update" not in permissions:
         raise UploadImageResponses.PERMISSION_ERROR
     if not file.content_type.startswith("image/"):
         raise UploadImageResponses.INVALID_CONTENT_TYPE
@@ -141,7 +141,7 @@ async def reorder_cards(
     director_service: DirectorBoardMemberServiceDep,
     permissions: AdminPermissionsDep,
 ):
-    if "director_board.update" not in permissions:
+    if "directors_board.update" not in permissions:
         raise ReorderCardResponses.PERMISSION_ERROR
     try:
         await director_service.update_order(items)

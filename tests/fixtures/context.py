@@ -24,7 +24,7 @@ async def admin_all_permissions_context(
     user_permissions_factory: PermissionFactory,
     permissions: list[Permission],
 ) -> UserContext:
-    user = await user_factory(stuff=True)
+    user = await user_factory(admin=True)
     await user_permissions_factory(user)
     auth = authentication_data_factory(user)
 
@@ -40,7 +40,7 @@ async def admin_no_permissions_context(
     user_factory: UserFactory,
     authentication_data_factory: AuthFactory,
 ) -> UserContext:
-    user = await user_factory(stuff=True)
+    user = await user_factory(admin=True)
     auth = authentication_data_factory(user)
     return UserContext(
         user=user,

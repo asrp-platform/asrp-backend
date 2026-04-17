@@ -46,7 +46,7 @@ class UserService:
             user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            if current_user is None or user_id != current_user.id or not current_user.stuff:
+            if current_user is None or user_id != current_user.id or not current_user.admin:
                 raise NotResourceOwnerError("Not resource owner")
 
     async def get_all_paginated_counted(

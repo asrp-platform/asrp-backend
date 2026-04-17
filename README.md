@@ -142,6 +142,7 @@ The following branch types are used according to the GitFlow development workflo
 2. `release/*`
 3. `hotfix/*`
 4. `bugfix/*`
+5. `refactor/*`
 
 ### Pull requests naming
 
@@ -149,6 +150,7 @@ The following branch types are used according to the GitFlow development workflo
 2. `Release: *`
 3. `Hotfix: *`
 4. `Bugfix: *`
+5. `Refactor: *`
 
 ### Commits naming
 

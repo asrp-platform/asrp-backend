@@ -38,7 +38,7 @@ class ContactMessage(Base, UCIMixin):
 
 
 class ContactMessageReply(Base, UCIMixin):
-    __tablename__ = "contact_message_replies"
+    __tablename__ = "contact_messages_replies"
 
     contact_message_id: Mapped[int] = mapped_column(
         ForeignKey("contact_messages.id", ondelete="CASCADE"), nullable=False
@@ -48,7 +48,7 @@ class ContactMessageReply(Base, UCIMixin):
 
 
 class FeedbackAdditionalInfo(Base, UCIMixin):
-    __tablename__ = "feedback_additional_infos"
+    __tablename__ = "feedback_additional_info"
 
     hear_about_asrp: Mapped[str] = mapped_column(nullable=False)
     tg_username: Mapped[str] = mapped_column(nullable=True)
