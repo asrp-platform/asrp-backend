@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
@@ -46,23 +46,8 @@ class MembershipRequestSchema(BaseModel):
     current_period_end: datetime | None = None
     user_id: int
     membership_type_id: int
+    membership_type: MembershipTypeSchema
 
     model_config = {
         "from_attributes": True,
     }
-
-
-class UserMembershipViewSchema(MembershipRequestSchema):
-    membership_type: MembershipTypeSchema
-
-
-class UserMembershipMockUpdateSchema(BaseModel):
-    status: MembershipRequestStatusEnum = Field(
-        default=MembershipRequestStatusEnum.PAYMENT_PENDING,
-        description="Approval status of the membership",
-    )
-    current_period_end: datetime | None = Field(None, description="End date of the current period")
-    membership_type: MembershipTypeEnum = Field(
-        default=MembershipTypeEnum.ACTIVE,
-        description="Membership type",
-    )

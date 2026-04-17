@@ -10,14 +10,9 @@ from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsE
 from app.domains.memberships.exceptions import MembershipRequestAlreadyExistsError
 from app.domains.memberships.schemas import (
     MembershipRequestCreateSchema,
-    UserMembershipMockUpdateSchema,
-    UserMembershipViewSchema,
+    MembershipRequestSchema,
 )
 from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
-from app.domains.memberships.use_cases.update_user_membership_mock import (
-    UpdateUserMembershipMockRequest,
-    UpdateUserMembershipMockUseCaseDep,
-)
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
@@ -189,7 +184,7 @@ class CurrentUserMembershipResponses(Responses):
 
 @router.get(
     "/membership-requests",
-    response_model=UserMembershipViewSchema,
+    response_model=MembershipRequestSchema,
     responses=CurrentUserMembershipResponses.responses,
 )
 async def get_current_user_membership(
@@ -252,23 +247,3 @@ async def get_current_user_payments(
         page=params["page"],
         page_size=params["page_size"],
     )
-
-
-@router.patch("/membership/mock", response_model=UserMembershipViewSchema)
-async def update_current_user_membership_mock(
-    user: CurrentUserDep,
-    update_data: UserMembershipMockUpdateSchema,
-    update_use_case: UpdateUserMembershipMockUseCaseDep,
-):
-    """
-    TEMP: Mock endpoint for development/testing membership status and periods.
-    """
-    request = UpdateUserMembershipMockRequest(
-        user_id=user.id,
-        status=update_data.status,
-        current_period_end=update_data.current_period_end,
-        auto_renewal=update_data.auto_renewal,
-        membership_type=update_data.membership_type,
-        updated_fields=set(update_data.model_fields_set),
-    )
-    return await update_use_case.execute(request)

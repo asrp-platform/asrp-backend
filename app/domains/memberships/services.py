@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.domains.memberships.exceptions import (
     MembershipRequestAlreadyExistsError,
@@ -19,11 +19,14 @@ class MembershipService:
         self.uow = uow
         self.transaction_manager = transaction_manager
 
-    async def get_membership_requests(
+    async def get_membership_requests_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
-    ):
+    ) -> [list[MembershipRequest], int]:
+        stmt = select(MembershipRequest).options(selectinload(MembershipRequest.membership_type))
         async with self.transaction_manager:
-            return await self.transaction_manager.membership_requests_repository.list(limit, offset, order_by, filters)
+            return await self.transaction_manager.membership_requests_repository.list(
+                limit, offset, order_by, filters, stmt=stmt
+            )
 
     async def get_user_membership_request(self, user_id: int) -> MembershipRequest | None:
         async with self.transaction_manager:
