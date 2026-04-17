@@ -6,8 +6,8 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.domains.permissions.infrastructure import PermissionsTransactionManagerBase, get_permissions_unit_of_work
 from app.domains.permissions.models import Permission
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
 
@@ -15,27 +15,27 @@ privileges_logger = logger.bind(name="privileges")
 
 
 class PermissionsService:
-    def __init__(self, uow):
-        self.uow: PermissionsTransactionManagerBase = uow
+    def __init__(self, transaction_manager):
+        self.transaction_manager: TransactionManager = transaction_manager
 
     async def get_all_permissions(self):
-        async with self.uow:
-            return await self.uow.permission_repository.list()
+        async with self.transaction_manager:
+            return await self.transaction_manager.permission_repository.list()
 
     async def get_permissions_by_ids(self, permissions_ids: list[int]):
         stmt = select(Permission).where(Permission.id.in_(permissions_ids))
-        async with self.uow:
-            data, count = await self.uow.permission_repository.list(stmt=stmt)
+        async with self.transaction_manager:
+            data, count = await self.transaction_manager.permission_repository.list(stmt=stmt)
             return data
 
     async def get_user_permissions(self, user_id: int) -> list[Permission]:
-        async with self.uow:
+        async with self.transaction_manager:
             select_user_stmt = (
                 select(User)
                 .options(selectinload(User.permissions))  # сразу подгружаем
                 .where(User.id == user_id)
             )
-            user: User | None = (await self.uow._session.execute(select_user_stmt)).scalar_one_or_none()
+            user: User | None = (await self.transaction_manager._session.execute(select_user_stmt)).scalar_one_or_none()
 
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
@@ -63,20 +63,20 @@ class PermissionsService:
             UserNotFoundError: If the target user is not found.
         """
 
-        async with self.uow:
+        async with self.transaction_manager:
             request_time_utc = datetime.now(timezone.utc).isoformat()
 
             user_stmt = select(User).options(selectinload(User.permissions)).where(User.id == user_id)
-            user: User | None = (await self.uow._session.execute(user_stmt)).scalar_one_or_none()
+            user: User | None = (await self.transaction_manager._session.execute(user_stmt)).scalar_one_or_none()
 
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
 
             permissions_stmt = select(Permission).where(Permission.id.in_(permissions_ids))
-            permissions = (await self.uow._session.execute(permissions_stmt)).scalars().all()
+            permissions = (await self.transaction_manager._session.execute(permissions_stmt)).scalars().all()
             user.permissions = permissions
 
-            await self.uow._session.commit()
+            await self.transaction_manager._session.commit()
 
             privileges_logger.info(
                 f"Admin: {actor.id} ({actor.email}) | Target: {user.id} ({user.email}) | New Permissions: {[p.action for p in permissions]} | Time: {request_time_utc}"
@@ -86,9 +86,9 @@ class PermissionsService:
 
 
 def get_permissions_service(
-    uow: Annotated[PermissionsTransactionManagerBase, Depends(get_permissions_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> PermissionsService:
-    return PermissionsService(uow)
+    return PermissionsService(transaction_manager)
 
 
 PermissionServiceDep = Annotated[PermissionsService, Depends(get_permissions_service)]

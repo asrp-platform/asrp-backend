@@ -2,8 +2,8 @@ from typing import Awaitable, Callable, Sequence
 
 import pytest
 
-from app.domains.permissions.infrastructure import PermissionsTransactionManagerBase
 from app.domains.permissions.models import Permission
+from app.domains.permissions.repositories import PermissionsTransactionManagerBase
 from app.domains.users.models import User
 
 pytestmark = pytest.mark.anyio

@@ -5,7 +5,7 @@ from app.domains.auth.infrastructure import AuthTransactionManagerBase
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberTransactionManagerBase
 from app.domains.feedback.infrastructure import FeedbackTransactionManagerBase
 from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
-from app.domains.permissions.infrastructure import PermissionsTransactionManagerBase
+from app.domains.permissions.repositories import PermissionsTransactionManagerBase
 from app.domains.users.infrastructure import UserTransactionManagerBase
 
 pytestmark = pytest.mark.anyio

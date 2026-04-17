@@ -9,14 +9,12 @@ from app.domains.memberships.exceptions import (
     MembershipRequestNotFoundError,
     MembershipTypeNotFoundError,
 )
-from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipRequest, MembershipType, MembershipTypeEnum
-from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
 
 class MembershipService:
-    def __init__(self, uow: MembershipsTransactionManagerBase, transaction_manager):
-        self.uow = uow
+    def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
 
     async def get_membership_requests_paginated_counted(
@@ -77,10 +75,9 @@ class MembershipService:
 
 
 def get_membership_service(
-    uow: Annotated[MembershipsTransactionManagerBase, Depends(get_memberships_unit_of_work)],
     transaction_manager: TransactionManagerDep,
 ) -> MembershipService:
-    return MembershipService(uow, transaction_manager)
+    return MembershipService(transaction_manager)
 
 
 MembershipServiceDep = Annotated[MembershipService, Depends(get_membership_service)]
