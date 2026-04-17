@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_transaction_manager import BaseTransactionManager, SQLAlchemyTransactionManagerBase
 from app.core.database.setup_db import session_getter
 from app.domains.auth.infrastructure import UserPermissionRepository
-from app.domains.memberships.infrastructure import MembershipRequestsRepository, MembershipTypeRepository
+from app.domains.feedback.repositories import (
+    ContactMessageReplyRepository,
+    ContactMessageRepository,
+    FeedbackAdditionalInfoRepository,
+)
+from app.domains.memberships.repositories import MembershipRequestsRepository, MembershipTypeRepository
 from app.domains.payments.infrastructure import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository
 
@@ -35,6 +40,18 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def user_permission_repository(self):
         return UserPermissionRepository(self._session)
+
+    @property
+    def contact_message_repository(self):
+        return ContactMessageRepository(self._session)
+
+    @property
+    def contact_message_reply_repository(self):
+        return ContactMessageReplyRepository(self._session)
+
+    @property
+    def feedback_additional_info_repository(self):
+        return FeedbackAdditionalInfoRepository(self._session)
 
 
 def get_transaction_manager(

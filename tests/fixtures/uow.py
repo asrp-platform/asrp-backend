@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.infrastructure import AuthTransactionManagerBase
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberTransactionManagerBase
-from app.domains.feedback.infrastructure import FeedbackTransactionManagerBase
-from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
+from app.domains.feedback.repositories import FeedbackTransactionManagerBase
+from app.domains.memberships.repositories import MembershipsTransactionManagerBase
 from app.domains.permissions.repositories import PermissionsTransactionManagerBase
 from app.domains.users.infrastructure import UserTransactionManagerBase
 

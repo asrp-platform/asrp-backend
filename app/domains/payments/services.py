@@ -22,7 +22,7 @@ class PaymentService:
     async def get_user_payments(
         self, user_id: int, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> list[Payment]:
-        # нельзя использовать этот метод в use case, если здесь используется uow
+        # Can't use this method is use case when transaction manager used here
         async with self.transaction_manager:
             return await self.transaction_manager.payment_repository.list(
                 limit=limit, offset=offset, order_by=order_by, filters={**filters, "user_id": user_id}

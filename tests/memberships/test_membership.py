@@ -1,8 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
+from app.domains.memberships.repositories import MembershipsTransactionManagerBase
 from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders

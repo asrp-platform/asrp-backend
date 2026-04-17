@@ -1,8 +1,8 @@
 import pytest
 from faker import Faker
 
-from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase
 from app.domains.memberships.models import MembershipRequest, MembershipTypeEnum
+from app.domains.memberships.repositories import MembershipsTransactionManagerBase
 from app.domains.users.models import User
 
 

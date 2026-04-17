@@ -8,12 +8,12 @@ from app.domains.feedback.services import (
     FeedbackAdditionalInfoServiceDep,
     get_feedback_additional_info_service,
 )
-from app.domains.memberships.infrastructure import MembershipsTransactionManagerBase, get_memberships_unit_of_work
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.services import (
     CommunicationPreferencesService,
     CommunicationPreferencesServiceDep,
@@ -24,13 +24,13 @@ from app.domains.users.services import (
 class CreateUserMembershipRequestUseCase:
     def __init__(
         self,
-        uow: MembershipsTransactionManagerBase,
+        transaction_manager: TransactionManager,
         membership_service: MembershipService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
         communication_preference_service: CommunicationPreferencesService,
         payment_service: PaymentServiceDep,
     ) -> None:
-        self.uow = uow
+        self.__transaction_manager = transaction_manager
         self.membership_service = membership_service
         self.feedback_additional_info_service = feedback_additional_info_service
         self.communication_preference_service = communication_preference_service
@@ -44,7 +44,7 @@ class CreateUserMembershipRequestUseCase:
         membership_request_data: dict,
         feedback_additional_info_data: dict,
     ) -> str:
-        async with self.uow:
+        async with self.__transaction_manager:
             membership_request = await self.membership_service.create_membership_request(
                 user_id,
                 membership_type,
@@ -87,7 +87,7 @@ class CreateUserMembershipRequestUseCase:
                 provider_data=None,
             )
             # Needed to get payment id
-            await self.uow._session.flush()
+            await self.__transaction_manager._session.flush()
 
             payment_metadata = {
                 "membership_request_id": membership_request.id,
@@ -115,7 +115,7 @@ class CreateUserMembershipRequestUseCase:
 
 
 def get_create_membership_request_use_case(
-    uow: Annotated[MembershipsTransactionManagerBase, Depends(get_memberships_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
     membership_service: MembershipServiceDep,
     feedback_additional_info_service: Annotated[
         FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)
@@ -126,7 +126,11 @@ def get_create_membership_request_use_case(
     payment_service: PaymentServiceDep,
 ) -> CreateUserMembershipRequestUseCase:
     return CreateUserMembershipRequestUseCase(
-        uow, membership_service, feedback_additional_info_service, communication_preference_service, payment_service
+        transaction_manager,
+        membership_service,
+        feedback_additional_info_service,
+        communication_preference_service,
+        payment_service,
     )
 
 

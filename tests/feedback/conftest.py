@@ -3,8 +3,8 @@ import random
 import pytest
 from faker import Faker
 
-from app.domains.feedback.infrastructure import FeedbackTransactionManagerBase
 from app.domains.feedback.models import ContactMessage, ContactMessageTypeEnum
+from app.domains.feedback.repositories import FeedbackTransactionManagerBase
 
 
 @pytest.fixture(scope="function")
