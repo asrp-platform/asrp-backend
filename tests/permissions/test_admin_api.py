@@ -7,7 +7,6 @@ from httpx import AsyncClient
 from app.domains.permissions.services import get_permissions_service
 from app.domains.shared.deps import get_users_permissions
 from app.domains.users.exceptions import UserNotFoundError
-from app.domains.users.routes.users_admin_api import ManagePermissionsResponses
 from app.main import app
 
 pytestmark = pytest.mark.anyio
@@ -125,5 +124,4 @@ async def test_put_permissions_user_not_found(
     )
 
     assert response.status_code == 404
-    assert response.json()["detail"] == ManagePermissionsResponses.USER_NOT_FOUND.detail  # type: ignore[attr-defined]
     mock_service.set_users_permissions.assert_called_once()

@@ -3,9 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.infrastructure import AuthTransactionManagerBase
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberTransactionManagerBase
-from app.domains.feedback.repositories import FeedbackTransactionManagerBase
-from app.domains.memberships.repositories import MembershipsTransactionManagerBase
-from app.domains.permissions.repositories import PermissionsTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.infrastructure import UserTransactionManagerBase
 
 pytestmark = pytest.mark.anyio
@@ -22,20 +20,10 @@ def user_uow(test_session: AsyncSession) -> UserTransactionManagerBase:
 
 
 @pytest.fixture()
-def permissions_uow(test_session: AsyncSession) -> PermissionsTransactionManagerBase:
-    return PermissionsTransactionManagerBase(test_session)
-
-
-@pytest.fixture()
 def directors_board_uow(test_session: AsyncSession) -> DirectorsBoardMemberTransactionManagerBase:
     return DirectorsBoardMemberTransactionManagerBase(test_session)
 
 
 @pytest.fixture()
-def contact_message_uow(test_session: AsyncSession) -> FeedbackTransactionManagerBase:
-    return FeedbackTransactionManagerBase(test_session)
-
-
-@pytest.fixture()
-def membership_uow(test_session: AsyncSession) -> MembershipsTransactionManagerBase:
-    return MembershipsTransactionManagerBase(test_session)
+def test_transaction_manager(test_session: AsyncSession) -> TransactionManager:
+    return TransactionManager(test_session)

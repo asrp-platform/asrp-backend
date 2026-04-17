@@ -2,22 +2,22 @@ import pytest
 from faker import Faker
 
 from app.domains.memberships.models import MembershipRequest, MembershipTypeEnum
-from app.domains.memberships.repositories import MembershipsTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 
 
 @pytest.fixture(scope="function")
 async def user_membership(
     test_user: User,
-    membership_uow: MembershipsTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     user_membership_data: dict,
 ) -> MembershipRequest:
-    async with membership_uow:
-        membership_type = await membership_uow.membership_type_repository.get_first_by_kwargs(
+    async with test_transaction_manager:
+        membership_type = await test_transaction_manager.membership_type_repository.get_first_by_kwargs(
             type=user_membership_data["membership_type"],
         )
 
-        user_membership = await membership_uow.membership_request_repository.create(
+        user_membership = await test_transaction_manager.membership_requests_repository.create(
             user_id=test_user.id,
             membership_type_id=membership_type.id,
             **user_membership_data["membership"],

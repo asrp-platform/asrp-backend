@@ -4,16 +4,16 @@ import pytest
 
 from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionsService
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
-from tests.fixtures.uow import PermissionsTransactionManagerBase
 
 pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture(scope="function")
-def service(permissions_uow: PermissionsTransactionManagerBase) -> PermissionsService:
-    return PermissionsService(permissions_uow)
+def service(test_transaction_manager: TransactionManager) -> PermissionsService:
+    return PermissionsService(test_transaction_manager)
 
 
 async def test_set_users_permissions_success(

@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.repositories import MembershipsTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.infrastructure import UserTransactionManagerBase
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
@@ -16,14 +16,16 @@ async def test_create_user_membership(
     auth_headers: AuthHeaders,
     user_membership_data: dict,
     user_uow: UserTransactionManagerBase,
-    membership_uow: MembershipsTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
 ) -> None:
     response = await client.post(
         "api/users/current-user/membership-requests", headers=auth_headers, json=user_membership_data
     )
 
-    async with membership_uow:
-        user_membership = await membership_uow.membership_request_repository.get_first_by_kwargs(user_id=test_user.id)
+    async with test_transaction_manager:
+        user_membership = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
+            user_id=test_user.id
+        )
         communication_preferences = await user_uow.communication_preferences_repository.get_first_by_kwargs(
             user_id=test_user.id
         )

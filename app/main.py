@@ -99,7 +99,7 @@ app.include_router(job_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 
 
-app.include_router(users_admin_router, prefix="/api/ad`min")
+app.include_router(users_admin_router, prefix="/api/admin")
 app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")

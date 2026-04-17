@@ -4,7 +4,7 @@ import pytest
 from faker import Faker
 
 from app.domains.feedback.models import ContactMessage, ContactMessageTypeEnum
-from app.domains.feedback.repositories import FeedbackTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 
 
 @pytest.fixture(scope="function")
@@ -94,6 +94,6 @@ def get_involved_committees_message_data(faker: Faker) -> dict:
 
 @pytest.fixture(scope="function")
 async def contact_message_db(
-    contact_message_uow: FeedbackTransactionManagerBase, get_involved_committees_message_data: dict
+    test_transaction_manager: TransactionManager, get_involved_committees_message_data: dict
 ) -> ContactMessage:
-    return await contact_message_uow.contact_message_repository.create(**get_involved_committees_message_data)
+    return await test_transaction_manager.contact_message_repository.create(**get_involved_committees_message_data)
