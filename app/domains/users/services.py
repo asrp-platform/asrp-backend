@@ -82,6 +82,8 @@ class UserService:
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
             avatar_object_key = user.avatar_path
+            if avatar_object_key is None:
+                return None
         return await self.file_storage.get_presigned_object(avatar_object_key)
 
     async def upload_avatar(self, user_id: int, file):
