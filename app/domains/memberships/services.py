@@ -11,6 +11,7 @@ from app.domains.memberships.exceptions import (
 )
 from app.domains.memberships.models import MembershipRequest, MembershipType, MembershipTypeEnum
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
+from app.domains.users.exceptions import UserNotFoundError
 
 
 class MembershipService:
@@ -28,6 +29,9 @@ class MembershipService:
 
     async def get_user_membership_request(self, user_id: int) -> MembershipRequest | None:
         async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
             stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
             return await self.transaction_manager.membership_requests_repository.get_first_by_kwargs(
                 stmt=stmt, user_id=user_id

@@ -1,40 +1,35 @@
-from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.base_use_case import BaseUseCase
-from app.core.database.base_transaction_manager import SQLAlchemyTransactionManagerBase
-from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.models import CommunicationPreferences
-from app.domains.users.services import CommunicationPreferencesService, get_communication_preferences_service
+from app.domains.users.services import CommunicationPreferencesService, CommunicationPreferencesServiceDep
 
 
-@dataclass
-class UpdateCommunicationPreferencesRequest:
-    user_id: int
-    current_user_id: int
-    update_data: dict
+class UpdateCommunicationPreferencesUseCase:
+    def __init__(
+        self,
+        transaction_manager: TransactionManager,
+        communication_preferences_service: CommunicationPreferencesService,
+    ):
+        self.__communication_preferences_service = communication_preferences_service
+        self.__transaction_manager = transaction_manager
 
-
-class UpdateCommunicationPreferencesUseCase(
-    BaseUseCase[UpdateCommunicationPreferencesRequest, CommunicationPreferences]
-):
-    def __init__(self, uow: SQLAlchemyTransactionManagerBase, service: CommunicationPreferencesService):
-        self.__service = service
-        self.__uow = uow
-
-    async def execute(self, request: UpdateCommunicationPreferencesRequest) -> CommunicationPreferences:
-        async with self.__uow:
-            await self.__service.check_resource_owner(request.user_id, current_user_id=request.current_user_id)
-            return await self.__service.update_or_create_preferences(request.user_id, request.update_data)
+    async def execute(self, user_id: int, current_user_id: int, update_data: dict) -> CommunicationPreferences:
+        async with self.__transaction_manager:
+            await self.__communication_preferences_service.check_resource_owner(
+                user_id,
+                current_user_id=current_user_id,
+            )
+            return await self.__communication_preferences_service.update_or_create_preferences(user_id, update_data)
 
 
 def get_update_user_communication_preferences_use_case(
-    service: Annotated[CommunicationPreferencesService, Depends(get_communication_preferences_service)],
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
+    communication_preferences_service: CommunicationPreferencesServiceDep,
 ) -> UpdateCommunicationPreferencesUseCase:
-    return UpdateCommunicationPreferencesUseCase(uow, service)
+    return UpdateCommunicationPreferencesUseCase(transaction_manager, communication_preferences_service)
 
 
 UpdateCommunicationPreferencesUseCaseDep = Annotated[

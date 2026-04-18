@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
-from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
+from app.core.common.exceptions import NotFoundError, NotResourceOwnerError, ResourceAlreadyExistsError
 from app.core.config import DEV_MODE, settings
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
@@ -60,6 +60,11 @@ async def not_found_error_handler(request: Request, exc: NotFoundError):
 @app.exception_handler(NotResourceOwnerError)
 async def not_resource_owner_error_handler(request: Request, exc: NotResourceOwnerError):
     return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(ResourceAlreadyExistsError)
+async def resource_already_exists_error_handler(request: Request, exc: ResourceAlreadyExistsError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 # --- Обработчик ошибок 422 ---

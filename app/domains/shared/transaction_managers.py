@@ -14,6 +14,11 @@ from app.domains.feedback.repositories import (
 from app.domains.memberships.repositories import MembershipRequestsRepository, MembershipTypeRepository
 from app.domains.payments.infrastructure import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository
+from app.domains.users.infrastructure import (
+    CommunicationPreferencesRepository,
+    NameChangeRequestRepository,
+    UserRepository,
+)
 
 
 class TransactionManager(SQLAlchemyTransactionManagerBase):
@@ -52,6 +57,18 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def feedback_additional_info_repository(self):
         return FeedbackAdditionalInfoRepository(self._session)
+
+    @property
+    def communication_preferences_repository(self):
+        return CommunicationPreferencesRepository(self._session)
+
+    @property
+    def user_repository(self):
+        return UserRepository(self._session)
+
+    @property
+    def name_change_request_repository(self):
+        return NameChangeRequestRepository(self._session)
 
 
 def get_transaction_manager(

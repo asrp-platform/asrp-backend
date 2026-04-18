@@ -15,13 +15,9 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.retrieve_user_communication_preferences import (
-    RetrieveCommunicationPreferencesRequest,
     RetrieveCommunicationPreferencesUseCaseDep,
 )
-from app.domains.users.use_cases.update_user_communication_preferences import (
-    UpdateCommunicationPreferencesRequest,
-    UpdateCommunicationPreferencesUseCaseDep,
-)
+from app.domains.users.use_cases.update_user_communication_preferences import UpdateCommunicationPreferencesUseCaseDep
 
 router = APIRouter(tags=["Users"], prefix="/users")
 
@@ -78,9 +74,7 @@ async def get_user_communication_preferences(
     current_user: CurrentUserDep,  # noqa
     use_case: RetrieveCommunicationPreferencesUseCaseDep,
 ) -> CommunicationPreferencesViewSchema:
-    request = RetrieveCommunicationPreferencesRequest(user_id=user_id)
-    preferences = await use_case.execute(request)
-    return CommunicationPreferencesViewSchema.model_validate(preferences)
+    return await use_case.execute(user_id)
 
 
 @router.patch("/{user_id}/communication-preferences")
@@ -89,12 +83,5 @@ async def update_user_communication_preferences(
     current_user: CurrentUserDep,
     use_case: UpdateCommunicationPreferencesUseCaseDep,
     update_data: CommunicationPreferencesUpdateSchema,
-):
-    request = UpdateCommunicationPreferencesRequest(
-        user_id=user_id,
-        current_user_id=current_user.id,
-        update_data=update_data.model_dump(exclude_none=True),
-    )
-
-    updated_preferences = await use_case.execute(request)
-    return CommunicationPreferencesViewSchema.model_validate(updated_preferences)
+) -> CommunicationPreferencesViewSchema:
+    return await use_case.execute(user_id, current_user.id, update_data.model_dump(exclude_none=True))

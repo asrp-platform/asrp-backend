@@ -6,6 +6,7 @@ from fastapi import Depends
 
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import s3_storage, settings
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
     FellowshipNotFoundError,
@@ -67,13 +68,11 @@ class UserService:
         async with self.uow:
             return await self.uow.user_repository.get_first_by_kwargs(**kwargs)
 
-    async def update_user(self, user_id: int, current_user: User, update_data: dict) -> User:
-        await self.check_resource_owner(user_id, current_user=current_user)
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
-            await self.uow.user_repository.update(user_id, **update_data)
+    async def update_user(self, user_id: int, **kwargs) -> User:
+        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        if user is None:
+            raise UserNotFoundError("User with provided ID not found")
+        await self.uow.user_repository.update(user_id, **kwargs)
         return user
 
     async def get_user_avatar_url(self, user_id: int):
@@ -381,8 +380,8 @@ class JobService(ProfessionalExperienceBaseService):
 
 
 class NameChangeRequestService:
-    def __init__(self, uow: UserTransactionManagerBase):
-        self.uow = uow
+    def __init__(self, transaction_manager: TransactionManager):
+        self.transaction_manager = transaction_manager
 
     async def check_resource_existence(
         self,
@@ -391,8 +390,8 @@ class NameChangeRequestService:
         current_user_id: int | None = None,
         name_change_request_id: int | None = None,
     ) -> None:
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
@@ -401,7 +400,7 @@ class NameChangeRequestService:
                 raise NotResourceOwnerError("Not resource owner")
 
             if name_change_request_id is not None:
-                name_change_request = await self.uow.name_change_request_repository.get_first_by_kwargs(
+                name_change_request = await self.transaction_manager.name_change_request_repository.get_first_by_kwargs(
                     id=name_change_request_id, user_id=user_id
                 )
                 if name_change_request is None:
@@ -410,20 +409,20 @@ class NameChangeRequestService:
     async def get_pending_name_change_request(self, user_id: int, name_change_request_id: int) -> NameChangeRequest:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
 
-        async with self.uow:
-            return await self.uow.name_change_request_repository.get_first_by_kwargs(
+        async with self.transaction_manager:
+            return await self.transaction_manager.name_change_request_repository.get_first_by_kwargs(
                 id=name_change_request_id, status=NameChangeRequestStatusEnum.PENDING
             )
 
     async def get_all_paginated_counted_name_change_requests(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> list[NameChangeRequest]:
-        async with self.uow:
-            return await self.uow.name_change_request_repository.list(limit, offset, order_by, filters)
+        async with self.transaction_manager:
+            return await self.transaction_manager.name_change_request_repository.list(limit, offset, order_by, filters)
 
     async def get_last_name_change_request_by_user_id(self, user_id: int) -> NameChangeRequest | None:
-        async with self.uow:
-            name_change_request, _ = await self.uow.name_change_request_repository.list(
+        async with self.transaction_manager:
+            name_change_request, _ = await self.transaction_manager.name_change_request_repository.list(
                 filters={"user_id": user_id},
                 limit=1,
                 order_by="-created_at",
@@ -434,27 +433,27 @@ class NameChangeRequestService:
             return None
 
     async def create_name_change_request(self, user_id: int, **kwargs) -> NameChangeRequest:
-        await self.check_resource_existence(user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+        if user is None:
+            raise UserNotFoundError("User with provided ID not found")
 
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-            name_change_request = await self.get_last_name_change_request_by_user_id(user_id=user_id)
+        name_change_request = await self.get_last_name_change_request_by_user_id(user_id=user_id)
 
-            if name_change_request is not None and name_change_request.status == NameChangeRequestStatusEnum.PENDING:
-                raise PendingNameChangeRequestAlreadyExistsError(
-                    "Pending name change request for User with provided ID is already exists"
+        if name_change_request is not None and name_change_request.status == NameChangeRequestStatusEnum.PENDING:
+            raise PendingNameChangeRequestAlreadyExistsError(
+                "Pending name change request for User with provided ID is already exists"
+            )
+
+        cooldown = settings.NAME_CHANGE_REQUEST_COOLDOWN_DAYS
+        if name_change_request is not None and cooldown is not None and user.last_name_change is not None:
+            days_elapsed = (datetime.now(tz=timezone.utc) - user.last_name_change).days
+
+            if days_elapsed < cooldown:
+                raise NameChangeRequestCooldownNotExpiredError(
+                    "The time until the next name change request for User with provided ID has not passed yet"
                 )
 
-            cooldown = settings.NAME_CHANGE_REQUEST_COOLDOWN_DAYS
-            if name_change_request is not None and cooldown is not None and user.last_name_change is not None:
-                days_elapsed = (datetime.now(tz=timezone.utc) - user.last_name_change).days
-
-                if days_elapsed < cooldown:
-                    raise NameChangeRequestCooldownNotExpiredError(
-                        "The time until the next name change request for User with provided ID has not passed yet"
-                    )
-
-            return await self.uow.name_change_request_repository.create(user_id=user_id, **kwargs)
+        return await self.transaction_manager.name_change_request_repository.create(user_id=user_id, **kwargs)
 
     async def update_name_change_request(
         self,
@@ -471,12 +470,12 @@ class NameChangeRequestService:
     async def _approve_name_change_request(self, user_id: int, name_change_request_id: int) -> None:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
 
-        async with self.uow:
-            name_change_request = await self.uow.name_change_request_repository.get_first_by_kwargs(
+        async with self.transaction_manager:
+            name_change_request = await self.transaction_manager.name_change_request_repository.get_first_by_kwargs(
                 id=name_change_request_id
             )
 
-            await self.uow.user_repository.update(
+            await self.transaction_manager.user_repository.update(
                 user_id,
                 firstname=name_change_request.firstname,
                 lastname=name_change_request.lastname,
@@ -484,7 +483,7 @@ class NameChangeRequestService:
                 last_name_change=datetime.now(tz=timezone.utc),
             )
 
-            await self.uow.name_change_request_repository.update(
+            await self.transaction_manager.name_change_request_repository.update(
                 name_change_request_id, status=NameChangeRequestStatusEnum.APPROVED
             )
 
@@ -493,8 +492,8 @@ class NameChangeRequestService:
     ) -> None:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
 
-        async with self.uow:
-            await self.uow.name_change_request_repository.update(
+        async with self.transaction_manager:
+            await self.transaction_manager.name_change_request_repository.update(
                 name_change_request_id,
                 reason_rejecting=reason_rejecting,
                 status=NameChangeRequestStatusEnum.REJECTED,
@@ -502,11 +501,11 @@ class NameChangeRequestService:
 
 
 class CommunicationPreferencesService:
-    def __init__(self, uow):
-        self.uow = uow
+    def __init__(self, transaction_manager):
+        self.transaction_manager = transaction_manager
 
     async def check_resource_owner(self, user_id: int, *, current_user_id: int = None):
-        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
             raise UserNotFoundError("User with provided ID not found")
@@ -519,13 +518,13 @@ class CommunicationPreferencesService:
         Retrieves communication settings for the user or creates them with default values.
         This ensures that the user always has the settings after calling the method.
         """
-        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
             raise UserNotFoundError("User with provided ID not found")
 
-        communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(
-            user_id=user_id
+        communication_preferences = (
+            await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
         )
 
         if not communication_preferences:
@@ -540,7 +539,9 @@ class CommunicationPreferencesService:
                     }
                 )
 
-            communication_preferences = await self.uow.communication_preferences_repository.create(**create_data)
+            communication_preferences = await self.transaction_manager.communication_preferences_repository.create(
+                **create_data
+            )
 
         return communication_preferences
 
@@ -553,8 +554,8 @@ class CommunicationPreferencesService:
         if update_data is None:
             update_data = {}
 
-        communication_preferences = await self.uow.communication_preferences_repository.get_first_by_kwargs(
-            user_id=user_id
+        communication_preferences = (
+            await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
         )
 
         if not communication_preferences:
@@ -569,9 +570,11 @@ class CommunicationPreferencesService:
                     }
                 )
 
-            return await self.uow.communication_preferences_repository.create(**create_data)
+            return await self.transaction_manager.communication_preferences_repository.create(**create_data)
 
-        return await self.uow.communication_preferences_repository.update(communication_preferences.id, **update_data)
+        return await self.transaction_manager.communication_preferences_repository.update(
+            communication_preferences.id, **update_data
+        )
 
 
 def get_user_service(uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)]) -> UserService:
@@ -602,16 +605,14 @@ def get_job_service(
     return JobService(uow)
 
 
-def get_name_change_request_service(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
-) -> NameChangeRequestService:
-    return NameChangeRequestService(uow)
+def get_name_change_request_service(transaction_manager: TransactionManagerDep) -> NameChangeRequestService:
+    return NameChangeRequestService(transaction_manager)
 
 
 def get_communication_preferences_service(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> CommunicationPreferencesService:
-    return CommunicationPreferencesService(uow)
+    return CommunicationPreferencesService(transaction_manager)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
