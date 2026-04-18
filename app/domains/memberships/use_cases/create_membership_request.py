@@ -31,10 +31,10 @@ class CreateUserMembershipRequestUseCase:
         payment_service: PaymentServiceDep,
     ) -> None:
         self.__transaction_manager = transaction_manager
-        self.membership_service = membership_service
-        self.feedback_additional_info_service = feedback_additional_info_service
-        self.communication_preference_service = communication_preference_service
-        self.payment_service = payment_service
+        self.__membership_service = membership_service
+        self.__feedback_additional_info_service = feedback_additional_info_service
+        self.__communication_preference_service = communication_preference_service
+        self.__payment_service = payment_service
 
     async def execute(
         self,
@@ -45,24 +45,24 @@ class CreateUserMembershipRequestUseCase:
         feedback_additional_info_data: dict,
     ) -> str:
         async with self.__transaction_manager:
-            membership_request = await self.membership_service.create_membership_request(
+            membership_request = await self.__membership_service.create_membership_request(
                 user_id,
                 membership_type,
                 status=MembershipRequestStatusEnum.PAYMENT_PENDING,
                 **membership_request_data,
             )
 
-            await self.feedback_additional_info_service.create_feedback_additional_info(
+            await self.__feedback_additional_info_service.create_feedback_additional_info(
                 user_id,
                 **feedback_additional_info_data,
             )
 
-            await self.communication_preference_service.update_or_create_preferences(
+            await self.__communication_preference_service.update_or_create_preferences(
                 user_id,
                 is_agrees_communications=is_agrees_communications,
             )
 
-            membership_type = await self.membership_service.get_membership_type(membership_type)
+            membership_type = await self.__membership_service.get_membership_type(membership_type)
             membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
 
             membership_type_line_items = [
@@ -78,7 +78,7 @@ class CreateUserMembershipRequestUseCase:
                     "quantity": 1,
                 }
             ]
-            payment = await self.payment_service.create_payment(
+            payment = await self.__payment_service.create_payment(
                 provider=PaymentProvider.STRIPE,
                 amount=membership_type_price_cents,
                 status=PaymentStatusEnum.PENDING,
@@ -86,7 +86,7 @@ class CreateUserMembershipRequestUseCase:
                 user_id=user_id,
                 provider_data=None,
             )
-            # Needed to get payment id
+            # Need to get payment id
             await self.__transaction_manager._session.flush()
 
             payment_metadata = {
@@ -109,7 +109,7 @@ class CreateUserMembershipRequestUseCase:
                 "url": checkout_session.url,
             }
 
-            await self.payment_service.update_payment(payment.id, provider_data=provider_data)
+            await self.__payment_service.update_payment(payment.id, provider_data=provider_data)
 
         return checkout_session.url
 

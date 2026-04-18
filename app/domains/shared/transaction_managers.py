@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database.base_transaction_manager import BaseTransactionManager, SQLAlchemyTransactionManagerBase
 from app.core.database.setup_db import session_getter
-from app.domains.auth.infrastructure import UserPermissionRepository
 from app.domains.directors_board.repositories import DirectorBoardMemberRepository
 from app.domains.feedback.repositories import (
     ContactMessageReplyRepository,
@@ -13,8 +12,8 @@ from app.domains.feedback.repositories import (
     FeedbackAdditionalInfoRepository,
 )
 from app.domains.memberships.repositories import MembershipRequestsRepository, MembershipTypeRepository
-from app.domains.payments.infrastructure import PaymentRepository, ProcessedWebhookEventRepository
-from app.domains.permissions.repositories import PermissionRepository
+from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
+from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
 from app.domains.users.repositories import (
     CommunicationPreferencesRepository,
     FellowshipRepository,
