@@ -44,6 +44,7 @@ class CreateUserMembershipRequestUseCase:
         membership_request_data: dict,
         feedback_additional_info_data: dict,
     ) -> str:
+        # TODO: raise error when trying to buy not purchasable membership
         async with self.__transaction_manager:
             membership_request = await self.__membership_service.create_membership_request(
                 user_id,
@@ -102,6 +103,7 @@ class CreateUserMembershipRequestUseCase:
             )
 
             provider_data = {
+                "membership_request_id": membership_request.id,
                 "payment_id": str(payment.id),
                 "checkout_session_id": checkout_session.id,
                 "checkout_session_status": checkout_session.status,

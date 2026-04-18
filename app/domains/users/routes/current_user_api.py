@@ -179,16 +179,16 @@ class MembershipCreateResponses(Responses):
     summary="Create a membership request for current user",
 )
 async def create_membership_request(
-    membership_request_data: MembershipRequestCreateSchema,
+    create_membership_request_data: MembershipRequestCreateSchema,
     current_user: CurrentUserDep,
     use_case: CreateMembershipRequestUseCaseDep,
 ) -> str:
     return await use_case.execute(
         user_id=current_user.id,
-        is_agrees_communications=membership_request_data.is_agrees_communications,
-        membership_type=membership_request_data.membership_type,
-        membership_request_data=membership_request_data.membership.model_dump(),
-        feedback_additional_info_data=membership_request_data.feedback_additional_info.model_dump(),
+        is_agrees_communications=create_membership_request_data.is_agrees_communications,
+        membership_type=create_membership_request_data.membership_type,
+        membership_request_data=create_membership_request_data.membership.model_dump(),
+        feedback_additional_info_data=create_membership_request_data.feedback_additional_info.model_dump(),
     )
 
 

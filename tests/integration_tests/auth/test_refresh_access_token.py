@@ -4,7 +4,7 @@ from httpx import AsyncClient
 
 from app.domains.shared.deps import create_refresh_token
 from app.domains.users.models import User
-from tests.auth.utils import decode_jwt
+from tests.integration_tests.auth.utils import decode_jwt
 
 pytestmark = pytest.mark.anyio
 

@@ -44,10 +44,11 @@ async def setup_database(test_engine: AsyncEngine) -> AsyncIterator[None]:
 
     yield
     async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        pass
+        # await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 async def insert_test_data(
     setup_database: AsyncIterator[None],
     test_engine: AsyncEngine,
