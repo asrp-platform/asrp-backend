@@ -1,42 +1,31 @@
-from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.base_use_case import BaseUseCase
-from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
-from app.domains.users.services import UserService, get_user_service
+from app.domains.users.services import UserServiceDep
 
 
-@dataclass
-class ChangeCurrentUserPasswordRequest:
-    current_user: User
-    new_password: str
-    old_password: str
+class ChangeCurrentUserPasswordUseCase:
+    def __init__(self, transaction_manager, service):
+        self.__transaction_manager = transaction_manager
+        self.__service = service
 
-
-class ChangeCurrentUserPasswordUseCase(BaseUseCase[ChangeCurrentUserPasswordRequest, None]):
-    def __init__(self, uow, service):
-        self.uow = uow
-        self.service = service
-
-    async def execute(self, request: ChangeCurrentUserPasswordRequest):
-        async with self.uow:
-            return await self.service.change_password(
-                request.current_user.id,
-                old_password=request.old_password,
-                new_password=request.new_password,
+    async def execute(self, current_user: User, new_password: str, old_password: str):
+        async with self.__transaction_manager:
+            return await self.__service.change_password(
+                current_user.id,
+                old_password=old_password,
+                new_password=new_password,
             )
 
 
-def get_delete_current_user_avatar_use_case(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
-    service: Annotated[UserService, Depends(get_user_service)],
+def get_use_case(
+    transaction_manager: TransactionManagerDep,
+    service: UserServiceDep,
 ) -> ChangeCurrentUserPasswordUseCase:
-    return ChangeCurrentUserPasswordUseCase(uow, service)
+    return ChangeCurrentUserPasswordUseCase(transaction_manager, service)
 
 
-ChangeCurrentUserPasswordUseCaseDep = Annotated[
-    ChangeCurrentUserPasswordUseCase, Depends(get_delete_current_user_avatar_use_case)
-]
+ChangeCurrentUserPasswordUseCaseDep = Annotated[ChangeCurrentUserPasswordUseCase, Depends(get_use_case)]

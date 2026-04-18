@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_transaction_manager import BaseTransactionManager, SQLAlchemyTransactionManagerBase
 from app.core.database.setup_db import session_getter
 from app.domains.auth.infrastructure import UserPermissionRepository
+from app.domains.directors_board.repositories import DirectorBoardMemberRepository
 from app.domains.feedback.repositories import (
     ContactMessageReplyRepository,
     ContactMessageRepository,
@@ -14,9 +15,13 @@ from app.domains.feedback.repositories import (
 from app.domains.memberships.repositories import MembershipRequestsRepository, MembershipTypeRepository
 from app.domains.payments.infrastructure import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository
-from app.domains.users.infrastructure import (
+from app.domains.users.repositories import (
     CommunicationPreferencesRepository,
+    FellowshipRepository,
+    JobRepository,
     NameChangeRequestRepository,
+    ProfessionalInformationRepository,
+    ResidencyRepository,
     UserRepository,
 )
 
@@ -69,6 +74,26 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def name_change_request_repository(self):
         return NameChangeRequestRepository(self._session)
+
+    @property
+    def professional_information_repository(self):
+        return ProfessionalInformationRepository(self._session)
+
+    @property
+    def residency_repository(self):
+        return ResidencyRepository(self._session)
+
+    @property
+    def fellowship_repository(self):
+        return FellowshipRepository(self._session)
+
+    @property
+    def job_repository(self):
+        return JobRepository(self._session)
+
+    @property
+    def directors_board_member_repository(self):
+        return DirectorBoardMemberRepository(self._session)
 
 
 def get_transaction_manager(

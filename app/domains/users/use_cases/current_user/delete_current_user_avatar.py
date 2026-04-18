@@ -1,34 +1,27 @@
-from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.base_use_case import BaseUseCase
-from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
-from app.domains.users.services import UserService, get_user_service
+from app.domains.users.services import UserServiceDep
 
 
-@dataclass
-class DeleteCurrentUserAvatarRequest:
-    current_user: User
+class DeleteCurrentUserAvatarUseCase:
+    def __init__(self, transaction_manager, user_service):
+        self.__transaction_manager = transaction_manager
+        self.__user_service = user_service
 
-
-class DeleteCurrentUserAvatarUseCase(BaseUseCase[DeleteCurrentUserAvatarRequest, None]):
-    def __init__(self, uow, service):
-        self.uow = uow
-        self.service = service
-
-    async def execute(self, request: DeleteCurrentUserAvatarRequest):
-        async with self.uow:
-            return await self.service.delete_user_avatar(request.current_user.id)
+    async def execute(self, current_user: User):
+        async with self.__transaction_manager:
+            return await self.__user_service.delete_user_avatar(current_user.id)
 
 
 def get_delete_current_user_avatar_use_case(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
-    service: Annotated[UserService, Depends(get_user_service)],
+    transaction_manager: TransactionManagerDep,
+    user_service: UserServiceDep,
 ) -> DeleteCurrentUserAvatarUseCase:
-    return DeleteCurrentUserAvatarUseCase(uow, service)
+    return DeleteCurrentUserAvatarUseCase(transaction_manager, user_service)
 
 
 DeleteCurrentUserAvatarUseCaseDep = Annotated[

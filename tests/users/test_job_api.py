@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.shared.deps import create_access_token
-from app.domains.users.infrastructure import UserTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import Fellowship, Job, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
@@ -99,14 +99,14 @@ async def test_create_user_job_forbidden(
 
 async def test_create_user_job_not_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     job_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -122,14 +122,14 @@ async def test_create_user_job_not_current_position_professional_experience_curr
 
 async def test_create_user_job_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     job_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -201,14 +201,14 @@ async def test_update_user_job_forbidden(
 
 async def test_update_user_job_current_position(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     job: Job,
     job_data: dict,
 ):
-    async with user_uow:
-        await user_uow.job_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.job_repository.update(
             job.id,
             current_position=True,
         )
@@ -242,15 +242,15 @@ async def test_update_user_job_current_position_professional_experience_current_
 
 async def test_update_user_job_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     job: Job,
     job_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )

@@ -7,7 +7,7 @@ from app.core.database.base_repository import SQLAlchemyRepository
 from app.core.database.base_transaction_manager import SQLAlchemyTransactionManagerBase
 from app.core.database.setup_db import session_getter
 from app.domains.permissions.models import Permission, UserPermission
-from app.domains.users.infrastructure import UserRepository
+from app.domains.users.repositories import UserRepository
 
 
 class PermissionRepository(SQLAlchemyRepository):

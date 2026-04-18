@@ -2,14 +2,13 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.shared.deps import create_access_token
-from app.domains.users.infrastructure import UserTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import Fellowship, Residency, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
 pytestmark = pytest.mark.anyio
 
 
-@pytest.mark.asyncio
 async def test_get_user_residencies_success(
     client: AsyncClient,
     test_user: User,
@@ -23,7 +22,6 @@ async def test_get_user_residencies_success(
     assert data[0]["user_id"] == test_user.id
 
 
-@pytest.mark.asyncio
 async def test_get_user_residencies_user_not_found(
     client: AsyncClient,
 ):
@@ -32,7 +30,6 @@ async def test_get_user_residencies_user_not_found(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_get_single_user_residency_success(
     client: AsyncClient,
     test_user: User,
@@ -47,7 +44,6 @@ async def test_get_single_user_residency_success(
     assert data["user_id"] == test_user.id
 
 
-@pytest.mark.asyncio
 async def test_get_single_user_residency_not_found(
     client: AsyncClient,
     test_user: User,
@@ -57,7 +53,6 @@ async def test_get_single_user_residency_not_found(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_create_user_residency_success(
     client: AsyncClient,
     test_user: User,
@@ -80,14 +75,14 @@ async def test_create_user_residency_success(
 
 async def test_create_user_residency_not_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     residency_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -101,17 +96,16 @@ async def test_create_user_residency_not_current_position_professional_experienc
     assert response.status_code == 201
 
 
-@pytest.mark.asyncio
 async def test_create_user_residency_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
     residency_data: dict,
 ):
-    async with user_uow:
-        await user_uow.residency_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.residency_repository.update(
             residency.id,
             current_position=True,
         )
@@ -127,7 +121,6 @@ async def test_create_user_residency_current_position_professional_experience_cu
     assert response.status_code == 409
 
 
-@pytest.mark.asyncio
 async def test_create_user_residency_forbidden(
     client: AsyncClient,
     test_user: User,
@@ -146,7 +139,6 @@ async def test_create_user_residency_forbidden(
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_update_user_residency_success(
     client: AsyncClient,
     test_user: User,
@@ -169,14 +161,14 @@ async def test_update_user_residency_success(
 
 async def test_update_user_residency_current_position(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
     residency_data: dict,
 ):
-    async with user_uow:
-        await user_uow.residency_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.residency_repository.update(
             residency.id,
             current_position=True,
         )
@@ -192,7 +184,7 @@ async def test_update_user_residency_current_position(
 
 async def test_update_user_residency_current_position_professional_experience_current_position_not_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
@@ -209,18 +201,17 @@ async def test_update_user_residency_current_position_professional_experience_cu
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_update_user_residency_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
     fellowship: Fellowship,
     residency_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -236,7 +227,6 @@ async def test_update_user_residency_current_position_professional_experience_cu
     assert response.status_code == 409
 
 
-@pytest.mark.asyncio
 async def test_update_user_residency_forbidden(
     client: AsyncClient,
     test_user: User,
@@ -256,18 +246,17 @@ async def test_update_user_residency_forbidden(
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_delete_user_residency_success(
     client: AsyncClient,
     test_user: User,
     auth_headers: AuthHeaders,
     residency: Residency,
-    user_uow,
+    test_transaction_manager: TransactionManager,
     year_range: str,
 ):
     # ensure there are at least two residencies so deleting one is allowed
-    async with user_uow:
-        await user_uow.residency_repository.create(
+    async with test_transaction_manager:
+        await test_transaction_manager.residency_repository.create(
             user_id=test_user.id,
             institution="Another Institution",
             speciality="Another Speciality",
@@ -285,7 +274,6 @@ async def test_delete_user_residency_success(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_delete_user_residency_not_found(
     client: AsyncClient,
     test_user: User,
@@ -299,7 +287,6 @@ async def test_delete_user_residency_not_found(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_delete_user_residency_cannot_delete_last(
     client: AsyncClient,
     test_user: User,

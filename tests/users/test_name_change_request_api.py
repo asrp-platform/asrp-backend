@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from httpx import AsyncClient
 
-from app.domains.users.infrastructure import UserTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import NameChangeRequest, NameChangeRequestStatusEnum, User
 from tests.fixtures.auth import AuthHeaders
 
@@ -157,18 +157,18 @@ async def test_create_name_change_request_when_active_request_already_exists(
 
 async def test_create_name_change_request_when_cooldown_not_expired(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     name_change_request: NameChangeRequest,
     auth_headers: AuthHeaders,
     name_change_request_data: dict,
 ) -> None:
-    async with user_uow:
-        await user_uow.user_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.user_repository.update(
             name_change_request.user_id,
             last_name_change=datetime.now(tz=timezone.utc),
         )
 
-        await user_uow.name_change_request_repository.update(
+        await test_transaction_manager.name_change_request_repository.update(
             name_change_request.id,
             status=NameChangeRequestStatusEnum.APPROVED,
         )

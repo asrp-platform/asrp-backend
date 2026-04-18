@@ -1,38 +1,28 @@
-from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, File
 
-from app.core.common.base_use_case import BaseUseCase
-from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
-from app.domains.users.services import UserService, get_user_service
+from app.domains.users.services import UserServiceDep
 
 
-@dataclass
-class UploadCurrentUserAvatarRequest:
-    current_user: User
-    file: File
+class UploadCurrentUserAvatarUseCase:
+    def __init__(self, transaction_manager, service):
+        self.__transaction_manager = transaction_manager
+        self.__service = service
+
+    async def execute(self, current_user: User, file: File):
+        async with self.__transaction_manager:
+            await self.__service.upload_avatar(current_user.id, file)
+            return await self.__service.get_user_avatar_url(current_user.id)
 
 
-class UploadCurrentUserAvatarUseCase(BaseUseCase[UploadCurrentUserAvatarRequest, None]):
-    def __init__(self, uow, service):
-        self.uow = uow
-        self.service = service
-
-    async def execute(self, request: UploadCurrentUserAvatarRequest):
-        async with self.uow:
-            await self.service.upload_avatar(request.current_user.id, request.file)
-            return await self.service.get_user_avatar_url(request.current_user.id)
-
-
-def get_upload_current_user_avatar_use_case(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
-    service: Annotated[UserService, Depends(get_user_service)],
+def get_use_case(
+    transaction_manager: TransactionManagerDep,
+    service: UserServiceDep,
 ) -> UploadCurrentUserAvatarUseCase:
-    return UploadCurrentUserAvatarUseCase(uow, service)
+    return UploadCurrentUserAvatarUseCase(transaction_manager, service)
 
 
-UploadCurrentUserAvatarUseCaseDep = Annotated[
-    UploadCurrentUserAvatarUseCase, Depends(get_upload_current_user_avatar_use_case)
-]
+UploadCurrentUserAvatarUseCaseDep = Annotated[UploadCurrentUserAvatarUseCase, Depends(get_use_case)]

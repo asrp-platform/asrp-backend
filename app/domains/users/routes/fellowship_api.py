@@ -1,13 +1,7 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
 
-from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
-from app.domains.users.exceptions import (
-    FellowshipNotFoundError,
-    ProfessionalExperienceCurrentPositionExistsError,
-    UserNotFoundError,
-)
 from app.domains.users.schemas import (
     FellowshipCreateSchema,
     FellowshipUpdateSchema,
@@ -34,11 +28,7 @@ async def get_user_fellowships(
     user_id: int,
     service: FellowshipServiceDep,
 ) -> list[FellowshipViewSchema]:
-    try:
-        user_fellowships = await service.get_by_user_id(user_id)
-        return [FellowshipViewSchema.model_validate(fellowship) for fellowship in user_fellowships]
-    except UserNotFoundError:
-        raise GetUserFellowshipsResponses.USER_NOT_FOUND
+    return await service.get_by_user_id(user_id)
 
 
 class GetSingleUserFellowshipResponses(GetUserFellowshipsResponses):
@@ -55,18 +45,10 @@ async def get_single_user_fellowship(
     fellowship_id: int,
     service: FellowshipServiceDep,
 ) -> FellowshipViewSchema:
-    try:
-        user_fellowship = await service.get_user_fellowship_by_id(
-            user_id=user_id,
-            fellowship_id=fellowship_id,
-        )
-        return FellowshipViewSchema.model_validate(user_fellowship)
-
-    except UserNotFoundError:
-        raise GetSingleUserFellowshipResponses.USER_NOT_FOUND
-
-    except FellowshipNotFoundError:
-        raise GetSingleUserFellowshipResponses.FELLOWSHIP_NOT_FOUND
+    return await service.get_user_fellowship_by_id(
+        user_id=user_id,
+        fellowship_id=fellowship_id,
+    )
 
 
 class CreateUserFellowshipResponses(GetUserFellowshipsResponses):
@@ -86,22 +68,11 @@ async def create_fellowship_for_user(
     service: FellowshipServiceDep,
     fellowship_creation_data: FellowshipCreateSchema,
 ) -> FellowshipViewSchema:
-    try:
-        user_fellowship = await service.create_user_fellowship(
-            user_id,
-            current_user.id,
-            **fellowship_creation_data.model_dump(),
-        )
-        return FellowshipViewSchema.model_validate(user_fellowship)
-
-    except NotResourceOwnerError:
-        raise CreateUserFellowshipResponses.NOT_RESOURCE_OWNER
-
-    except UserNotFoundError:
-        raise CreateUserFellowshipResponses.USER_NOT_FOUND
-
-    except ProfessionalExperienceCurrentPositionExistsError:
-        raise CreateUserFellowshipResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
+    return await service.create_user_fellowship(
+        user_id,
+        current_user.id,
+        **fellowship_creation_data.model_dump(),
+    )
 
 
 class UpdateFellowshipResponses(CreateUserFellowshipResponses):
@@ -120,23 +91,12 @@ async def update_user_fellowship(
     service: FellowshipServiceDep,
     fellowship_update_data: FellowshipUpdateSchema,
 ) -> FellowshipViewSchema:
-    try:
-        user_fellowship = await service.update_user_fellowship(
-            user_id,
-            current_user.id,
-            fellowship_id,
-            fellowship_update_data.model_dump(),
-        )
-        return FellowshipViewSchema.model_validate(user_fellowship)
-
-    except NotResourceOwnerError:
-        raise UpdateFellowshipResponses.NOT_RESOURCE_OWNER
-
-    except UserNotFoundError:
-        raise UpdateFellowshipResponses.USER_NOT_FOUND
-
-    except ProfessionalExperienceCurrentPositionExistsError:
-        raise UpdateFellowshipResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
+    return await service.update_user_fellowship(
+        user_id,
+        current_user.id,
+        fellowship_id,
+        fellowship_update_data.model_dump(),
+    )
 
 
 class DeleteFellowshipResponses(
@@ -157,18 +117,8 @@ async def delete_user_fellowship(
     current_user: CurrentUserDep,
     service: FellowshipServiceDep,
 ) -> int:
-    try:
-        return await service.delete_user_fellowship(
-            user_id,
-            current_user.id,
-            fellowship_id,
-        )
-
-    except NotResourceOwnerError:
-        raise DeleteFellowshipResponses.NOT_RESOURCE_OWNER
-
-    except UserNotFoundError:
-        raise DeleteFellowshipResponses.USER_NOT_FOUND
-
-    except FellowshipNotFoundError:
-        raise DeleteFellowshipResponses.FELLOWSHIP_NOT_FOUND
+    return await service.delete_user_fellowship(
+        user_id,
+        current_user.id,
+        fellowship_id,
+    )

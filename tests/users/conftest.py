@@ -1,7 +1,7 @@
 import pytest
 from faker import Faker
 
-from app.domains.users.infrastructure import UserTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
@@ -24,9 +24,9 @@ def year_range(faker: Faker) -> str:
 
 @pytest.fixture(scope="function")
 async def professional_information(
-    user_uow: UserTransactionManagerBase, test_user: User, faker: Faker, year_range: str
+    test_transaction_manager: TransactionManager, test_user: User, faker: Faker, year_range: str
 ) -> ProfessionalInformation:
-    prof_info = await user_uow.professional_information_repository.create(
+    prof_info = await test_transaction_manager.professional_information_repository.create(
         user_id=test_user.id,
         medical_school=faker.pystr(min_chars=2),
         medical_school_country=faker.country(),
@@ -52,12 +52,12 @@ def professional_information_data(faker: Faker, year_range: str) -> dict:
 
 @pytest.fixture(scope="function")
 async def fellowship(
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     test_user: User,
     year_range: str,
 ) -> Fellowship:
-    async with user_uow:
-        fellowship = await user_uow.fellowship_repository.create(
+    async with test_transaction_manager:
+        fellowship = await test_transaction_manager.fellowship_repository.create(
             user_id=test_user.id,
             current_position=False,
             institution="Mayo Clinic",
@@ -88,12 +88,12 @@ def fellowship_data(
 
 @pytest.fixture(scope="function")
 async def residency(
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     test_user: User,
     year_range: str,
 ) -> Residency:
-    async with user_uow:
-        residency = await user_uow.residency_repository.create(
+    async with test_transaction_manager:
+        residency = await test_transaction_manager.residency_repository.create(
             user_id=test_user.id,
             current_position=False,
             institution="Johns Hopkins Hospital",
@@ -124,12 +124,12 @@ def residency_data(
 
 @pytest.fixture(scope="function")
 async def job(
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     test_user: User,
     year_range: str,
 ) -> Job:
-    async with user_uow:
-        job = await user_uow.job_repository.create(
+    async with test_transaction_manager:
+        job = await test_transaction_manager.job_repository.create(
             user_id=test_user.id,
             current_position=False,
             institution="John Doe Hospital",
@@ -161,11 +161,11 @@ def job_data(
 @pytest.fixture(scope="function")
 async def name_change_request(
     faker: Faker,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     test_user: User,
 ) -> NameChangeRequest:
-    async with user_uow:
-        name_change_request = await user_uow.name_change_request_repository.create(
+    async with test_transaction_manager:
+        name_change_request = await test_transaction_manager.name_change_request_repository.create(
             firstname=faker.first_name(),
             lastname=faker.last_name(),
             reason_change=faker.text(max_nb_chars=100),
@@ -202,11 +202,11 @@ def name_change_request_reject_data(faker: Faker) -> dict:
 @pytest.fixture(scope="function")
 async def communication_preferences(
     faker: Faker,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     test_user: User,
 ) -> CommunicationPreferences:
-    async with user_uow:
-        preferences = await user_uow.communication_preferences_repository.create(
+    async with test_transaction_manager:
+        preferences = await test_transaction_manager.communication_preferences_repository.create(
             newsletters=faker.pybool(),
             events_meetings=faker.pybool(),
             committees_leadership=faker.pybool(),

@@ -3,8 +3,8 @@ from typing import Any
 import pytest
 from faker import Faker
 
-from app.domains.directors_board.infrastructure import DirectorsBoardMemberTransactionManagerBase
 from app.domains.directors_board.models import DirectorBoardMember
+from app.domains.shared.transaction_managers import TransactionManager
 
 
 @pytest.fixture(scope="function")
@@ -19,7 +19,7 @@ async def directors_board_member_data(faker: Faker) -> dict[str, Any]:
 @pytest.fixture(scope="function")
 async def directors_board_member_db(
     faker: Faker,
-    directors_board_uow: DirectorsBoardMemberTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     directors_board_member_data: dict[str, Any],
 ) -> DirectorBoardMember:
     creation_data = {
@@ -44,4 +44,4 @@ async def directors_board_member_db(
         "is_visible": faker.boolean(),
     }
 
-    return await directors_board_uow.director_board_member_repository.create(**creation_data)
+    return await test_transaction_manager.directors_board_member_repository.create(**creation_data)

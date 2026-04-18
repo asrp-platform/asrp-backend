@@ -19,7 +19,6 @@ from app.domains.users.exceptions import (
     ResidencyNotFoundError,
     UserNotFoundError,
 )
-from app.domains.users.infrastructure import UserTransactionManagerBase, get_user_unit_of_work
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
@@ -33,8 +32,8 @@ from app.domains.users.models import (
 
 
 class UserService:
-    def __init__(self, uow):
-        self.uow = uow
+    def __init__(self, transaction_manager: TransactionManager):
+        self.transaction_manager = transaction_manager
         self.file_storage = s3_storage
 
     async def check_resource_owner(self, user_id: int, *, current_user: User):
@@ -43,8 +42,8 @@ class UserService:
         - user exists
         - current user is a resource owner (optional) or admin
         """
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
             if current_user is None or user_id != current_user.id or not current_user.admin:
@@ -53,31 +52,31 @@ class UserService:
     async def get_all_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> [list[User], int]:
-        async with self.uow:
-            return await self.uow.user_repository.list(limit, offset, order_by, filters)
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.list(limit, offset, order_by, filters)
 
     async def get_all_users_count(self) -> int:
-        async with self.uow:
-            return await self.uow.user_repository.get_count()
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.get_count()
 
     async def create(self, **kwargs):
-        async with self.uow:
-            return await self.uow.user_repository.create(**kwargs)
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.create(**kwargs)
 
     async def get_user_by_kwargs(self, **kwargs) -> User:
-        async with self.uow:
-            return await self.uow.user_repository.get_first_by_kwargs(**kwargs)
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
 
     async def update_user(self, user_id: int, **kwargs) -> User:
-        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
         if user is None:
             raise UserNotFoundError("User with provided ID not found")
-        await self.uow.user_repository.update(user_id, **kwargs)
+        await self.transaction_manager.user_repository.update(user_id, **kwargs)
         return user
 
     async def get_user_avatar_url(self, user_id: int):
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
             avatar_object_key = user.avatar_path
@@ -94,18 +93,18 @@ class UserService:
                 file_content,
                 "uploads",
             )
-            async with self.uow:
-                await self.uow.user_repository.update(user_id, avatar_path=filename)
+            async with self.transaction_manager:
+                await self.transaction_manager.user_repository.update(user_id, avatar_path=filename)
             return upload_result
         except Exception as e:
             raise e
 
     async def delete_user_avatar(self, user_id: int) -> None:
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            await self.uow.user_repository.update(user_id, avatar_path=None)
+            await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
 
     async def change_password(
         self,
@@ -113,55 +112,60 @@ class UserService:
         old_password: str,
         new_password: str,
     ):
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
-            if user is None:
-                raise UserNotFoundError("user with provided email not found")
+        if user is None:
+            raise UserNotFoundError("user with provided email not found")
 
-            if not user.verify_password(old_password):
-                raise InvalidPasswordError("Invalid password")
+        if not user.verify_password(old_password):
+            raise InvalidPasswordError("Invalid password")
 
-            user.password = new_password
-            await self.uow._session.flush()  # noqa property's setter manual calling
-            await self.uow.user_repository.update(user.id, last_password_change=datetime.now(tz=timezone.utc))
+        user.password = new_password
+        await self.transaction_manager._session.flush()  # noqa property's setter manual calling
+        await self.transaction_manager.user_repository.update(
+            user.id, last_password_change=datetime.now(tz=timezone.utc)
+        )
 
 
 class ProfessionalInformationService:
-    def __init__(self, uow):
-        self.uow = uow
+    def __init__(self, transaction_manager: TransactionManager):
+        self.transaction_manager = transaction_manager
 
     async def get_by_user_id(self, user_id: int) -> ProfessionalInformation | None:
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            return await self.uow.professional_information_repository.get_first_by_kwargs(user_id=user_id)
+            return await self.transaction_manager.professional_information_repository.get_first_by_kwargs(
+                user_id=user_id
+            )
 
     async def create_or_update(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalInformation:
         if user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
 
-            professional_information = await self.uow.professional_information_repository.get_first_by_kwargs(
-                user_id=user_id
+            professional_information = (
+                await self.transaction_manager.professional_information_repository.get_first_by_kwargs(user_id=user_id)
             )
             data = {**kwargs, "user_id": user.id}
 
             if professional_information is not None:
-                return await self.uow.professional_information_repository.update(professional_information.id, **data)
+                return await self.transaction_manager.professional_information_repository.update(
+                    professional_information.id, **data
+                )
             else:
-                return await self.uow.professional_information_repository.create(**data)
+                return await self.transaction_manager.professional_information_repository.create(**data)
 
 
 class ProfessionalExperienceBaseService:
-    def __init__(self, uow):
-        self.uow = uow
+    def __init__(self, transaction_manager):
+        self.transaction_manager = transaction_manager
 
     async def _check_resource_owner(
         self,
@@ -172,7 +176,7 @@ class ProfessionalExperienceBaseService:
         fellowship_id: int = None,
         job_id: int = None,
     ) -> None:
-        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
             raise UserNotFoundError("User with provided ID not found")
@@ -181,24 +185,32 @@ class ProfessionalExperienceBaseService:
             raise NotResourceOwnerError("Not resource owner")
 
         if residency_id is not None:
-            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+            residency = await self.transaction_manager.residency_repository.get_first_by_kwargs(
+                id=residency_id, user_id=user_id
+            )
             if residency is None:
                 raise ResidencyNotFoundError("Residency with provided ID not found")
 
         if fellowship_id is not None:
-            fellowship = await self.uow.fellowship_repository.get_first_by_kwargs(id=fellowship_id, user_id=user_id)
+            fellowship = await self.transaction_manager.fellowship_repository.get_first_by_kwargs(
+                id=fellowship_id, user_id=user_id
+            )
             if fellowship is None:
                 raise FellowshipNotFoundError("Fellowship with provided ID not found")
 
         if job_id is not None:
-            job = await self.uow.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
+            job = await self.transaction_manager.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
             if job is None:
                 raise JobNotFoundError("Job with provided ID not found")
 
     async def _check_current_position_selected(self, user_id: int) -> None:
-        residency = await self.uow.residency_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
-        fellowship = await self.uow.fellowship_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
-        job = await self.uow.job_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
+        residency = await self.transaction_manager.residency_repository.get_first_by_kwargs(
+            user_id=user_id, current_position=True
+        )
+        fellowship = await self.transaction_manager.fellowship_repository.get_first_by_kwargs(
+            user_id=user_id, current_position=True
+        )
+        job = await self.transaction_manager.job_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
 
         if residency is not None or fellowship is not None or job is not None:
             raise ProfessionalExperienceCurrentPositionExistsError("Current position has already been selected")
@@ -206,26 +218,28 @@ class ProfessionalExperienceBaseService:
 
 class ResidencyService(ProfessionalExperienceBaseService):
     async def get_by_user_id(self, user_id: int) -> list[Residency]:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id)
 
-            return await self.uow.residency_repository.get_all_by_kwargs(user_id=user_id)
+            return await self.transaction_manager.residency_repository.get_all_by_kwargs(user_id=user_id)
 
     async def get_user_residency_by_id(self, user_id: int, residency_id: int) -> Residency:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, residency_id=residency_id)
 
-            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+            residency = await self.transaction_manager.residency_repository.get_first_by_kwargs(
+                id=residency_id, user_id=user_id
+            )
             return residency
 
     async def create_user_residency(self, user_id: int, current_user_id: int, **kwargs) -> Residency:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
 
             if kwargs.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
-            return await self.uow.residency_repository.create(user_id=user_id, **kwargs)
+            return await self.transaction_manager.residency_repository.create(user_id=user_id, **kwargs)
 
     async def update_user_residency(
         self,
@@ -234,42 +248,42 @@ class ResidencyService(ProfessionalExperienceBaseService):
         residency_id: int,
         update_data: dict,
     ) -> Residency:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
 
             if update_data.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
-            return await self.uow.residency_repository.update(residency_id, **update_data)
+            return await self.transaction_manager.residency_repository.update(residency_id, **update_data)
 
     async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
 
-            remaining = await self.uow.residency_repository.get_count(user_id=user_id)
+            remaining = await self.transaction_manager.residency_repository.get_count(user_id=user_id)
 
             if remaining <= 1:
                 raise CannotDeleteLastResidencyError("Cannot delete last residency for user")
 
-            return await self.uow.residency_repository.mark_as_deleted(residency_id)
+            return await self.transaction_manager.residency_repository.mark_as_deleted(residency_id)
 
 
 class FellowshipService(ProfessionalExperienceBaseService):
     async def get_by_user_id(self, user_id: int) -> list[Fellowship]:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id)
 
-            return await self.uow.fellowship_repository.get_all_by_kwargs(user_id=user_id)
+            return await self.transaction_manager.fellowship_repository.get_all_by_kwargs(user_id=user_id)
 
     async def get_user_fellowship_by_id(
         self,
         user_id: int,
         fellowship_id: int,
     ) -> Fellowship:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, fellowship_id=fellowship_id)
 
-            return await self.uow.fellowship_repository.get_first_by_kwargs(
+            return await self.transaction_manager.fellowship_repository.get_first_by_kwargs(
                 id=fellowship_id,
                 user_id=user_id,
             )
@@ -280,13 +294,13 @@ class FellowshipService(ProfessionalExperienceBaseService):
         current_user_id: int,
         **kwargs,
     ) -> Fellowship:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
 
             if kwargs.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
-            return await self.uow.fellowship_repository.create(
+            return await self.transaction_manager.fellowship_repository.create(
                 user_id=user_id,
                 **kwargs,
             )
@@ -298,13 +312,13 @@ class FellowshipService(ProfessionalExperienceBaseService):
         fellowship_id: int,
         update_data: dict,
     ) -> Fellowship:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
 
             if update_data.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
-            return await self.uow.fellowship_repository.update(
+            return await self.transaction_manager.fellowship_repository.update(
                 fellowship_id,
                 **update_data,
             )
@@ -315,28 +329,28 @@ class FellowshipService(ProfessionalExperienceBaseService):
         current_user_id: int,
         fellowship_id: int,
     ) -> int:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
 
-            return await self.uow.fellowship_repository.mark_as_deleted(fellowship_id)
+            return await self.transaction_manager.fellowship_repository.mark_as_deleted(fellowship_id)
 
 
 class JobService(ProfessionalExperienceBaseService):
     async def get_by_user_id(self, user_id: int) -> list[Job]:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id)
 
-            return await self.uow.job_repository.get_all_by_kwargs(user_id=user_id)
+            return await self.transaction_manager.job_repository.get_all_by_kwargs(user_id=user_id)
 
     async def get_user_job_by_id(
         self,
         user_id: int,
         job_id: int,
     ) -> Job:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, job_id=job_id)
 
-            return await self.uow.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
+            return await self.transaction_manager.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
 
     async def create_user_job(
         self,
@@ -344,13 +358,13 @@ class JobService(ProfessionalExperienceBaseService):
         current_user_id: int,
         **kwargs,
     ) -> Job:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id)
 
             if kwargs.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
-            return await self.uow.job_repository.create(user_id=user_id, **kwargs)
+            return await self.transaction_manager.job_repository.create(user_id=user_id, **kwargs)
 
     async def update_user_job(
         self,
@@ -359,13 +373,13 @@ class JobService(ProfessionalExperienceBaseService):
         job_id: int,
         update_data: dict,
     ) -> Job:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
 
             if update_data.get("current_position"):
                 await self._check_current_position_selected(user_id)
 
-            return await self.uow.job_repository.update(job_id, **update_data)
+            return await self.transaction_manager.job_repository.update(job_id, **update_data)
 
     async def delete_user_job(
         self,
@@ -373,10 +387,10 @@ class JobService(ProfessionalExperienceBaseService):
         current_user_id: int,
         job_id: int,
     ) -> int:
-        async with self.uow:
+        async with self.transaction_manager:
             await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
 
-            return await self.uow.job_repository.mark_as_deleted(job_id)
+            return await self.transaction_manager.job_repository.mark_as_deleted(job_id)
 
 
 class NameChangeRequestService:
@@ -577,32 +591,32 @@ class CommunicationPreferencesService:
         )
 
 
-def get_user_service(uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)]) -> UserService:
-    return UserService(uow)
+def get_user_service(transaction_manager: TransactionManagerDep) -> UserService:
+    return UserService(transaction_manager)
 
 
 def get_professional_information_service(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> ProfessionalInformationService:
-    return ProfessionalInformationService(uow)
+    return ProfessionalInformationService(transaction_manager)
 
 
 def get_residency_service(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> ResidencyService:
-    return ResidencyService(uow)
+    return ResidencyService(transaction_manager)
 
 
 def get_fellowship_service(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> FellowshipService:
-    return FellowshipService(uow)
+    return FellowshipService(transaction_manager)
 
 
 def get_job_service(
-    uow: Annotated[UserTransactionManagerBase, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
 ) -> JobService:
-    return JobService(uow)
+    return JobService(transaction_manager)
 
 
 def get_name_change_request_service(transaction_manager: TransactionManagerDep) -> NameChangeRequestService:

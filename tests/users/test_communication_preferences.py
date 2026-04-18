@@ -8,7 +8,6 @@ from tests.fixtures.auth import AuthHeaders, UserFactory
 pytestmark = pytest.mark.anyio
 
 
-@pytest.mark.asyncio
 async def test_create_user_communication_preferences_success(
     client: AsyncClient,
     test_user: User,
@@ -28,7 +27,6 @@ async def test_create_user_communication_preferences_success(
     assert not data["volunteer_opportunities"]
 
 
-@pytest.mark.asyncio
 async def test_get_user_communication_preferences(
     client: AsyncClient,
     test_user: User,
@@ -49,7 +47,6 @@ async def test_get_user_communication_preferences(
     assert data["volunteer_opportunities"] == communication_preferences.volunteer_opportunities
 
 
-@pytest.mark.asyncio
 async def test_get_user_communication_preferences_not_found(
     client: AsyncClient,
     auth_headers: AuthHeaders,
@@ -65,7 +62,6 @@ async def test_get_user_communication_preferences_not_found(
     assert "detail" in data
 
 
-@pytest.mark.asyncio
 async def test_update_user_communication_preferences_success(
     client: AsyncClient,
     test_user: User,
@@ -92,7 +88,6 @@ async def test_update_user_communication_preferences_success(
     assert data["volunteer_opportunities"] == communication_preferences.volunteer_opportunities
 
 
-@pytest.mark.asyncio
 async def test_update_user_communication_preferences_partial_update_success(
     client: AsyncClient,
     test_user: User,
@@ -122,7 +117,6 @@ async def test_update_user_communication_preferences_partial_update_success(
     assert data["volunteer_opportunities"] == old_volunteer_opportunities
 
 
-@pytest.mark.asyncio
 async def test_update_user_communication_preferences_not_found(
     client: AsyncClient,
     auth_headers: AuthHeaders,
@@ -143,7 +137,6 @@ async def test_update_user_communication_preferences_not_found(
     assert "detail" in data
 
 
-@pytest.mark.asyncio
 async def test_update_user_communication_preferences_forbid_extra_fields(
     client: AsyncClient,
     test_user: User,
@@ -163,7 +156,6 @@ async def test_update_user_communication_preferences_forbid_extra_fields(
     assert response.status_code == 422
 
 
-@pytest.mark.asyncio
 async def test_update_user_communication_preferences_forbidden_for_another_user(
     client: AsyncClient,
     test_user: User,

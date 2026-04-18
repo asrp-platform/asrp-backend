@@ -26,14 +26,8 @@ from app.domains.users.schemas import (
     UserSchema,
 )
 from app.domains.users.services import UserServiceDep
-from app.domains.users.use_cases.current_user.change_current_user_password import (
-    ChangeCurrentUserPasswordRequest,
-    ChangeCurrentUserPasswordUseCaseDep,
-)
-from app.domains.users.use_cases.current_user.delete_current_user_avatar import (
-    DeleteCurrentUserAvatarRequest,
-    DeleteCurrentUserAvatarUseCaseDep,
-)
+from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
+from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.get_current_user_membership import (
     GetCurrentUserMembershipRequestUseCaseDep,
 )
@@ -41,10 +35,7 @@ from app.domains.users.use_cases.current_user.request_name_change import Request
 from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
     RetrieveCurrentUserPaymentsUseCaseDep,
 )
-from app.domains.users.use_cases.current_user.set_current_user_avatar import (
-    UploadCurrentUserAvatarRequest,
-    UploadCurrentUserAvatarUseCaseDep,
-)
+from app.domains.users.use_cases.current_user.set_current_user_avatar import UploadCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.update_current_user import UpdateCurrentUserUseCaseDep
 
 router = APIRouter(tags=["Current user"], prefix="/users/current-user")
@@ -93,9 +84,7 @@ async def upload_user_avatar(
 ) -> str:
     if not file.content_type.startswith("image/"):
         raise UploadAvatarResponses.INVALID_CONTENT_TYPE
-
-    request = UploadCurrentUserAvatarRequest(current_user, file)
-    return await use_case.execute(request)
+    return await use_case.execute(current_user, file)
 
 
 class DeleteUserAvatarResponses(UpdateUserDataResponses):
@@ -112,8 +101,7 @@ async def remove_user_avatar(
     use_case: DeleteCurrentUserAvatarUseCaseDep,
     current_user: CurrentUserDep,
 ):
-    request = DeleteCurrentUserAvatarRequest(current_user=current_user)
-    await use_case.execute(request)
+    await use_case.execute(current_user)
 
 
 class ChangePasswordResponses(Responses):
@@ -132,14 +120,8 @@ async def change_user_password(
     current_user: CurrentUserDep,  # noqa
     data: ChangePasswordSchema,
 ) -> None:
-    request = ChangeCurrentUserPasswordRequest(
-        current_user,
-        new_password=data.new_password,
-        old_password=data.old_password,
-    )
-
     try:
-        await use_case.execute(request)
+        await use_case.execute(current_user, new_password=data.new_password, old_password=data.old_password)
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD
 

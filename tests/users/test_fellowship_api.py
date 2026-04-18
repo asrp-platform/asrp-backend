@@ -2,19 +2,17 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.shared.deps import create_access_token
-from app.domains.users.infrastructure import UserTransactionManagerBase
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import Fellowship, Job, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
 pytestmark = pytest.mark.anyio
 
 
-@pytest.mark.asyncio
 async def test_get_user_fellowships_success(
     client: AsyncClient,
     test_user: User,
     fellowship: Fellowship,
-    user_uow: UserTransactionManagerBase,
 ):
     response = await client.get(f"/api/users/{test_user.id}/fellowships")
 
@@ -24,7 +22,6 @@ async def test_get_user_fellowships_success(
     assert data[0]["user_id"] == test_user.id
 
 
-@pytest.mark.asyncio
 async def test_get_user_fellowships_user_not_found(
     client: AsyncClient,
 ):
@@ -33,7 +30,6 @@ async def test_get_user_fellowships_user_not_found(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_get_single_user_fellowship_success(
     client: AsyncClient,
     test_user: User,
@@ -48,7 +44,6 @@ async def test_get_single_user_fellowship_success(
     assert data["user_id"] == test_user.id
 
 
-@pytest.mark.asyncio
 async def test_get_single_user_fellowship_not_found(
     client: AsyncClient,
     test_user: User,
@@ -58,7 +53,6 @@ async def test_get_single_user_fellowship_not_found(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_create_user_fellowship_success(
     client: AsyncClient,
     test_user: User,
@@ -79,17 +73,16 @@ async def test_create_user_fellowship_success(
     assert data["user_id"] == test_user.id
 
 
-@pytest.mark.asyncio
 async def test_create_user_fellowship_not_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     fellowship_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -103,17 +96,16 @@ async def test_create_user_fellowship_not_current_position_professional_experien
     assert response.status_code == 201
 
 
-@pytest.mark.asyncio
 async def test_create_user_fellowship_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     fellowship_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -129,7 +121,6 @@ async def test_create_user_fellowship_current_position_professional_experience_c
     assert response.status_code == 409
 
 
-@pytest.mark.asyncio
 async def test_create_user_fellowship_forbidden(
     client: AsyncClient,
     test_user: User,
@@ -148,7 +139,6 @@ async def test_create_user_fellowship_forbidden(
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_update_user_fellowship_success(
     client: AsyncClient,
     test_user: User,
@@ -169,17 +159,16 @@ async def test_update_user_fellowship_success(
     assert data["speciality"] == fellowship_data["speciality"]
 
 
-@pytest.mark.asyncio
 async def test_update_user_fellowship_current_position(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     fellowship_data: dict,
 ):
-    async with user_uow:
-        await user_uow.fellowship_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.fellowship_repository.update(
             fellowship.id,
             current_position=True,
         )
@@ -193,10 +182,8 @@ async def test_update_user_fellowship_current_position(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_update_user_fellowship_current_position_professional_experience_current_position_not_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
@@ -213,18 +200,17 @@ async def test_update_user_fellowship_current_position_professional_experience_c
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_update_user_fellowship_current_position_professional_experience_current_position_already_exists(
     client: AsyncClient,
-    user_uow: UserTransactionManagerBase,
+    test_transaction_manager: TransactionManager,
     auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
     job: Job,
     fellowship_data: dict,
 ):
-    async with user_uow:
-        await user_uow.job_repository.update(
+    async with test_transaction_manager:
+        await test_transaction_manager.job_repository.update(
             job.id,
             current_position=True,
         )
@@ -240,7 +226,6 @@ async def test_update_user_fellowship_current_position_professional_experience_c
     assert response.status_code == 409
 
 
-@pytest.mark.asyncio
 async def test_update_user_fellowship_forbidden(
     client: AsyncClient,
     test_user: User,
@@ -260,7 +245,6 @@ async def test_update_user_fellowship_forbidden(
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_delete_user_fellowship_success(
     client: AsyncClient,
     test_user: User,
@@ -275,7 +259,6 @@ async def test_delete_user_fellowship_success(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_delete_user_fellowship_not_found(
     client: AsyncClient,
     test_user: User,
