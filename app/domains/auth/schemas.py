@@ -12,8 +12,6 @@ class RegisterFormData(BaseModel):
     lastname: str = Field(min_length=2)
     country: str = Field(min_length=2)
     city: str = Field(min_length=2)
-    institution: str = Field(min_length=2)
-    role: str = Field(min_length=2)
 
     @model_validator(mode="after")
     def check_passwords_match(self):

@@ -7,11 +7,14 @@ from fastapi import Depends
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import s3_storage, settings
 from app.domains.users.exceptions import (
+    CannotDeleteLastResidencyError,
     FellowshipNotFoundError,
     InvalidPasswordError,
+    JobNotFoundError,
     NameChangeRequestCooldownNotExpiredError,
     NameChangeRequestNotFoundError,
     PendingNameChangeRequestAlreadyExistsError,
+    ProfessionalExperienceCurrentPositionExistsError,
     ResidencyNotFoundError,
     UserNotFoundError,
 )
@@ -19,17 +22,13 @@ from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_wo
 from app.domains.users.models import (
     CommunicationPreferences,
     Fellowship,
+    Job,
     NameChangeRequest,
     NameChangeRequestStatusEnum,
     ProfessionalInformation,
     Residency,
     User,
 )
-
-"""
-Не использую HTTPExceptions в сервисах, так как
-это сделало бы сервисы зависимыми от фреймворка
-"""
 
 
 class UserService:
@@ -159,46 +158,72 @@ class ProfessionalInformationService:
                 return await self.uow.professional_information_repository.create(**data)
 
 
-class ResidencyService:
+class ProfessionalExperienceBaseService:
     def __init__(self, uow):
         self.uow = uow
 
-    async def check_resource_owner(self, user_id: int, *, current_user_id: int = None, residency_id: int = None):
-        """
-        Ensures:
-        - user exists
-        - residency exists (optional)
-        - current user is a resource owner (optional)
-        """
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
+    async def _check_resource_owner(
+        self,
+        user_id: int,
+        *,
+        current_user_id: int = None,
+        residency_id: int = None,
+        fellowship_id: int = None,
+        job_id: int = None,
+    ) -> None:
+        user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
 
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+        if user is None:
+            raise UserNotFoundError("User with provided ID not found")
 
-            if current_user_id is not None and user_id != current_user_id:
-                raise NotResourceOwnerError("Not resource owner")
+        if current_user_id is not None and user_id != current_user_id:
+            raise NotResourceOwnerError("Not resource owner")
 
-            if residency_id is not None:
-                residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+        if residency_id is not None:
+            residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
+            if residency is None:
+                raise ResidencyNotFoundError("Residency with provided ID not found")
 
-                if residency is None:
-                    raise ResidencyNotFoundError("Residency with provided ID not found")
+        if fellowship_id is not None:
+            fellowship = await self.uow.fellowship_repository.get_first_by_kwargs(id=fellowship_id, user_id=user_id)
+            if fellowship is None:
+                raise FellowshipNotFoundError("Fellowship with provided ID not found")
 
+        if job_id is not None:
+            job = await self.uow.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
+            if job is None:
+                raise JobNotFoundError("Job with provided ID not found")
+
+    async def _check_current_position_selected(self, user_id: int) -> None:
+        residency = await self.uow.residency_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
+        fellowship = await self.uow.fellowship_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
+        job = await self.uow.job_repository.get_first_by_kwargs(user_id=user_id, current_position=True)
+
+        if residency is not None or fellowship is not None or job is not None:
+            raise ProfessionalExperienceCurrentPositionExistsError("Current position has already been selected")
+
+
+class ResidencyService(ProfessionalExperienceBaseService):
     async def get_by_user_id(self, user_id: int) -> list[Residency]:
-        await self.check_resource_owner(user_id)
         async with self.uow:
+            await self._check_resource_owner(user_id)
+
             return await self.uow.residency_repository.get_all_by_kwargs(user_id=user_id)
 
     async def get_user_residency_by_id(self, user_id: int, residency_id: int) -> Residency:
-        await self.check_resource_owner(user_id, residency_id=residency_id)
         async with self.uow:
+            await self._check_resource_owner(user_id, residency_id=residency_id)
+
             residency = await self.uow.residency_repository.get_first_by_kwargs(id=residency_id, user_id=user_id)
             return residency
 
     async def create_user_residency(self, user_id: int, current_user_id: int, **kwargs) -> Residency:
-        await self.check_resource_owner(user_id, current_user_id=current_user_id)
         async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id)
+
+            if kwargs.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
             return await self.uow.residency_repository.create(user_id=user_id, **kwargs)
 
     async def update_user_residency(
@@ -208,54 +233,31 @@ class ResidencyService:
         residency_id: int,
         update_data: dict,
     ) -> Residency:
-        await self.check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
         async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
+
+            if update_data.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
             return await self.uow.residency_repository.update(residency_id, **update_data)
 
     async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
-        await self.check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
         async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
+
+            remaining = await self.uow.residency_repository.get_count(user_id=user_id)
+
+            if remaining <= 1:
+                raise CannotDeleteLastResidencyError("Cannot delete last residency for user")
+
             return await self.uow.residency_repository.mark_as_deleted(residency_id)
 
 
-class FellowshipService:
-    def __init__(self, uow):
-        self.uow = uow
-
-    async def check_resource_owner(
-        self,
-        user_id: int,
-        *,
-        current_user_id: int = None,
-        fellowship_id: int = None,
-    ):
-        """
-        Ensures:
-        - user exists
-        - fellowship exists (optional)
-        - current user is a resource owner (optional)
-        """
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(id=user_id)
-
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
-
-            if current_user_id is not None and user_id != current_user_id:
-                raise NotResourceOwnerError("Not resource owner")
-
-            if fellowship_id is not None:
-                fellowship = await self.uow.fellowship_repository.get_first_by_kwargs(
-                    id=fellowship_id,
-                    user_id=user_id,
-                )
-
-                if fellowship is None:
-                    raise FellowshipNotFoundError("Fellowship with provided ID not found")
-
+class FellowshipService(ProfessionalExperienceBaseService):
     async def get_by_user_id(self, user_id: int) -> list[Fellowship]:
-        await self.check_resource_owner(user_id)
         async with self.uow:
+            await self._check_resource_owner(user_id)
+
             return await self.uow.fellowship_repository.get_all_by_kwargs(user_id=user_id)
 
     async def get_user_fellowship_by_id(
@@ -263,11 +265,9 @@ class FellowshipService:
         user_id: int,
         fellowship_id: int,
     ) -> Fellowship:
-        await self.check_resource_owner(
-            user_id,
-            fellowship_id=fellowship_id,
-        )
         async with self.uow:
+            await self._check_resource_owner(user_id, fellowship_id=fellowship_id)
+
             return await self.uow.fellowship_repository.get_first_by_kwargs(
                 id=fellowship_id,
                 user_id=user_id,
@@ -279,11 +279,12 @@ class FellowshipService:
         current_user_id: int,
         **kwargs,
     ) -> Fellowship:
-        await self.check_resource_owner(
-            user_id,
-            current_user_id=current_user_id,
-        )
         async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id)
+
+            if kwargs.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
             return await self.uow.fellowship_repository.create(
                 user_id=user_id,
                 **kwargs,
@@ -296,13 +297,16 @@ class FellowshipService:
         fellowship_id: int,
         update_data: dict,
     ) -> Fellowship:
-        await self.check_resource_owner(
-            user_id,
-            current_user_id=current_user_id,
-            fellowship_id=fellowship_id,
-        )
         async with self.uow:
-            return await self.uow.fellowship_repository.update(fellowship_id, **update_data)
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
+
+            if update_data.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
+            return await self.uow.fellowship_repository.update(
+                fellowship_id,
+                **update_data,
+            )
 
     async def delete_user_fellowship(
         self,
@@ -310,13 +314,68 @@ class FellowshipService:
         current_user_id: int,
         fellowship_id: int,
     ) -> int:
-        await self.check_resource_owner(
-            user_id,
-            current_user_id=current_user_id,
-            fellowship_id=fellowship_id,
-        )
         async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
+
             return await self.uow.fellowship_repository.mark_as_deleted(fellowship_id)
+
+
+class JobService(ProfessionalExperienceBaseService):
+    async def get_by_user_id(self, user_id: int) -> list[Job]:
+        async with self.uow:
+            await self._check_resource_owner(user_id)
+
+            return await self.uow.job_repository.get_all_by_kwargs(user_id=user_id)
+
+    async def get_user_job_by_id(
+        self,
+        user_id: int,
+        job_id: int,
+    ) -> Job:
+        async with self.uow:
+            await self._check_resource_owner(user_id, job_id=job_id)
+
+            return await self.uow.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
+
+    async def create_user_job(
+        self,
+        user_id: int,
+        current_user_id: int,
+        **kwargs,
+    ) -> Job:
+        async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id)
+
+            if kwargs.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
+            return await self.uow.job_repository.create(user_id=user_id, **kwargs)
+
+    async def update_user_job(
+        self,
+        user_id: int,
+        current_user_id: int,
+        job_id: int,
+        update_data: dict,
+    ) -> Job:
+        async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
+
+            if update_data.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
+            return await self.uow.job_repository.update(job_id, **update_data)
+
+    async def delete_user_job(
+        self,
+        user_id: int,
+        current_user_id: int,
+        job_id: int,
+    ) -> int:
+        async with self.uow:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
+
+            return await self.uow.job_repository.mark_as_deleted(job_id)
 
 
 class NameChangeRequestService:
@@ -344,7 +403,7 @@ class NameChangeRequestService:
                     id=name_change_request_id, user_id=user_id
                 )
                 if name_change_request is None:
-                    raise NameChangeRequestNotFoundError("Mame change request with provided ID not found")
+                    raise NameChangeRequestNotFoundError("Name change request with provided ID not found")
 
     async def get_pending_name_change_request(self, user_id: int, name_change_request_id: int) -> NameChangeRequest:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
@@ -484,10 +543,10 @@ class CommunicationPreferencesService:
         return communication_preferences
 
     async def update_or_create_preferences(
-            self,
-            user_id: int,
-            update_data: dict | None = None,
-            is_agrees_communications: bool = False,
+        self,
+        user_id: int,
+        update_data: dict | None = None,
+        is_agrees_communications: bool = False,
     ) -> CommunicationPreferences:
         if update_data is None:
             update_data = {}
@@ -533,6 +592,12 @@ def get_fellowship_service(
     return FellowshipService(uow)
 
 
+def get_job_service(
+    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+) -> JobService:
+    return JobService(uow)
+
+
 def get_name_change_request_service(
     uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
 ) -> NameChangeRequestService:
@@ -551,6 +616,7 @@ ProfessionalInformationServiceDep = Annotated[
 ]
 ResidencyServiceDep = Annotated[ResidencyService, Depends(get_residency_service)]
 FellowshipServiceDep = Annotated[FellowshipService, Depends(get_fellowship_service)]
+JobServiceDep = Annotated[JobService, Depends(get_job_service)]
 NameChangeRequestServiceDep = Annotated[NameChangeRequestService, Depends(get_name_change_request_service)]
 CommunicationPreferencesServiceDep = Annotated[
     CommunicationPreferencesService, Depends(get_communication_preferences_service)

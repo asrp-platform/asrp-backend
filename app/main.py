@@ -22,6 +22,7 @@ from app.domains.news.api import router as news_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
 from app.domains.users.routes.current_user_api import router as current_user_router
 from app.domains.users.routes.fellowship_api import router as fellowship_router
+from app.domains.users.routes.job_api import router as job_router
 from app.domains.users.routes.professional_info_api import router as professional_info_router
 from app.domains.users.routes.residency_api import router as residency_router
 from app.domains.users.routes.users_admin_api import router as users_admin_router
@@ -92,6 +93,7 @@ app.include_router(legal_documents_router, prefix="/api")
 app.include_router(professional_info_router, prefix="/api")
 app.include_router(residency_router, prefix="/api")
 app.include_router(fellowship_router, prefix="/api")
+app.include_router(job_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")

@@ -8,11 +8,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
-from app.domains.memberships.models import UserMembership
+from app.domains.memberships.models import MembershipRequest
 
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
     from app.domains.news.models import News
+    from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 
 
@@ -23,6 +24,7 @@ class User(Base):
     firstname: Mapped[str] = mapped_column(nullable=False)
     middlename: Mapped[str] = mapped_column(nullable=True)
     lastname: Mapped[str] = mapped_column(nullable=False)
+    preferred_name: Mapped[str | None] = mapped_column(nullable=True)
     suffix: Mapped[str] = mapped_column(nullable=True)
     credentials: Mapped[str] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
@@ -40,15 +42,15 @@ class User(Base):
         DateTime(timezone=True), default=func.now(), server_default=func.now(), nullable=False
     )
     pending: Mapped[bool] = mapped_column(default=True, nullable=True, server_default=text("true"))
-    institution: Mapped[str] = mapped_column()
-    role: Mapped[str] = mapped_column()
+    institution: Mapped[str] = mapped_column(nullable=True)
+    role: Mapped[str] = mapped_column(nullable=True)
 
     last_password_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     last_name_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     email_confirmed: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
-    membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="user")
+    membership_request: Mapped["MembershipRequest"] = relationship("MembershipRequest", back_populates="user")
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission", back_populates="users", secondary="users_permissions"
     )
@@ -57,11 +59,15 @@ class User(Base):
     )
     fellowships: Mapped[list["Fellowship"]] = relationship("Fellowship", back_populates="user")
     residencies: Mapped[list["Residency"]] = relationship("Residency", back_populates="user")
+    jobs: Mapped[list["Job"]] = relationship("Job", back_populates="user")
     name_change_requests: Mapped[list["NameChangeRequest"]] = relationship("NameChangeRequest", back_populates="user")
     communication_preferences: Mapped["CommunicationPreferences"] = relationship(
         "CommunicationPreferences", back_populates="user", uselist=False
     )
-    feedback_additional_info: Mapped["FeedbackAdditionalInfo"] = relationship("FeedbackAdditionalInfo", back_populates="user")
+    feedback_additional_info: Mapped["FeedbackAdditionalInfo"] = relationship(
+        "FeedbackAdditionalInfo", back_populates="user"
+    )
+    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
@@ -93,32 +99,35 @@ class ProfessionalInformation(Base, UCIMixin):
     user: Mapped["User"] = relationship("User", back_populates="professional_information")
 
 
-class Residency(Base, UCIMixin):
-    __tablename__ = "users_residency"
-
+class ProfessionalExperienceMixin:
+    current_position: Mapped[bool] = mapped_column(nullable=False, default=False, server_default=text("false"))
     institution: Mapped[str] = mapped_column(nullable=False)
     speciality: Mapped[str] = mapped_column(nullable=False)
     city: Mapped[str] = mapped_column(nullable=False)
     state: Mapped[str] = mapped_column(nullable=False)
     country: Mapped[str] = mapped_column(nullable=False)
     years_from_to: Mapped[str] = mapped_column(nullable=False)
+
+
+class Residency(Base, UCIMixin, ProfessionalExperienceMixin):
+    __tablename__ = "users_residency"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="residencies")
 
 
-class Fellowship(Base, UCIMixin):
+class Fellowship(Base, UCIMixin, ProfessionalExperienceMixin):
     __tablename__ = "users_fellowship"
-
-    institution: Mapped[str] = mapped_column(nullable=False)
-    speciality: Mapped[str] = mapped_column(nullable=False)
-    city: Mapped[str] = mapped_column(nullable=False)
-    state: Mapped[str] = mapped_column(nullable=False)
-    country: Mapped[str] = mapped_column(nullable=False)
-    years_from_to: Mapped[str] = mapped_column(nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="fellowships")
+
+
+class Job(Base, UCIMixin, ProfessionalExperienceMixin):
+    __tablename__ = "users_job"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="jobs")
 
 
 class NameChangeRequestStatusEnum(Enum):

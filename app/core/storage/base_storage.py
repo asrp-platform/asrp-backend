@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 
 from aiobotocore.session import get_session
+from botocore.exceptions import ClientError as BotocoreClientError
 
 
 class S3BaseStorage:
@@ -45,14 +46,16 @@ class S3BaseStorage:
             )
         return {"bucket": bucket, "object_name": object_name}
 
-    async def get_presigned_object(self, object_key: str):
-        if object_key is None:
-            return
+    async def get_presigned_object(self, object_key: str, bucket_name: str | None = None) -> str | None:
+        bucket = bucket_name or self.bucket_name
+        if not await self._check_object_exists(object_key, bucket_name=bucket):
+            return None
+
         async with self.get_client() as client:
             url = await client.generate_presigned_url(
                 "get_object",
                 Params={
-                    "Bucket": self.bucket_name,
+                    "Bucket": bucket,
                     "Key": object_key,
                 },
                 ExpiresIn=int(timedelta(hours=1).total_seconds()),
@@ -66,6 +69,20 @@ class S3BaseStorage:
             with suppress(client.exceptions.NoSuchBucket):
                 await client.delete_object(Bucket=bucket, Key=object_key)
 
+    async def _check_object_exists(self, object_key: str, bucket_name: str | None = None) -> bool:
+        bucket = bucket_name or self.bucket_name
+
+        async with self.get_client() as client:
+            try:
+                await client.head_object(Bucket=bucket, Key=object_key)
+                return True
+
+            except BotocoreClientError as e:
+                error_code = e.response.get("Error", {}).get("Code")
+                if error_code in ("404", "NoSuchKey", "NotFound"):
+                    return False
+                raise
+
     async def __ensure_bucket_exists(self, bucket_name: str | None = None):
         bucket = bucket_name or self.bucket_name
         async with self.get_client() as client:
@@ -74,11 +91,9 @@ class S3BaseStorage:
             except client.exceptions.NoSuchBucket:
                 await client.create_bucket(Bucket=bucket)  # Если не существует, то создаем его
             except Exception:
-                import botocore.exceptions
-
                 try:
                     await client.create_bucket(Bucket=bucket)
-                except botocore.exceptions.ClientError as e:
+                except BotocoreClientError as e:
                     error_code = e.response.get("Error", {}).get("Code")
                     if error_code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
                         raise

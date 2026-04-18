@@ -1,21 +1,25 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi_exception_responses import Responses
 
 from app.core.common.exceptions import NotResourceOwnerError
+from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
+from app.core.common.responses import PaginatedResponse
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
-from app.domains.memberships.exceptions import MembershipAlreadyExistsError
+from app.domains.memberships.exceptions import MembershipRequestAlreadyExistsError
 from app.domains.memberships.schemas import (
     MembershipCreateSchema,
     UserMembershipMockUpdateSchema,
     UserMembershipViewSchema,
 )
-from app.domains.memberships.use_cases.create_membership import CreateMembershipUseCaseDep
+from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
 from app.domains.memberships.use_cases.update_user_membership_mock import (
     UpdateUserMembershipMockRequest,
     UpdateUserMembershipMockUseCaseDep,
 )
+from app.domains.payments.filters import PaymentsFilter
+from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
 from app.domains.users.exceptions import (
     InvalidPasswordError,
@@ -38,6 +42,7 @@ from app.domains.users.use_cases.delete_current_user_avatar import (
     DeleteCurrentUserAvatarRequest,
     DeleteCurrentUserAvatarUseCaseDep,
 )
+from app.domains.users.use_cases.retrieve_current_user_payments import RetrieveCurrentUserPaymentsUseCaseDep
 from app.domains.users.use_cases.set_current_user_avatar import (
     UploadCurrentUserAvatarRequest,
     UploadCurrentUserAvatarUseCaseDep,
@@ -63,8 +68,7 @@ async def update_user_data(
     update_data: UpdateUserSchema,
 ) -> UserSchema:
     user = await user_service.update_user(
-        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_none=True)
-    )
+        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_unset=True))
     return UserSchema.from_orm(user)
 
 
@@ -183,7 +187,7 @@ class CurrentUserMembershipResponses(Responses):
 
 
 @router.get(
-    "/membership",
+    "/membership-requests",
     response_model=UserMembershipViewSchema,
     responses=CurrentUserMembershipResponses.responses,
 )
@@ -201,29 +205,52 @@ class MembershipCreateResponses(Responses):
 
 
 @router.post(
-    "/membership",
+    "/membership-requests",
     status_code=201,
     responses=MembershipCreateResponses.responses,
-    summary="Create membership for a user"
+    summary="Create a membership request for current user",
 )
-async def create_membership(
+async def create_membership_request(
     user_membership_data: MembershipCreateSchema,
     current_user: CurrentUserDep,
-    create_membership_use_case: CreateMembershipUseCaseDep
-) -> None:
+    create_membership_request_use_case: CreateMembershipRequestUseCaseDep,
+):
     try:
-        await create_membership_use_case.execute(
+        return await create_membership_request_use_case.execute(
             user_id=current_user.id,
             is_agrees_communications=user_membership_data.is_agrees_communications,
             membership_type=user_membership_data.membership_type,
-            user_membership_data=user_membership_data.membership.model_dump(),
-            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump()
+            membership_request_data=user_membership_data.membership.model_dump(),
+            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump(),
         )
 
-    except MembershipAlreadyExistsError:
+    except MembershipRequestAlreadyExistsError:
         raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
     except FeedbackAdditionalInfoAlreadyExistsError:
         raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
+
+
+@router.get("/payments")
+async def get_current_user_payments(
+    current_user: CurrentUserDep,
+    use_case: RetrieveCurrentUserPaymentsUseCaseDep,
+    params: PaginationParamsDep,
+    ordering: OrderingParamsDep = None,
+    filters: Annotated[PaymentsFilter, Depends()] = None,
+) -> PaginatedResponse[PaymentReadSchema]:
+    payments, count = await use_case.execute(
+        current_user,
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True),
+        limit=params["limit"],
+        offset=params["offset"],
+    )
+    return PaginatedResponse(
+        count=count,
+        data=payments,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
 
 
 @router.patch("/membership/mock", response_model=UserMembershipViewSchema)
@@ -237,7 +264,7 @@ async def update_current_user_membership_mock(
     """
     request = UpdateUserMembershipMockRequest(
         user_id=user.id,
-        approval_status=update_data.approval_status,
+        status=update_data.status,
         current_period_end=update_data.current_period_end,
         auto_renewal=update_data.auto_renewal,
         membership_type=update_data.membership_type,

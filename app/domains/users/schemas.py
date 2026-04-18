@@ -35,6 +35,7 @@ class UserSchema(BaseModel):
     firstname: str
     middlename: str | None
     lastname: str
+    preferred_name: str | None
     suffix: str | None
     credentials: str | None
     email: str
@@ -47,8 +48,8 @@ class UserSchema(BaseModel):
     professional_interests: str | None
     telegram_username: str | None
     created_at: datetime
-    institution: str
-    role: str
+    institution: str | None
+    role: str | None
     avatar_path: str | None
     phone_number: str | None
     pending: bool
@@ -65,9 +66,7 @@ class UpdateUserByAdminSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    firstname: Annotated[str | None, Field(min_length=2)] = None
-    middlename: str | None = None
-    lastname: Annotated[str | None, Field(min_length=2)] = None
+    preferred_name: str | None = None
     suffix: str | None = None
     credentials: str | None = None
     description: str | None = None
@@ -81,6 +80,18 @@ class UpdateUserSchema(BaseModel):
     role: str | None = None
     phone_number: Annotated[str | None, Field()] = None
 
+    @field_validator("country", "city", "institution", "role")
+    def forbid_null_for_required_fields(cls, value, info):
+        if value is None:
+            raise PydanticCustomError("field_null", "{field_name} cannot be null", {"field_name": info.field_name})
+        return value
+
+    @field_validator("preferred_name", mode="before")
+    def normalize_preferred_name(cls, value):
+        if value == "":
+            return None
+        return value
+
     @field_validator("phone_number")
     def validate_phone_number(cls, value):
         if value is None or value.strip() == "":
@@ -92,6 +103,8 @@ class UpdateUserSchema(BaseModel):
         except phonenumbers.NumberParseException:
             raise PydanticCustomError("phone_number.unparsable", "Invalid phone number format")
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+
+    model_config = {"extra": "forbid"}
 
 
 class ChangePasswordSchema(BaseModel):
@@ -115,13 +128,18 @@ class ChangePasswordSchema(BaseModel):
         return v
 
 
-class PostgraduateTrainingMixin(BaseModel):
+class ProfessionalExperienceMixin(BaseModel):
+    current_position: bool
     institution: str = Field(min_length=2)
     speciality: str = Field(min_length=2)
     city: str = Field(min_length=2)
     state: str = Field(min_length=2)
     country: str = Field(min_length=2)
-    years_from_to: YearRange
+    years_from_to: YearRange = Field(default="2000-2006")
+
+    model_config = {
+        "from_attributes": True,
+    }
 
 
 class ViewMixin(UCIMixinSchema):
@@ -144,7 +162,7 @@ class ProfessionalInformationViewSchema(ViewMixin, ProfessionalInformationCreate
     }
 
 
-class ResidencyCreateSchema(PostgraduateTrainingMixin):
+class ResidencyCreateSchema(ProfessionalExperienceMixin):
     pass
 
 
@@ -153,12 +171,10 @@ class ResidencyUpdateSchema(ResidencyCreateSchema):
 
 
 class ResidencyViewSchema(ViewMixin, ResidencyCreateSchema):
-    model_config = {
-        "from_attributes": True,
-    }
+    pass
 
 
-class FellowshipCreateSchema(PostgraduateTrainingMixin):
+class FellowshipCreateSchema(ProfessionalExperienceMixin):
     pass
 
 
@@ -167,9 +183,19 @@ class FellowshipUpdateSchema(FellowshipCreateSchema):
 
 
 class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
-    model_config = {
-        "from_attributes": True,
-    }
+    pass
+
+
+class JobCreateSchema(ProfessionalExperienceMixin):
+    pass
+
+
+class JobUpdateSchema(JobCreateSchema):
+    pass
+
+
+class JobViewSchema(ViewMixin, JobCreateSchema):
+    pass
 
 
 class NameChangeRequestCreateSchema(BaseModel):

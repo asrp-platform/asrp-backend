@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import Depends
-from fastapi_exception_responses import Responses
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -13,11 +12,6 @@ from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
 
 privileges_logger = logger.bind(name="privileges")
-
-
-class RegisterResponses(Responses):
-    PASSWORDS_DONT_MATCH = 400, "Passwords don't match"
-    EMAIL_ALREADY_IN_USE = 409, "Provided email is already in use"
 
 
 class PermissionsService:

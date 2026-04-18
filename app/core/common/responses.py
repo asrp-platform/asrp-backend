@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 from fastapi_exception_responses import Responses
 from pydantic import BaseModel
 
-DataModel = TypeVar("DataModel", bound=BaseModel)
+DataModel = TypeVar("DataModel")
 
 
 class PaginatedResponse(BaseModel, Generic[DataModel]):
