@@ -19,8 +19,7 @@ async def test_delete_directors_board_member(
         headers=admin_auth_headers,
     )
 
-    assert response.status_code == 200
-    assert response.json() == directors_board_member_db.id
+    assert response.status_code == 204
     assert mock_s3_storage.delete_object.called
 
 

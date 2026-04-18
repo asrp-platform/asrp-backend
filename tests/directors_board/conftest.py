@@ -1,9 +1,12 @@
+import pytest
 from typing import Any
+from faker import Faker
 from unittest.mock import AsyncMock, patch
 
-import pytest
-from faker import Faker
+import app.core.config
 
+from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
+from app.core.storage.base_storage import S3BaseStorage
 from app.domains.directors_board.infrastructure import DirectorsBoardMemberUnitOfWork
 from app.domains.directors_board.models import DirectorBoardMember
 
@@ -11,11 +14,23 @@ from app.domains.directors_board.models import DirectorBoardMember
 @pytest.fixture()
 def mock_s3_storage():
     """
-    Automatically mocks s3_storage for all tests in this directory.
+    Robustly mocks S3BaseStorage methods globally at the class level.
+    Now that volume mounts are fixed, this will correctly intercept calls
+    from any instance of S3BaseStorage in the app.
     """
-    with patch("app.domains.directors_board.services.s3_storage", new_callable=AsyncMock) as mocked:
-        # Mock get_presigned_object to return a fake URL
-        mocked.get_presigned_object.return_value = "http://fake-s3-url.com/image.jpg"
+    with (
+        patch.object(S3BaseStorage, "delete_object", new_callable=AsyncMock) as mock_delete,
+        patch.object(S3BaseStorage, "upload_file", new_callable=AsyncMock) as mock_upload,
+        patch.object(S3BaseStorage, "get_presigned_object", new_callable=AsyncMock) as mock_get_presigned,
+    ):
+        # Default mock behavior
+        mock_get_presigned.return_value = "http://fake-s3-url.com/image.jpg"
+
+        # Create a helper object to track calls in tests
+        mocked = AsyncMock()
+        mocked.delete_object = mock_delete
+        mocked.upload_file = mock_upload
+        mocked.get_presigned_object = mock_get_presigned
         yield mocked
 
 
