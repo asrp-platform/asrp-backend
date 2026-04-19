@@ -34,11 +34,30 @@ def user_membership_data(faker: Faker):
             "practice_setting": faker.text(max_nb_chars=50),
             "subspecialty": faker.text(max_nb_chars=50),
         },
-        "membership_type": MembershipTypeEnum.TRAINEE.value,
+        "membership_type": faker.random_element([item.value for item in MembershipTypeEnum]),
         "feedback_additional_info": {
             "hear_about_asrp": faker.text(max_nb_chars=50),
             "tg_username": f"@{faker.pystr(min_chars=5, max_chars=32)}",
             "interest_description": faker.text(max_nb_chars=100),
         },
         "is_agrees_communications": False,
+    }
+
+
+@pytest.fixture(scope="function")
+def membership_request_create_data(faker: Faker) -> dict:
+    return {
+        "membership": {
+            "primary_affiliation": faker.company(),
+            "job_title": faker.job(),
+            "practice_setting": faker.word(),
+            "subspecialty": faker.word(),
+        },
+        "membership_type": faker.random_element([item for item in MembershipTypeEnum]),
+        "feedback_additional_info": {
+            "hear_about_asrp": faker.sentence(),
+            "tg_username": f"@{faker.user_name()[:20]}",
+            "interest_description": faker.text(max_nb_chars=200),
+        },
+        "is_agrees_communications": faker.boolean(),
     }
