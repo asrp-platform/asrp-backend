@@ -8,8 +8,14 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
-from app.core.common.exceptions import NotFoundError, NotResourceOwnerError, ResourceAlreadyExistsError
+from app.core.common.exceptions import (
+    NotFoundError,
+    NotResourceOwnerError,
+    PermissionDeniedError,
+    ResourceAlreadyExistsError,
+)
 from app.core.config import DEV_MODE, settings
+from app.core.logging import REQUESTS_CHANNEL, configure_logging
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
@@ -30,6 +36,9 @@ from app.domains.users.routes.residency_api import router as residency_router
 from app.domains.users.routes.users_admin_api import router as users_admin_router
 from app.domains.users.routes.users_api import router as users_router
 
+configure_logging()
+request_logger = logger.bind(channel=REQUESTS_CHANNEL)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,13 +50,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
 )
-logger.add("logs/request_logs.log", rotation="10 days")
-logger.add(
-    "logs/privileges.log",
-    filter=lambda record: record["extra"].get("name") == "privileges",
-    rotation="30 days",
-)
-
 
 app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME), name=settings.MEDIA_DIR_NAME)
 
@@ -67,6 +69,11 @@ async def resource_already_exists_error_handler(request: Request, exc: ResourceA
     return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
+@app.exception_handler(PermissionDeniedError)
+async def permission_denied_error_handler(request: Request, exc: PermissionDeniedError):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
 # --- Обработчик ошибок 422 ---
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -81,8 +88,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.middleware("http")
 async def log_request(request: Request, call_next):
-    message = f"URL: {request.url.path} Method: {request.method}"
-    logger.info(message)
+    message = f"{request.method} {request.url.path}"
+    request_logger.info(message)
     response = await call_next(request)
     return response
 

@@ -1,12 +1,13 @@
 from typing import Annotated
 
 from fastapi import Depends
+from loguru import logger
 
 from app.core.config import settings
+from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.feedback.services import (
     FeedbackAdditionalInfoService,
     FeedbackAdditionalInfoServiceDep,
-    get_feedback_additional_info_service,
 )
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
@@ -17,8 +18,9 @@ from app.domains.shared.transaction_managers import TransactionManager, Transact
 from app.domains.users.services import (
     CommunicationPreferencesService,
     CommunicationPreferencesServiceDep,
-    get_communication_preferences_service,
 )
+
+payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
 class CreateUserMembershipRequestUseCase:
@@ -113,18 +115,21 @@ class CreateUserMembershipRequestUseCase:
 
             await self.__payment_service.update_payment(payment.id, provider_data=provider_data)
 
+            payments_logger.info(
+                "Created membership request: membership_request_id={} payment_id={} checkout_session_id={}",
+                membership_request.id,
+                payment.id,
+                checkout_session.id,
+            )
+
         return checkout_session.url
 
 
-def get_create_membership_request_use_case(
+def get_use_case(
     transaction_manager: TransactionManagerDep,
     membership_service: MembershipServiceDep,
-    feedback_additional_info_service: Annotated[
-        FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)
-    ],
-    communication_preference_service: Annotated[
-        CommunicationPreferencesServiceDep, Depends(get_communication_preferences_service)
-    ],
+    feedback_additional_info_service: FeedbackAdditionalInfoServiceDep,
+    communication_preference_service: CommunicationPreferencesServiceDep,
     payment_service: PaymentServiceDep,
 ) -> CreateUserMembershipRequestUseCase:
     return CreateUserMembershipRequestUseCase(
@@ -136,6 +141,4 @@ def get_create_membership_request_use_case(
     )
 
 
-CreateMembershipRequestUseCaseDep = Annotated[
-    CreateUserMembershipRequestUseCase, Depends(get_create_membership_request_use_case)
-]
+CreateMembershipRequestUseCaseDep = Annotated[CreateUserMembershipRequestUseCase, Depends(get_use_case)]

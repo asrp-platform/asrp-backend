@@ -158,12 +158,11 @@ class CurrentUserMembershipResponses(Responses):
 
 @router.get(
     "/membership-requests",
-    response_model=MembershipRequestViewSchema,
     responses=CurrentUserMembershipResponses.responses,
 )
 async def get_current_user_membership(
     current_user: CurrentUserDep, use_case: GetCurrentUserMembershipRequestUseCaseDep
-) -> MembershipRequestViewSchema:
+) -> MembershipRequestViewSchema | None:
     return await use_case.execute(current_user)
 
 

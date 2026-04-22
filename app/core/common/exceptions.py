@@ -19,5 +19,10 @@ class InvalidOperationError(Exception):
 
     pass
 
+
 class InvalidMimeTypeError(Exception):
+    pass
+
+
+class PermissionDeniedError(Exception):
     pass

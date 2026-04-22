@@ -132,7 +132,7 @@ async def test_process_payment_event_succeeded(
 ):
     await process_payment_use_case.execute(
         event=stripe_event,
-        payment_status=PaymentStatusEnum.SUCCEEDED,
+        target_payment_status=PaymentStatusEnum.SUCCEEDED,
     )
 
     payment_intent = stripe_event["data"]["object"]
@@ -173,7 +173,7 @@ async def test_process_payment_event_failed(
 ):
     await process_payment_use_case.execute(
         event=stripe_event,
-        payment_status=PaymentStatusEnum.FAILED,
+        target_payment_status=PaymentStatusEnum.FAILED,
     )
 
     payment_intent = stripe_event["data"]["object"]

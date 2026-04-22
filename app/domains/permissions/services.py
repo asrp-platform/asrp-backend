@@ -6,12 +6,13 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.core.logging import PRIVILEGES_CHANNEL
 from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
 
-privileges_logger = logger.bind(name="privileges")
+privileges_logger = logger.bind(channel=PRIVILEGES_CHANNEL)
 
 
 class PermissionsService:

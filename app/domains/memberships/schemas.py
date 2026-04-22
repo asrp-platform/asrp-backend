@@ -38,7 +38,7 @@ class MembershipRequestCreateSchema(BaseModel):
     }
 
 
-class MembershipRequestViewSchema(BaseModel):
+class MembershipRequestViewSchema(MembershipRequestDataSchema):
     id: int
     created_at: datetime
     updated_at: datetime

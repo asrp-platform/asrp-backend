@@ -4,21 +4,24 @@ from fastapi import APIRouter, Depends
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.core.utils.permissions import check_permissions
 from app.domains.memberships.filters import MembershipRequestsFilters
 from app.domains.memberships.schemas import MembershipRequestViewSchema
 from app.domains.memberships.use_cases.get_membership_requests_admin import GetMembershipRequestsAdminUseCaseDep
+from app.domains.shared.deps import AdminPermissionsDep
 
 router = APIRouter(prefix="/membership-requests", tags=["Admin: Membership"])
 
 
 @router.get("/")
 async def get_membership_requests(
-    # permissions: AdminPermissionsDep,
+    permissions: AdminPermissionsDep,
     use_case: GetMembershipRequestsAdminUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[MembershipRequestsFilters, Depends()] = None,
 ) -> PaginatedResponse[MembershipRequestViewSchema]:
+    check_permissions("memberships.view", permissions)
     data, count = await use_case.execute(
         order_by=ordering,
         filters=filters.model_dump(exclude_none=True),
