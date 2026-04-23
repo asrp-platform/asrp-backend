@@ -6,7 +6,7 @@ from faker import Faker
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet
 from app.domains.shared.deps import create_access_token, create_refresh_token
-from app.domains.users.infrastructure import UserUnitOfWork
+from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 
 pytestmark = pytest.mark.anyio
@@ -22,7 +22,7 @@ AuthHeaders = dict[str, str]
 @pytest.fixture(scope="function")
 async def user_factory(
     faker: Faker,
-    user_uow: UserUnitOfWork,
+    test_transaction_manager: TransactionManager,
 ) -> UserFactory:
     async def _factory(**overrides) -> User:
         user_data = {
@@ -36,8 +36,8 @@ async def user_factory(
             "city": faker.city(),
             **overrides,
         }
-        async with user_uow:
-            return await user_uow.user_repository.create(**user_data)
+        async with test_transaction_manager:
+            return await test_transaction_manager.user_repository.create(**user_data)
 
     return _factory
 
@@ -67,7 +67,7 @@ def refresh_token(test_user: User):
 
 @pytest.fixture
 async def admin_user(user_factory: UserFactory) -> User:
-    return await user_factory(stuff=True)
+    return await user_factory(admin=True)
 
 
 @pytest.fixture
@@ -102,11 +102,11 @@ def user_data(user_registration_data) -> dict[str, Any]:
 
 @pytest.fixture(scope="function")
 async def test_user_with_data(
-    user_uow: UserUnitOfWork,
+    test_transaction_manager: TransactionManager,
     user_data: dict[str | Any],
 ) -> [User, dict]:
     user_creation_data = user_data.copy()
-    user = await user_uow.user_repository.create(**user_creation_data)
+    user = await test_transaction_manager.user_repository.create(**user_creation_data)
 
     return user, user_data
 

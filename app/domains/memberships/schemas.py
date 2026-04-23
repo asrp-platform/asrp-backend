@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
@@ -20,15 +20,15 @@ class MembershipTypeSchema(BaseModel):
     }
 
 
-class MembershipDataSchema(BaseModel):
+class MembershipRequestDataSchema(BaseModel):
     primary_affiliation: str
     job_title: str
     practice_setting: str
     subspecialty: str
 
 
-class MembershipCreateSchema(BaseModel):
-    membership: MembershipDataSchema
+class MembershipRequestCreateSchema(BaseModel):
+    membership: MembershipRequestDataSchema
     membership_type: MembershipTypeEnum
     feedback_additional_info: FeedbackAdditionalInfoCreateSchema
     is_agrees_communications: bool
@@ -38,34 +38,16 @@ class MembershipCreateSchema(BaseModel):
     }
 
 
-class UserMembershipSchema(BaseModel):
+class MembershipRequestViewSchema(MembershipRequestDataSchema):
     id: int
     created_at: datetime
     updated_at: datetime
     status: MembershipRequestStatusEnum
     current_period_end: datetime | None = None
-    auto_renewal: bool
-    has_access: bool
     user_id: int
     membership_type_id: int
+    membership_type: MembershipTypeSchema
 
     model_config = {
         "from_attributes": True,
     }
-
-
-class UserMembershipViewSchema(UserMembershipSchema):
-    membership_type: MembershipTypeSchema
-
-
-class UserMembershipMockUpdateSchema(BaseModel):
-    status: MembershipRequestStatusEnum = Field(
-        default=MembershipRequestStatusEnum.SUBMITTED,
-        description="Approval status of the membership",
-    )
-    current_period_end: datetime | None = Field(None, description="End date of the current period")
-    auto_renewal: bool = Field(True, description="Whether auto-renewal is enabled")
-    membership_type: MembershipTypeEnum = Field(
-        default=MembershipTypeEnum.ACTIVE,
-        description="Membership type",
-    )

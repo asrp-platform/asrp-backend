@@ -8,16 +8,16 @@ router = APIRouter(prefix="/permissions", tags=["Admin: Permissions"], dependenc
 
 
 @router.get(
-    "/current-user-permissions/",
-    summary="List of permissions for the authenticated user",
+    "/current-user-permissions",
+    summary="List of permissions actions for the authenticated user",
 )
-async def get_current_user_permissions(permissions: AdminPermissionsDep) -> list[PermissionSchema]:
-    return [PermissionSchema.from_orm(permission) for permission in permissions]
+async def get_current_user_permissions(permissions: AdminPermissionsDep) -> list[str]:
+    return permissions
 
 
-@router.get("")
+@router.get("", summary="List of all existing permissions")
 async def get_all_permissions(
     permission_service: PermissionServiceDep,
 ) -> list[PermissionSchema]:
     data, count = await permission_service.get_all_permissions()
-    return [PermissionSchema.from_orm(permission) for permission in data]
+    return data

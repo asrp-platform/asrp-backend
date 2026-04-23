@@ -73,12 +73,21 @@ print(Fernet.generate_key().decode())
 
 #### Secret Key generation
 
-
 ```python
 import secrets
 
 print(secrets.token_urlsafe(64))
 ```
+
+#### Stripe Api Key
+
+Ask team lead to get restricted stripe api key
+
+
+#### Stripe Webhook Secret
+
+STRIPE_WEBHOOK_SECRET can be retrieved from the stripe-cli docker container. Check the container logs after it started
+
 
 ### Start and build containers
 
@@ -133,6 +142,7 @@ The following branch types are used according to the GitFlow development workflo
 2. `release/*`
 3. `hotfix/*`
 4. `bugfix/*`
+5. `refactor/*`
 
 ### Pull requests naming
 
@@ -140,6 +150,7 @@ The following branch types are used according to the GitFlow development workflo
 2. `Release: *`
 3. `Hotfix: *`
 4. `Bugfix: *`
+5. `Refactor: *`
 
 ### Commits naming
 
@@ -172,6 +183,20 @@ We use MinIO as a file storage. Minio web interface is accessible via
 
 ```
 http://localhost:9001/login
+```
+
+### Stripe CLI
+
+If backend is running as a docker-container command in `local.yml` need must be:
+
+```yml
+listen --forward-to http://asrp_backend:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
+```
+
+If backend runs on a host mush be set as a `host.docker.internal`:
+
+```yml
+listen --forward-to http://host.docker.internal:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
 ```
 
 

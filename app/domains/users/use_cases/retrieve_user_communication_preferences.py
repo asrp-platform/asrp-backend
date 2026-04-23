@@ -1,37 +1,27 @@
-from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.base_use_case import BaseUseCase
-from app.core.database.unit_of_work import SQLAlchemyUnitOfWork
-from app.domains.users.infrastructure import UserUnitOfWork, get_user_unit_of_work
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.models import CommunicationPreferences
-from app.domains.users.services import CommunicationPreferencesService, get_communication_preferences_service
+from app.domains.users.services import CommunicationPreferencesService, CommunicationPreferencesServiceDep
 
 
-@dataclass
-class RetrieveCommunicationPreferencesRequest:
-    user_id: int
-
-
-class RetrieveCommunicationPreferencesUseCase(
-    BaseUseCase[RetrieveCommunicationPreferencesRequest, CommunicationPreferences]
-):
-    def __init__(self, uow: SQLAlchemyUnitOfWork, service: CommunicationPreferencesService):
+class RetrieveCommunicationPreferencesUseCase:
+    def __init__(self, transaction_manager: TransactionManager, service: CommunicationPreferencesService):
         self.__service = service
-        self.__uow = uow
+        self.__transaction_manager = transaction_manager
 
-    async def execute(self, request: RetrieveCommunicationPreferencesRequest) -> CommunicationPreferences:
-        async with self.__uow:
-            return await self.__service.get_or_create(request.user_id)
+    async def execute(self, user_id: int) -> CommunicationPreferences:
+        async with self.__transaction_manager:
+            return await self.__service.get_or_create(user_id)
 
 
 def get_retrieve_user_communication_preferences_use_case(
-    service: Annotated[CommunicationPreferencesService, Depends(get_communication_preferences_service)],
-    uow: Annotated[UserUnitOfWork, Depends(get_user_unit_of_work)],
+    transaction_manager: TransactionManagerDep,
+    service: CommunicationPreferencesServiceDep,
 ) -> RetrieveCommunicationPreferencesUseCase:
-    return RetrieveCommunicationPreferencesUseCase(uow, service)
+    return RetrieveCommunicationPreferencesUseCase(transaction_manager, service)
 
 
 RetrieveCommunicationPreferencesUseCaseDep = Annotated[

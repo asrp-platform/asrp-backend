@@ -6,7 +6,7 @@ from app.core.database.setup_db import Base
 
 
 class DirectorBoardMember(Base, UCIMixin):
-    __tablename__ = "director_board_members"
+    __tablename__ = "directors_board_members"
 
     role: Mapped[str] = mapped_column(nullable=False)
     name: Mapped[str] = mapped_column(nullable=False)

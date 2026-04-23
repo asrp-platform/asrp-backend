@@ -11,4 +11,4 @@ async def get_all_director_members(
     director_service: DirectorBoardMemberServiceDep,
 ) -> list[BoardMemberSchema]:
     data, count = await director_service.get_all_directors()
-    return [BoardMemberSchema.from_orm(permission) for permission in data]
+    return data

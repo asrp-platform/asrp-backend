@@ -8,8 +8,14 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
-from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
+from app.core.common.exceptions import (
+    NotFoundError,
+    NotResourceOwnerError,
+    PermissionDeniedError,
+    ResourceAlreadyExistsError,
+)
 from app.core.config import DEV_MODE, settings
+from app.core.logging import REQUESTS_CHANNEL, configure_logging
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
@@ -18,7 +24,9 @@ from app.domains.feedback.routes.contact_messages_admin_api import router as con
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
+from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.news.api import router as news_router
+from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
 from app.domains.users.routes.current_user_api import router as current_user_router
 from app.domains.users.routes.fellowship_api import router as fellowship_router
@@ -27,6 +35,9 @@ from app.domains.users.routes.professional_info_api import router as professiona
 from app.domains.users.routes.residency_api import router as residency_router
 from app.domains.users.routes.users_admin_api import router as users_admin_router
 from app.domains.users.routes.users_api import router as users_router
+
+configure_logging()
+request_logger = logger.bind(channel=REQUESTS_CHANNEL)
 
 
 @asynccontextmanager
@@ -39,13 +50,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
 )
-logger.add("logs/request_logs.log", rotation="10 days")
-logger.add(
-    "logs/privileges.log",
-    filter=lambda record: record["extra"].get("name") == "privileges",
-    rotation="30 days",
-)
-
 
 app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME), name=settings.MEDIA_DIR_NAME)
 
@@ -57,6 +61,16 @@ async def not_found_error_handler(request: Request, exc: NotFoundError):
 
 @app.exception_handler(NotResourceOwnerError)
 async def not_resource_owner_error_handler(request: Request, exc: NotResourceOwnerError):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(ResourceAlreadyExistsError)
+async def resource_already_exists_error_handler(request: Request, exc: ResourceAlreadyExistsError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(PermissionDeniedError)
+async def permission_denied_error_handler(request: Request, exc: PermissionDeniedError):
     return JSONResponse(status_code=403, content={"detail": str(exc)})
 
 
@@ -74,8 +88,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.middleware("http")
 async def log_request(request: Request, call_next):
-    message = f"URL: {request.url.path} Method: {request.method}"
-    logger.info(message)
+    message = f"{request.method} {request.url.path}"
+    request_logger.info(message)
     response = await call_next(request)
     return response
 
@@ -94,6 +108,7 @@ app.include_router(professional_info_router, prefix="/api")
 app.include_router(residency_router, prefix="/api")
 app.include_router(fellowship_router, prefix="/api")
 app.include_router(job_router, prefix="/api")
+app.include_router(webhooks_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
@@ -101,6 +116,7 @@ app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 app.include_router(contact_messages_admin_router, prefix="/api/admin")
+app.include_router(membership_requests_admin_router, prefix="/api/admin")
 
 
 if DEV_MODE:

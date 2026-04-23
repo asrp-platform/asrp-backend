@@ -6,10 +6,10 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet, settings
-from app.domains.auth.infrastructure import AuthUnitOfWork, get_auth_unit_of_work
 from app.domains.auth.schemas import RegisterFormData
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import UserNotFoundError
 
 
@@ -20,8 +20,8 @@ class RegisterResponses(Responses):
 
 
 class AuthService:
-    def __init__(self, uow):
-        self.uow: AuthUnitOfWork = uow
+    def __init__(self, transaction_manager: TransactionManager):
+        self.transaction_manager = transaction_manager
         self.cryptographer = Cryptographer(fernet)
         self.email_provider = get_email_service(GmailPlugin)
 
@@ -30,37 +30,39 @@ class AuthService:
 
         user_data = register_form_data.model_dump()
 
-        if (await self.uow.user_repository.get_first_by_kwargs(email=user_data["email"])) is not None:
+        if (await self.transaction_manager.user_repository.get_first_by_kwargs(email=user_data["email"])) is not None:
             raise RegisterResponses.EMAIL_ALREADY_IN_USE
 
         if user_data["password"] != user_data.pop("repeat_password"):
             raise RegisterResponses.PASSWORDS_DONT_MATCH
 
-        async with self.uow:
-            user = await self.uow.user_repository.create(**user_data)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.create(**user_data)
 
         return user
 
     async def set_new_password(self, email, password):
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
             if user is None:
                 raise UserNotFoundError("User with provided email not found")
 
             user.password = password
-            await self.uow._session.flush()  # noqa property's setter manual calling
-            await self.uow.user_repository.update(user.id, last_password_change=datetime.now(tz=timezone.utc))
+            await self.transaction_manager._session.flush()  # noqa property's setter manual calling
+            await self.transaction_manager.user_repository.update(
+                user.id, last_password_change=datetime.now(tz=timezone.utc)
+            )
 
     async def reset_password(self, email: str):
-        async with self.uow:
-            user = await self.uow.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
         if user is None:
             return
 
         token = self.cryptographer.create_token(email)
-        link = f"{settings.FRONTEND_DOMAIN}/auth/password-reset/confirm/?token={token.decode()}"
+        link = f"{settings.FRONTEND_DOMAIN}/password-reset/confirm/?token={token.decode()}"
         message = f"""
         Hello,
 
@@ -89,11 +91,11 @@ class AuthService:
         await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
 
     async def confirm_email(self, current_user_id: int, email_from_confirmation_token: str, current_user_email: str):
-        async with self.uow:
+        async with self.transaction_manager:
             if current_user_email != email_from_confirmation_token:
                 raise ValueError("email of the confirmation token does not match email of the authorized user")
 
-            await self.uow.user_repository.update(current_user_id, email_confirmed=True)
+            await self.transaction_manager.user_repository.update(current_user_id, email_confirmed=True)
 
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
@@ -104,8 +106,8 @@ class AuthService:
         return self.cryptographer.verify_token(token, lifetime_seconds)
 
 
-def get_auth_service(uow: Annotated[AuthUnitOfWork, Depends(get_auth_unit_of_work)]) -> AuthService:
-    return AuthService(uow)
+def get_auth_service(transaction_manager: TransactionManagerDep) -> AuthService:
+    return AuthService(transaction_manager)
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]

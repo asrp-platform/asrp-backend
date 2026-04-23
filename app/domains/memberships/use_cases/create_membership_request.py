@@ -1,39 +1,42 @@
 from typing import Annotated
 
 from fastapi import Depends
+from loguru import logger
 
+from app.core.config import settings
+from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.feedback.services import (
     FeedbackAdditionalInfoService,
     FeedbackAdditionalInfoServiceDep,
-    get_feedback_additional_info_service,
 )
-from app.domains.memberships.infrastructure import MembershipsUnitOfWork, get_memberships_unit_of_work
-from app.domains.memberships.models import MembershipTypeEnum
-from app.domains.memberships.services import MembershipService, MembershipServiceDep, get_membership_service
+from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
+from app.domains.memberships.services import MembershipService, MembershipServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
+from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.services import (
     CommunicationPreferencesService,
     CommunicationPreferencesServiceDep,
-    get_communication_preferences_service,
 )
+
+payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
 class CreateUserMembershipRequestUseCase:
     def __init__(
         self,
-        uow: MembershipsUnitOfWork,
+        transaction_manager: TransactionManager,
         membership_service: MembershipService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
         communication_preference_service: CommunicationPreferencesService,
         payment_service: PaymentServiceDep,
     ) -> None:
-        self.uow = uow
-        self.membership_service = membership_service
-        self.feedback_additional_info_service = feedback_additional_info_service
-        self.communication_preference_service = communication_preference_service
-        self.payment_service = payment_service
+        self.__transaction_manager = transaction_manager
+        self.__membership_service = membership_service
+        self.__feedback_additional_info_service = feedback_additional_info_service
+        self.__communication_preference_service = communication_preference_service
+        self.__payment_service = payment_service
 
     async def execute(
         self,
@@ -43,24 +46,28 @@ class CreateUserMembershipRequestUseCase:
         membership_request_data: dict,
         feedback_additional_info_data: dict,
     ) -> str:
-        async with self.uow:
-            await self.membership_service.create_membership_request(
+        async with self.__transaction_manager:
+            if membership_type == MembershipTypeEnum.HONORARY:
+                raise ValueError("Can't buy honorary membership")
+
+            membership_request = await self.__membership_service.create_membership_request(
                 user_id,
                 membership_type,
+                status=MembershipRequestStatusEnum.PAYMENT_PENDING,
                 **membership_request_data,
             )
 
-            await self.feedback_additional_info_service.create_feedback_additional_info(
+            await self.__feedback_additional_info_service.create_feedback_additional_info(
                 user_id,
                 **feedback_additional_info_data,
             )
 
-            await self.communication_preference_service.update_or_create_preferences(
+            await self.__communication_preference_service.update_or_create_preferences(
                 user_id,
                 is_agrees_communications=is_agrees_communications,
             )
 
-            membership_type = await self.membership_service.get_membership_type(membership_type)
+            membership_type = await self.__membership_service.get_membership_type(membership_type)
             membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
 
             membership_type_line_items = [
@@ -76,43 +83,64 @@ class CreateUserMembershipRequestUseCase:
                     "quantity": 1,
                 }
             ]
-            checkout_session = await create_checkout_session(membership_type_line_items)
-
-            provider_data = {
-                "checkout_session_id": checkout_session.id,
-                "checkout_session_status": checkout_session.status,
-                "payment_status": checkout_session.payment_status,
-                "url": checkout_session.url,
-            }
-
-            await self.payment_service.create_payment(
+            payment = await self.__payment_service.create_payment(
                 provider=PaymentProvider.STRIPE,
                 amount=membership_type_price_cents,
                 status=PaymentStatusEnum.PENDING,
                 purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
                 user_id=user_id,
-                provider_data=provider_data,
+                provider_data=None,
+            )
+            # Need to get payment id
+            await self.__transaction_manager._session.flush()
+
+            payment_metadata = {
+                "membership_request_id": membership_request.id,
+                "payment_id": str(payment.id),
+                "payment_purpose": PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+            }
+
+            checkout_session = await create_checkout_session(
+                membership_type_line_items,
+                metadata=payment_metadata,
+                success_url=f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+            )
+
+            provider_data = {
+                "membership_request_id": membership_request.id,
+                "payment_id": str(payment.id),
+                "checkout_session_id": checkout_session.id,
+                "checkout_session_status": checkout_session.status,
+                "payment_intent_status": checkout_session.payment_status,
+                "url": checkout_session.url,
+            }
+
+            await self.__payment_service.update_payment(payment.id, provider_data=provider_data)
+
+            payments_logger.info(
+                "Created membership request: membership_request_id={} payment_id={} checkout_session_id={}",
+                membership_request.id,
+                payment.id,
+                checkout_session.id,
             )
 
         return checkout_session.url
 
 
-def get_create_membership_request_use_case(
-    uow: Annotated[MembershipsUnitOfWork, Depends(get_memberships_unit_of_work)],
-    membership_service: Annotated[MembershipServiceDep, Depends(get_membership_service)],
-    feedback_additional_info_service: Annotated[
-        FeedbackAdditionalInfoServiceDep, Depends(get_feedback_additional_info_service)
-    ],
-    communication_preference_service: Annotated[
-        CommunicationPreferencesServiceDep, Depends(get_communication_preferences_service)
-    ],
+def get_use_case(
+    transaction_manager: TransactionManagerDep,
+    membership_service: MembershipServiceDep,
+    feedback_additional_info_service: FeedbackAdditionalInfoServiceDep,
+    communication_preference_service: CommunicationPreferencesServiceDep,
     payment_service: PaymentServiceDep,
 ) -> CreateUserMembershipRequestUseCase:
     return CreateUserMembershipRequestUseCase(
-        uow, membership_service, feedback_additional_info_service, communication_preference_service, payment_service
+        transaction_manager,
+        membership_service,
+        feedback_additional_info_service,
+        communication_preference_service,
+        payment_service,
     )
 
 
-CreateMembershipRequestUseCaseDep = Annotated[
-    CreateUserMembershipRequestUseCase, Depends(get_create_membership_request_use_case)
-]
+CreateMembershipRequestUseCaseDep = Annotated[CreateUserMembershipRequestUseCase, Depends(get_use_case)]

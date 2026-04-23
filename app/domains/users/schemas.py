@@ -39,7 +39,7 @@ class UserSchema(BaseModel):
     suffix: str | None
     credentials: str | None
     email: str
-    stuff: bool
+    admin: bool
     description: str | None
     country: str
     state: str | None
@@ -62,7 +62,7 @@ class UserSchema(BaseModel):
 
 
 class UpdateUserByAdminSchema(BaseModel):
-    stuff: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
+    admin: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
 
 
 class UpdateUserSchema(BaseModel):

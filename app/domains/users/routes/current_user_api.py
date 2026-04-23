@@ -3,24 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi_exception_responses import Responses
 
-from app.core.common.exceptions import NotResourceOwnerError
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
-from app.domains.memberships.exceptions import MembershipRequestAlreadyExistsError
 from app.domains.memberships.schemas import (
-    MembershipCreateSchema,
-    UserMembershipMockUpdateSchema,
-    UserMembershipViewSchema,
+    MembershipRequestCreateSchema,
+    MembershipRequestViewSchema,
 )
 from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
-from app.domains.memberships.use_cases.update_user_membership_mock import (
-    UpdateUserMembershipMockRequest,
-    UpdateUserMembershipMockUseCaseDep,
-)
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
-from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
+from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
@@ -33,20 +25,18 @@ from app.domains.users.schemas import (
     UpdateUserSchema,
     UserSchema,
 )
-from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
-from app.domains.users.use_cases.change_current_user_password import (
-    ChangeCurrentUserPasswordRequest,
-    ChangeCurrentUserPasswordUseCaseDep,
+from app.domains.users.services import UserServiceDep
+from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
+from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
+from app.domains.users.use_cases.current_user.get_current_user_membership import (
+    GetCurrentUserMembershipRequestUseCaseDep,
 )
-from app.domains.users.use_cases.delete_current_user_avatar import (
-    DeleteCurrentUserAvatarRequest,
-    DeleteCurrentUserAvatarUseCaseDep,
+from app.domains.users.use_cases.current_user.request_name_change import RequestNageChangeUseCaseDep
+from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
+    RetrieveCurrentUserPaymentsUseCaseDep,
 )
-from app.domains.users.use_cases.retrieve_current_user_payments import RetrieveCurrentUserPaymentsUseCaseDep
-from app.domains.users.use_cases.set_current_user_avatar import (
-    UploadCurrentUserAvatarRequest,
-    UploadCurrentUserAvatarUseCaseDep,
-)
+from app.domains.users.use_cases.current_user.set_current_user_avatar import UploadCurrentUserAvatarUseCaseDep
+from app.domains.users.use_cases.current_user.update_current_user import UpdateCurrentUserUseCaseDep
 
 router = APIRouter(tags=["Current user"], prefix="/users/current-user")
 
@@ -58,18 +48,13 @@ async def get_current_user(current_user: CurrentUserDep) -> UserSchema:
 
 class UpdateUserDataResponses(Responses):
     USER_NOT_FOUND = 404, "User with the provided email was not found"
-    NOT_RESOURCE_OWNER = 403, "Not resource owner"
 
 
-@router.patch("", summary="Update user data", responses=UpdateUserDataResponses.responses)
-async def update_user_data(
-    user_service: UserServiceDep,
-    current_user: CurrentUserDep,
-    update_data: UpdateUserSchema,
+@router.patch("", summary="Update current authenticated user", responses=UpdateUserDataResponses.responses)
+async def update_user(
+    current_user: CurrentUserDep, update_data: UpdateUserSchema, use_case: UpdateCurrentUserUseCaseDep
 ) -> UserSchema:
-    user = await user_service.update_user(
-        user_id=current_user.id, current_user=current_user, update_data=update_data.model_dump(exclude_unset=True))
-    return UserSchema.from_orm(user)
+    return await use_case.execute(current_user, **update_data.model_dump(exclude_unset=True))
 
 
 @router.get(
@@ -79,6 +64,7 @@ async def get_user_avatar(
     current_user: CurrentUserDep,
     user_service: UserServiceDep,
 ) -> str | None:
+    # Using use case here is overhead
     return await user_service.get_user_avatar_url(current_user.id)
 
 
@@ -98,9 +84,7 @@ async def upload_user_avatar(
 ) -> str:
     if not file.content_type.startswith("image/"):
         raise UploadAvatarResponses.INVALID_CONTENT_TYPE
-
-    request = UploadCurrentUserAvatarRequest(current_user, file)
-    return await use_case.execute(request)
+    return await use_case.execute(current_user, file)
 
 
 class DeleteUserAvatarResponses(UpdateUserDataResponses):
@@ -114,11 +98,10 @@ class DeleteUserAvatarResponses(UpdateUserDataResponses):
     status_code=204,
 )
 async def remove_user_avatar(
-    user_case: DeleteCurrentUserAvatarUseCaseDep,
+    use_case: DeleteCurrentUserAvatarUseCaseDep,
     current_user: CurrentUserDep,
 ):
-    request = DeleteCurrentUserAvatarRequest(current_user=current_user)
-    await user_case.execute(request)
+    await use_case.execute(current_user)
 
 
 class ChangePasswordResponses(Responses):
@@ -137,20 +120,13 @@ async def change_user_password(
     current_user: CurrentUserDep,  # noqa
     data: ChangePasswordSchema,
 ) -> None:
-    request = ChangeCurrentUserPasswordRequest(
-        current_user,
-        new_password=data.new_password,
-        old_password=data.old_password,
-    )
-
     try:
-        await use_case.execute(request)
+        await use_case.execute(current_user, new_password=data.new_password, old_password=data.old_password)
     except InvalidPasswordError:
         raise ChangePasswordResponses.INVALID_PASSWORD
 
 
 class NameChangeRequestResponses(Responses):
-    NOT_RESOURCE_OWNER = 403, "Not resource owner"
     PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS = 409, "Pending name change request already exists"
     NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED = 429, "Name change request cooldown not expired"
 
@@ -162,18 +138,12 @@ class NameChangeRequestResponses(Responses):
     summary="Create request to change user firstname and lastname",
 )
 async def create_name_change_request(
-    service: NameChangeRequestServiceDep,
+    use_case: RequestNageChangeUseCaseDep,
     current_user: CurrentUserDep,
     name_change_request_data: NameChangeRequestCreateSchema,
 ) -> NameChangeRequestViewSchema:
     try:
-        name_change_request = await service.create_name_change_request(
-            current_user.id, **name_change_request_data.model_dump(exclude_none=True)
-        )
-        return NameChangeRequestViewSchema.model_validate(name_change_request)
-
-    except NotResourceOwnerError:
-        raise NameChangeRequestResponses.NOT_RESOURCE_OWNER
+        return await use_case.execute(current_user, **name_change_request_data.model_dump(exclude_none=True))
 
     except PendingNameChangeRequestAlreadyExistsError:
         raise NameChangeRequestResponses.PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS
@@ -188,15 +158,12 @@ class CurrentUserMembershipResponses(Responses):
 
 @router.get(
     "/membership-requests",
-    response_model=UserMembershipViewSchema,
     responses=CurrentUserMembershipResponses.responses,
 )
 async def get_current_user_membership(
-    membership: CurrentUserMembershipDep,
-):
-    if membership is None:
-        raise CurrentUserMembershipResponses.MEMBERSHIP_NOT_FOUND
-    return membership
+    current_user: CurrentUserDep, use_case: GetCurrentUserMembershipRequestUseCaseDep
+) -> MembershipRequestViewSchema | None:
+    return await use_case.execute(current_user)
 
 
 class MembershipCreateResponses(Responses):
@@ -211,23 +178,17 @@ class MembershipCreateResponses(Responses):
     summary="Create a membership request for current user",
 )
 async def create_membership_request(
-    user_membership_data: MembershipCreateSchema,
+    create_membership_request_data: MembershipRequestCreateSchema,
     current_user: CurrentUserDep,
-    create_membership_request_use_case: CreateMembershipRequestUseCaseDep,
-):
-    try:
-        return await create_membership_request_use_case.execute(
-            user_id=current_user.id,
-            is_agrees_communications=user_membership_data.is_agrees_communications,
-            membership_type=user_membership_data.membership_type,
-            membership_request_data=user_membership_data.membership.model_dump(),
-            feedback_additional_info_data=user_membership_data.feedback_additional_info.model_dump(),
-        )
-
-    except MembershipRequestAlreadyExistsError:
-        raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
-    except FeedbackAdditionalInfoAlreadyExistsError:
-        raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
+    use_case: CreateMembershipRequestUseCaseDep,
+) -> str:
+    return await use_case.execute(
+        user_id=current_user.id,
+        is_agrees_communications=create_membership_request_data.is_agrees_communications,
+        membership_type=create_membership_request_data.membership_type,
+        membership_request_data=create_membership_request_data.membership.model_dump(),
+        feedback_additional_info_data=create_membership_request_data.feedback_additional_info.model_dump(),
+    )
 
 
 @router.get("/payments")
@@ -251,23 +212,3 @@ async def get_current_user_payments(
         page=params["page"],
         page_size=params["page_size"],
     )
-
-
-@router.patch("/membership/mock", response_model=UserMembershipViewSchema)
-async def update_current_user_membership_mock(
-    user: CurrentUserDep,
-    update_data: UserMembershipMockUpdateSchema,
-    update_use_case: UpdateUserMembershipMockUseCaseDep,
-):
-    """
-    TEMP: Mock endpoint for development/testing membership status and periods.
-    """
-    request = UpdateUserMembershipMockRequest(
-        user_id=user.id,
-        status=update_data.status,
-        current_period_end=update_data.current_period_end,
-        auto_renewal=update_data.auto_renewal,
-        membership_type=update_data.membership_type,
-        updated_fields=set(update_data.model_fields_set),
-    )
-    return await update_use_case.execute(request)

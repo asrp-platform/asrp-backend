@@ -35,16 +35,15 @@ async def get_contact_messages(
         raise GetContactMessagesResponses.PERMISSION_ERROR
 
     try:
-        messages, messages_count = await contact_message_service.get_all_paginated_counted(
+        contact_messages, messages_count = await contact_message_service.get_all_paginated_counted(
             order_by=ordering,
             filters=filters.model_dump(exclude_none=True),
             limit=params["limit"],
             offset=params["offset"],
         )
-        data = [ContactMessageResponseSchema.from_orm(message) for message in messages]
         return PaginatedResponse(
             count=messages_count,
-            data=data,
+            data=contact_messages,
             page=params["page"],
             page_size=params["page_size"],
         )

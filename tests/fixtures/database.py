@@ -44,10 +44,11 @@ async def setup_database(test_engine: AsyncEngine) -> AsyncIterator[None]:
 
     yield
     async with test_engine.begin() as conn:
+        pass
         await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 async def insert_test_data(
     setup_database: AsyncIterator[None],
     test_engine: AsyncEngine,
@@ -61,21 +62,17 @@ async def insert_test_data(
                 Permission(action="admin.delete", name="Remove admin role"),
                 Permission(action="admin.update", name="Update admin profile"),
                 Permission(action="permissions.create", name="Create permissions"),
-                Permission(action="permissions.view", name="Read permissions"),
+                Permission(action="permissions.view", name="View permissions"),
                 Permission(action="permissions.delete", name="Delete permissions"),
                 Permission(action="permissions.update", name="Update permissions"),
-                Permission(action="memberships.create", name="Create memberships"),
-                Permission(action="memberships.view", name="Read memberships"),
-                Permission(action="memberships.delete", name="Delete memberships"),
-                Permission(action="memberships.update", name="Update memberships"),
-                Permission(action="user_memberships.create", name="Create users memberships"),
-                Permission(action="user_memberships.view", name="Read users memberships"),
-                Permission(action="user_memberships.delete", name="Delete users memberships"),
-                Permission(action="user_memberships.update", name="Update users memberships"),
-                Permission(action="director_board.create", name="Create director board members"),
-                Permission(action="director_board.view", name="View director board members"),
-                Permission(action="director_board.delete", name="Remove director board members"),
-                Permission(action="director_board.update", name="Update director board members"),
+                Permission(action="membership.create", name="Create memberships"),
+                Permission(action="membership.view", name="View memberships"),
+                Permission(action="membership.delete", name="Delete memberships"),
+                Permission(action="membership.update", name="Update memberships"),
+                Permission(action="directors_board.create", name="Create director board members"),
+                Permission(action="directors_board.view", name="View director board members"),
+                Permission(action="directors_board.delete", name="Remove director board members"),
+                Permission(action="directors_board.update", name="Update director board members"),
                 Permission(action="feedback.create", name="Assign admin feedback"),
                 Permission(action="feedback.view", name="View admin feedback"),
                 Permission(action="feedback.delete", name="Remove admin feedback"),
@@ -84,15 +81,14 @@ async def insert_test_data(
                 Permission(action="legal_documents.view", name="View legal documents"),
                 Permission(action="legal_documents.update", name="Update legal documents"),
                 Permission(action="legal_documents.delete", name="Delete legal documents"),
-                Permission(action="name_change_request.view", name="View name change requests"),
-                Permission(action="name_change_request.update", name="Approve/reject name change requests"),
-                Permission(action="name_change_request.create", name="Create name change requests"),
-                Permission(action="name_change_request.delete", name="Delete name change requests"),
-
+                Permission(action="name_change_requests.view", name="View name change requests"),
+                Permission(action="name_change_requests.update", name="Approve/reject name change request"),
+                Permission(action="name_change_requests.create", name="Create name change request"),
+                Permission(action="name_change_requests.delete", name="Delete name change request"),
                 MembershipType(
                     name="Active Member",
                     type="ACTIVE",
-                    price_usd=20.00,
+                    price_usd=120.00,
                     duration=365,
                     description="Any legally qualified Russian-speaking specialist (MD, DO, MBBS, PhD, or equivalent degree). practicing pathology in the united states",
                     is_purchasable=True,
@@ -100,7 +96,7 @@ async def insert_test_data(
                 MembershipType(
                     name="Trainee Member",
                     type="TRAINEE",
-                    price_usd=20.00,
+                    price_usd=60.00,
                     duration=365,
                     description="Russian-speaking residents or fellows in pathology or related disciplines in the United States.",
                     is_purchasable=True,
@@ -108,7 +104,7 @@ async def insert_test_data(
                 MembershipType(
                     name="Affiliate Member",
                     type="AFFILIATE",
-                    price_usd=20.00,
+                    price_usd=90.00,
                     duration=365,
                     description="Russian-speaking pathologists, scientists, researchers, or allied professionals interested in the field of pathology whose involvement is relevant and contributes meaningfully to the Society (non-voting).",
                     is_purchasable=True,
@@ -116,7 +112,7 @@ async def insert_test_data(
                 MembershipType(
                     name="Honorary Member",
                     type="HONORARY",
-                    price_usd=20.00,
+                    price_usd=0.00,
                     duration=365,
                     description="Individuals recognized fo exceptional service to the field of pathology or the Society (non-voting).",
                     is_purchasable=False,
@@ -124,7 +120,7 @@ async def insert_test_data(
                 MembershipType(
                     name="Pathway Member",
                     type="PATHWAY",
-                    price_usd=20.00,
+                    price_usd=30.00,
                     duration=365,
                     description="Russian-speaking individuals pursuing or transition into a medical career in the United States. This includes medical students and internationally trained medical graduates seeking mentorship and professional development as they prepare for pathology practice in the United States (non-voting).",
                     is_purchasable=True,

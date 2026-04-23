@@ -1,0 +1,216 @@
+import pytest
+from faker import Faker
+
+from app.domains.shared.transaction_managers import TransactionManager
+from app.domains.users.models import (
+    CommunicationPreferences,
+    Fellowship,
+    Job,
+    NameChangeRequest,
+    ProfessionalInformation,
+    Residency,
+    User,
+)
+
+
+@pytest.fixture(scope="function")
+def year_range(faker: Faker) -> str:
+    start = faker.random_int(min=1900, max=2100)
+    end = faker.random_int(min=1900, max=2100)
+    if start > end:
+        return f"{end}-{start}"
+    return f"{start}-{end}"
+
+
+@pytest.fixture(scope="function")
+async def professional_information(
+    test_transaction_manager: TransactionManager, test_user: User, faker: Faker, year_range: str
+) -> ProfessionalInformation:
+    prof_info = await test_transaction_manager.professional_information_repository.create(
+        user_id=test_user.id,
+        medical_school=faker.pystr(min_chars=2),
+        medical_school_country=faker.country(),
+        years_from_to=year_range,
+        is_board_certified_pathologist=True,
+        is_us_pathology_trainee=False,
+        is_us_lab_professional=False,
+    )
+    return prof_info
+
+
+@pytest.fixture(scope="function")
+def professional_information_data(faker: Faker, year_range: str) -> dict:
+    return {
+        "medical_school": faker.pystr(min_chars=2),
+        "medical_school_country": faker.country(),
+        "years_from_to": year_range,
+        "is_board_certified_pathologist": faker.pybool(),
+        "is_us_pathology_trainee": faker.pybool(),
+        "is_us_lab_professional": faker.pybool(),
+    }
+
+
+@pytest.fixture(scope="function")
+async def fellowship(
+    test_transaction_manager: TransactionManager,
+    test_user: User,
+    year_range: str,
+) -> Fellowship:
+    async with test_transaction_manager:
+        fellowship = await test_transaction_manager.fellowship_repository.create(
+            user_id=test_user.id,
+            current_position=False,
+            institution="Mayo Clinic",
+            speciality="Surgical Oncology",
+            city="Rochester",
+            state="MN",
+            country="USA",
+            years_from_to=year_range,
+        )
+    return fellowship
+
+
+@pytest.fixture(scope="function")
+def fellowship_data(
+    faker: Faker,
+    year_range: str,
+) -> dict:
+    return {
+        "current_position": False,
+        "institution": faker.company(),
+        "speciality": faker.job(),
+        "city": faker.city(),
+        "state": faker.state(),
+        "country": faker.country(),
+        "years_from_to": year_range,
+    }
+
+
+@pytest.fixture(scope="function")
+async def residency(
+    test_transaction_manager: TransactionManager,
+    test_user: User,
+    year_range: str,
+) -> Residency:
+    async with test_transaction_manager:
+        residency = await test_transaction_manager.residency_repository.create(
+            user_id=test_user.id,
+            current_position=False,
+            institution="Johns Hopkins Hospital",
+            speciality="Anatomic Pathology",
+            city="Baltimore",
+            state="MD",
+            country="USA",
+            years_from_to=year_range,
+        )
+    return residency
+
+
+@pytest.fixture(scope="function")
+def residency_data(
+    faker: Faker,
+    year_range: str,
+) -> dict:
+    return {
+        "current_position": False,
+        "institution": faker.company(),
+        "speciality": faker.job(),
+        "city": faker.city(),
+        "state": faker.state(),
+        "country": faker.country(),
+        "years_from_to": year_range,
+    }
+
+
+@pytest.fixture(scope="function")
+async def job(
+    test_transaction_manager: TransactionManager,
+    test_user: User,
+    year_range: str,
+) -> Job:
+    async with test_transaction_manager:
+        job = await test_transaction_manager.job_repository.create(
+            user_id=test_user.id,
+            current_position=False,
+            institution="John Doe Hospital",
+            speciality="Anatomic Pathology",
+            city="New York",
+            state="NY",
+            country="USA",
+            years_from_to=year_range,
+        )
+    return job
+
+
+@pytest.fixture(scope="function")
+def job_data(
+    faker: Faker,
+    year_range: str,
+) -> dict:
+    return {
+        "current_position": False,
+        "institution": faker.company(),
+        "speciality": faker.job(),
+        "city": faker.city(),
+        "state": faker.state(),
+        "country": faker.country(),
+        "years_from_to": year_range,
+    }
+
+
+@pytest.fixture(scope="function")
+async def name_change_request(
+    faker: Faker,
+    test_transaction_manager: TransactionManager,
+    test_user: User,
+) -> NameChangeRequest:
+    async with test_transaction_manager:
+        name_change_request = await test_transaction_manager.name_change_request_repository.create(
+            firstname=faker.first_name(),
+            lastname=faker.last_name(),
+            reason_change=faker.text(max_nb_chars=100),
+            user_id=test_user.id,
+        )
+    return name_change_request
+
+
+@pytest.fixture(scope="function")
+def name_change_request_data(faker: Faker) -> dict:
+    return {
+        "firstname": faker.first_name(),
+        "lastname": faker.last_name(),
+        "reason_change": faker.text(max_nb_chars=100),
+    }
+
+
+@pytest.fixture(scope="function")
+def name_change_request_approve_data(faker: Faker) -> dict:
+    return {
+        "action": "approve",
+        "reason_rejecting": None,
+    }
+
+
+@pytest.fixture(scope="function")
+def name_change_request_reject_data(faker: Faker) -> dict:
+    return {
+        "action": "reject",
+        "reason_rejecting": faker.text(max_nb_chars=100),
+    }
+
+
+@pytest.fixture(scope="function")
+async def communication_preferences(
+    faker: Faker,
+    test_transaction_manager: TransactionManager,
+    test_user: User,
+) -> CommunicationPreferences:
+    async with test_transaction_manager:
+        preferences = await test_transaction_manager.communication_preferences_repository.create(
+            newsletters=faker.pybool(),
+            events_meetings=faker.pybool(),
+            committees_leadership=faker.pybool(),
+            volunteer_opportunities=faker.pybool(),
+            user_id=test_user.id,
+        )
+    return preferences
