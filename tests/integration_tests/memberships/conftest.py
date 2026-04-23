@@ -53,7 +53,9 @@ def membership_request_create_data(faker: Faker) -> dict:
             "practice_setting": faker.word(),
             "subspecialty": faker.word(),
         },
-        "membership_type": faker.random_element([item for item in MembershipTypeEnum]),
+        "membership_type": faker.random_element(
+            [item for item in MembershipTypeEnum if item != MembershipTypeEnum.HONORARY]
+        ),
         "feedback_additional_info": {
             "hear_about_asrp": faker.sentence(),
             "tg_username": f"@{faker.user_name()[:20]}",
