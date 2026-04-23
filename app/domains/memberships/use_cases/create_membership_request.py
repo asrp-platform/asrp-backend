@@ -46,8 +46,10 @@ class CreateUserMembershipRequestUseCase:
         membership_request_data: dict,
         feedback_additional_info_data: dict,
     ) -> str:
-        # TODO: raise error when trying to buy not purchasable membership
         async with self.__transaction_manager:
+            if membership_type == MembershipTypeEnum.HONORARY:
+                raise ValueError("Can't buy honorary membership")
+
             membership_request = await self.__membership_service.create_membership_request(
                 user_id,
                 membership_type,
