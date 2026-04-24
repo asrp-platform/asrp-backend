@@ -14,23 +14,17 @@ from app.domains.directors_board.schemas import (
 )
 from app.domains.directors_board.services import DirectorBoardMemberServiceDep
 from app.domains.directors_board.use_cases.create_directors_board_member import CreateDirectorsBoardMemberUseCaseDep
+from app.domains.directors_board.use_cases.get_directors_board_members import GetDirectorsBoardMembersUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
 
 
-class ViewDirectorResponses(PermissionsResponses):
-    pass
-
-
-@router.get("", responses=ViewDirectorResponses.responses, summary="View all directors board (admin view)")
+@router.get("", summary="View all directors board (admin view)")
 async def get_all_director_members(
-    director_service: DirectorBoardMemberServiceDep,
-    permissions: AdminPermissionsDep,
+    use_case: GetDirectorsBoardMembersUseCaseDep,
 ) -> list[BoardMemberSchema]:
-    if "directors_board.view" not in permissions:
-        raise ViewDirectorResponses.PERMISSION_ERROR
-    data, count = await director_service.get_all_directors()
+    data, count = await use_case.execute()
     return data
 
 

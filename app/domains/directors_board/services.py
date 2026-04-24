@@ -11,7 +11,7 @@ class DirectorsBoardService:
     def __init__(self, transaction_manager):
         self.transaction_manager = transaction_manager
 
-    async def get_all_directors(self):
+    async def get_directors_board_members(self):
         async with self.transaction_manager:
             return await self.transaction_manager.directors_board_member_repository.list()
 
