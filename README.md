@@ -106,7 +106,7 @@ For local development set `DB_HOST` to `localhost`.
 #### Start and build database container (DEV)
 
 ```shell
-docker compose -f local.yml up -d asrp_database minio
+docker compose -f local.yml up -d asrp_database minio stripe-cli
 ```
 
 #### Install dependencies

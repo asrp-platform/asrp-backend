@@ -1,0 +1,30 @@
+name: Dev CD
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to dev server via SSH
+        uses: appleboy/ssh-action@v1.2.0
+
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_USERNAME }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.DEV_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+
+            cd ~/asrp-backend
+
+            git fetch origin
+            git checkout develop
+            git pull origin develop
+
+            docker compose -f local.yml up -d --build
