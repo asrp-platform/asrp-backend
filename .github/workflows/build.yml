@@ -182,3 +182,29 @@ jobs:
 
       - name: Run tests
         run: poetry run pytest
+
+  deploy_dev:
+    needs: [prepare, migrations, tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to dev server via SSH
+        uses: appleboy/ssh-action@v1.2.0
+
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.DEV_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+
+            cd ~/asrp-backend
+
+            git fetch origin
+            git checkout develop
+            git pull origin develop
+
+            docker compose -f local.yml up -d --build
