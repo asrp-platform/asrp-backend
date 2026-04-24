@@ -1,8 +1,8 @@
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from loguru import logger
 
 from app.core.config import settings
 from app.domains.emails.common.abstract_plugin import EmailPlugin
-from app.domains.emails.common.exceptions import EmailDeliveryError
 
 
 class GmailPlugin(EmailPlugin):
@@ -36,5 +36,5 @@ class GmailPlugin(EmailPlugin):
                 subtype=subtype,
             )
             await self.fast_mail.send_message(message)
-        except Exception as e:
-            raise EmailDeliveryError(str(e))
+        except Exception as exc:
+            logger.error("Failed to send confirmation email to {}", exc)
