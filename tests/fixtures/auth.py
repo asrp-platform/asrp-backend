@@ -26,7 +26,7 @@ async def user_factory(
 ) -> UserFactory:
     async def _factory(**overrides) -> User:
         user_data = {
-            "email": faker.email(),
+            "email": faker.unique.email(),
             "password": faker.password(),
             "firstname": faker.first_name(),
             "lastname": faker.last_name(),
