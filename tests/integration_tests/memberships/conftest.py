@@ -34,7 +34,9 @@ def user_membership_data(faker: Faker):
             "practice_setting": faker.text(max_nb_chars=50),
             "subspecialty": faker.text(max_nb_chars=50),
         },
-        "membership_type": faker.random_element([item.value for item in MembershipTypeEnum]),
+        "membership_type": faker.random_element(
+            [item.value for item in MembershipTypeEnum if item != MembershipTypeEnum.HONORARY]
+        ),
         "feedback_additional_info": {
             "hear_about_asrp": faker.text(max_nb_chars=50),
             "tg_username": f"@{faker.pystr(min_chars=5, max_chars=32)}",
