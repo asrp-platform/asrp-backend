@@ -13,6 +13,7 @@ from app.domains.directors_board.schemas import (
     UpdateBoardMemberSchema,
 )
 from app.domains.directors_board.services import DirectorBoardMemberServiceDep
+from app.domains.directors_board.use_cases.create_directors_board_member import CreateDirectorsBoardMemberUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
@@ -46,11 +47,9 @@ class CreateDirectorResponses(PermissionsResponses):
 async def create_director_member(
     data: CreateBoardMemberSchema,
     permissions: AdminPermissionsDep,
-    director_service: DirectorBoardMemberServiceDep,
+    use_case: CreateDirectorsBoardMemberUseCaseDep,
 ) -> BoardMemberSchema:
-    if "directors_board.create" not in permissions:
-        raise CreateDirectorResponses.PERMISSION_ERROR
-    return await director_service.create_director_member(**data.model_dump())
+    return await use_case.execute(permissions, **data.model_dump())
 
 
 class UpdateDirectorMemberResponses(PermissionsResponses):

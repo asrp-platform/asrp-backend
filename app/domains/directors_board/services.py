@@ -7,7 +7,7 @@ from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
 
-class DirectorBoardMemberService:
+class DirectorsBoardService:
     def __init__(self, transaction_manager):
         self.transaction_manager = transaction_manager
 
@@ -22,8 +22,7 @@ class DirectorBoardMemberService:
             )
         ).scalar_one_or_none()
         insert_data = {**kwargs, "order": max_order + 1}
-        async with self.transaction_manager:
-            return await self.transaction_manager.directors_board_member_repository.create(**insert_data)
+        return await self.transaction_manager.directors_board_member_repository.create(**insert_data)
 
     async def update_director_member(self, director_member_id: int, data: dict):
         async with self.transaction_manager:
@@ -47,8 +46,8 @@ class DirectorBoardMemberService:
                 await self.transaction_manager._session.commit()
 
 
-def get_director_board_member_service(transaction_manager: TransactionManagerDep) -> DirectorBoardMemberService:
-    return DirectorBoardMemberService(transaction_manager)
+def get_director_board_member_service(transaction_manager: TransactionManagerDep) -> DirectorsBoardService:
+    return DirectorsBoardService(transaction_manager)
 
 
-DirectorBoardMemberServiceDep = Annotated[DirectorBoardMemberService, Depends(get_director_board_member_service)]
+DirectorBoardMemberServiceDep = Annotated[DirectorsBoardService, Depends(get_director_board_member_service)]
