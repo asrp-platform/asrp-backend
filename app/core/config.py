@@ -35,7 +35,7 @@ class GmailConfig(BaseModel):
 class S3Config(BaseModel):
     S3_ACCESS_KEY: str = "minioadmin"
     S3_SECRET_KEY: str = "minioadmin"
-    S3_BUCKET: str = "uploads"
+    S3_DEFAULT_BUCKET: str = "uploads"
     S3_REGION: str = "us-east-1"
     S3_ENDPOINT: str = "http://localhost:9000"
     S3_PUBLIC_URL: str = "http://localhost:9000"
@@ -84,7 +84,7 @@ s3_storage = S3BaseStorage(
     access_key=settings.S3_ACCESS_KEY,
     secret_key=settings.S3_SECRET_KEY,
     endpoint_url=settings.S3_ENDPOINT,
-    bucket_name=settings.S3_BUCKET,
+    default_bucket_name=settings.S3_DEFAULT_BUCKET,
     region_name=settings.S3_REGION,
 )
 fernet = Fernet(settings.fernet_key_bytes)

@@ -12,8 +12,7 @@ class DirectorsBoardService:
         self.transaction_manager = transaction_manager
 
     async def get_directors_board_members(self):
-        async with self.transaction_manager:
-            return await self.transaction_manager.directors_board_member_repository.list()
+        return await self.transaction_manager.directors_board_member_repository.list()
 
     async def create_director_member(self, **kwargs):
         max_order = (
@@ -24,8 +23,8 @@ class DirectorsBoardService:
         insert_data = {**kwargs, "order": max_order + 1}
         return await self.transaction_manager.directors_board_member_repository.create(**insert_data)
 
-    async def update_director_member(self, director_member_id: int, data: dict):
-        return await self.transaction_manager.directors_board_member_repository.update(director_member_id, **data)
+    async def update_director_member(self, director_member_id: int, **kwargs):
+        return await self.transaction_manager.directors_board_member_repository.update(director_member_id, **kwargs)
 
     async def delete_director_member(self, director_member_id: int) -> int:
         return await self.transaction_manager.directors_board_member_repository.mark_as_deleted(director_member_id)

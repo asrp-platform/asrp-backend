@@ -1,21 +1,29 @@
 from typing import Annotated
 
-from fastapi import Depends, UploadFile
+from fastapi import Depends
 
-from app.core.config import settings
+from app.core.common.exceptions import InvalidMimeTypeError
+from app.core.config import s3_storage
 from app.core.utils.permissions import check_permissions
-from app.core.utils.save_file import save_file
+from app.domains.shared.types import FileData
 
 
 class UploadDirectorsBoardMemberPhotoUseCase:
-    async def execute(self, permissions, file: UploadFile) -> dict:
+    def __init__(self):
+        self.__file_storage = s3_storage
+
+    async def execute(self, permissions, file_data: FileData) -> str:
+        """Returns presigned object key"""
         check_permissions("directors_board.update", permissions)
 
-        if not file.content_type.startswith("image/"):
-            raise ValueError("Invalid image content type")
+        if not file_data.content_type.startswith("image/"):
+            raise InvalidMimeTypeError("Invalid image content type")
 
-        relative_filepath = await save_file(file, settings.DIRECTORS_BOARD_UPLOADS_PATH)
-        return {"path": relative_filepath.as_posix()}
+        uploaded_file_data = await self.__file_storage.upload_file(
+            f"directors_board/{file_data.filename}", file=file_data.content
+        )
+
+        return await self.__file_storage.get_presigned_object(uploaded_file_data.object_key)
 
 
 def get_use_case() -> UploadDirectorsBoardMemberPhotoUseCase:

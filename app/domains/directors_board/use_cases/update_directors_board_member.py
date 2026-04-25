@@ -18,10 +18,10 @@ class UpdateDirectorsBoardMemberUseCase:
         self.__transaction_manager = transaction_manager
         self.__directors_board_service = directors_board_service
 
-    async def execute(self, permissions, director_member_id: int, data: dict) -> DirectorBoardMember:
+    async def execute(self, permissions, director_member_id: int, **kwargs) -> DirectorBoardMember:
         check_permissions("directors_board.update", permissions)
         async with self.__transaction_manager:
-            return await self.__directors_board_service.update_director_member(director_member_id, data)
+            return await self.__directors_board_service.update_director_member(director_member_id, **kwargs)
 
 
 def get_use_case(

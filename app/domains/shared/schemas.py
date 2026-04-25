@@ -32,3 +32,7 @@ class FeedbackAdditionalInfoCreateSchema(BaseModel):
             )
 
         return username
+
+
+class UploadedImageSchema(BaseModel):
+    path: str

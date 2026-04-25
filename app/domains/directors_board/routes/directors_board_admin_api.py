@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 
-from app.core.common.exceptions import PermissionDeniedError
+from app.core.common.exceptions import InvalidMimeTypeError, PermissionDeniedError
 from app.core.common.responses import PermissionsResponses
-from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError, InvalidReorderItemsCountError
+from app.domains.directors_board.exceptions import InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
     BoardMemberSchema,
     CardOrderUpdate,
@@ -20,29 +20,31 @@ from app.domains.directors_board.use_cases.upload_directors_board_member_photo i
     UploadDirectorsBoardMemberPhotoUseCaseDep,
 )
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
+from app.domains.shared.schemas import UploadedImageSchema
+from app.domains.shared.types import FileData
 
 router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
 
 
 @router.get("", summary="View all directors board (admin view)")
-async def get_all_director_members(
+async def get_all_directors_board_members(
     use_case: GetDirectorsBoardMembersUseCaseDep,
 ) -> list[BoardMemberSchema]:
     data, count = await use_case.execute()
     return data
 
 
-class CreateDirectorResponses(PermissionsResponses):
+class CreateDirectorsBoardMemberResponses(PermissionsResponses):
     pass
 
 
 @router.post(
     "",
     status_code=201,
-    responses=CreateDirectorResponses.responses,
+    responses=CreateDirectorsBoardMemberResponses.responses,
     summary="Create a director board member",
 )
-async def create_director_member(
+async def create_directors_board_member(
     data: CreateBoardMemberSchema,
     permissions: AdminPermissionsDep,
     use_case: CreateDirectorsBoardMemberUseCaseDep,
@@ -50,75 +52,65 @@ async def create_director_member(
     return await use_case.execute(permissions, **data.model_dump())
 
 
-class UpdateDirectorMemberResponses(PermissionsResponses):
+class UpdateDirectorsBoardMemberResponses(PermissionsResponses):
     DIRECTOR_MEMBER_NOT_FOUND = 404, "Director member with provided ID not found"
 
 
 @router.patch(
     "/{director_member_id}",
-    responses=UpdateDirectorMemberResponses.responses,
+    responses=UpdateDirectorsBoardMemberResponses.responses,
     summary="Update a director board member",
 )
-async def update_director_member(
+async def update_directors_board_member(
     director_member_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
     use_case: UpdateDirectorsBoardMemberUseCaseDep,
     update_data: UpdateBoardMemberSchema,
 ) -> BoardMemberSchema:
-    try:
-        update_data_dict = update_data.model_dump(exclude_unset=True)
-        updated_director_member = await use_case.execute(permissions, director_member_id, update_data_dict)
-        return updated_director_member
-
-    except PermissionDeniedError:
-        raise UpdateDirectorMemberResponses.PERMISSION_ERROR
-    except DirectionBoardMemberNotFoundError:
-        raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+    return await use_case.execute(permissions, director_member_id, **update_data.model_dump(exclude_unset=True))
 
 
-class DeleteDirectorMemberResponses(PermissionsResponses):
-    DIRECTOR_MEMBER_NOT_FOUND = 404, "Director member with provided ID not found"
+class DeleteDirectorsBoardMemberResponses(UpdateDirectorsBoardMemberResponses):
+    pass
 
 
 @router.delete(
     "/{director_member_id}",
-    responses=DeleteDirectorMemberResponses.responses,
+    responses=DeleteDirectorsBoardMemberResponses.responses,
     summary="Delete a director board member",
 )
-async def delete_director_member(
+async def delete_directors_board_member(
     director_member_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
     use_case: DeleteDirectorsBoardMemberUseCaseDep,
 ) -> int:
-    try:
-        deleted_id = await use_case.execute(permissions, director_member_id)
-        return deleted_id
-    except PermissionDeniedError:
-        raise DeleteDirectorMemberResponses.PERMISSION_ERROR
-    except DirectionBoardMemberNotFoundError:
-        raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+    return await use_case.execute(permissions, director_member_id)
 
 
 class UploadImageResponses(PermissionsResponses):
     INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
 
-@router.post(
+@router.put(
     "/images",
-    status_code=201,
     responses=UploadImageResponses.responses,
     summary="Upload image for a director member",
 )
-async def upload_director_member_photo(
+async def upload_directors_board_member_photo(
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
     use_case: UploadDirectorsBoardMemberPhotoUseCaseDep,
-) -> dict:
+) -> UploadedImageSchema:
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
+
     try:
-        return await use_case.execute(permissions, file)
-    except PermissionDeniedError:
-        raise UploadImageResponses.PERMISSION_ERROR
-    except ValueError:
+        file_path = await use_case.execute(permissions, file_data)
+        return UploadedImageSchema(path=file_path)
+    except InvalidMimeTypeError:
         raise UploadImageResponses.INVALID_CONTENT_TYPE
 
 
