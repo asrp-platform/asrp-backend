@@ -25,25 +25,22 @@ class DirectorsBoardService:
         return await self.transaction_manager.directors_board_member_repository.create(**insert_data)
 
     async def update_director_member(self, director_member_id: int, data: dict):
-        async with self.transaction_manager:
-            return await self.transaction_manager.directors_board_member_repository.update(director_member_id, **data)
+        return await self.transaction_manager.directors_board_member_repository.update(director_member_id, **data)
 
     async def delete_director_member(self, director_member_id: int) -> int:
-        async with self.transaction_manager:
-            return await self.transaction_manager.directors_board_member_repository.mark_as_deleted(director_member_id)
+        return await self.transaction_manager.directors_board_member_repository.mark_as_deleted(director_member_id)
 
     async def update_order(self, items):
-        async with self.transaction_manager:
-            # Temporary order for second card to exclude order duplication
-            await self.transaction_manager._session.execute(
-                update(DirectorBoardMember).where(DirectorBoardMember.id == items[1].id).values(order=9999)
-            )
+        # Temporary order for second card to exclude order duplication
+        await self.transaction_manager._session.execute(
+            update(DirectorBoardMember).where(DirectorBoardMember.id == items[1].id).values(order=9999)
+        )
 
-            for item in items:
-                await self.transaction_manager._session.execute(
-                    update(DirectorBoardMember).where(DirectorBoardMember.id == item.id).values(order=item.order)
-                )
-                await self.transaction_manager._session.commit()
+        for item in items:
+            await self.transaction_manager._session.execute(
+                update(DirectorBoardMember).where(DirectorBoardMember.id == item.id).values(order=item.order)
+            )
+            await self.transaction_manager._session.commit()
 
 
 def get_director_board_member_service(transaction_manager: TransactionManagerDep) -> DirectorsBoardService:

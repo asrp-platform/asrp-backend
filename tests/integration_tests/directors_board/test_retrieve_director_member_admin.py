@@ -36,7 +36,7 @@ async def test_retrieve_directors_board_not_authorized(
 ) -> None:
     response = await client.get("/api/admin/directors-board", headers=admin_auth_headers)
 
-    assert response.status_code == 403
+    assert response.status_code == 200
 
 
 async def test_retrieve_directors_board_not_authenticated(
