@@ -13,7 +13,7 @@ class UploadDirectorsBoardMemberPhotoUseCase:
         self.__file_storage = s3_storage
 
     async def execute(self, permissions, file_data: FileData) -> str:
-        """Returns presigned object key"""
+        """Returns presigned URL for uploaded image."""
         check_permissions("directors_board.update", permissions)
 
         if not file_data.content_type.startswith("image/"):

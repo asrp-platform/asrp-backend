@@ -3,7 +3,7 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings
 
 from app.core.storage.base_storage import S3BaseStorage
@@ -35,7 +35,7 @@ class GmailConfig(BaseModel):
 class S3Config(BaseModel):
     S3_ACCESS_KEY: str = "minioadmin"
     S3_SECRET_KEY: str = "minioadmin"
-    S3_DEFAULT_BUCKET: str = "uploads"
+    S3_DEFAULT_BUCKET: str = Field(default="uploads", validation_alias=AliasChoices("S3_DEFAULT_BUCKET", "S3_BUCKET"))
     S3_REGION: str = "us-east-1"
     S3_ENDPOINT: str = "http://localhost:9000"
     S3_PUBLIC_URL: str = "http://localhost:9000"

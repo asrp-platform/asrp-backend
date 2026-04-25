@@ -20,7 +20,9 @@ class GetDirectorsBoardMembersUseCase:
     async def execute(self) -> DirectorBoardMember:
         # No need to check permissions here
         async with self.__transaction_manager:
-            return await self.__directors_board_service.get_directors_board_members()
+            members, count = await self.__directors_board_service.get_directors_board_members()
+        await self.__directors_board_service.hydrate_photo_urls(members)
+        return members, count
 
 
 def get_use_case(

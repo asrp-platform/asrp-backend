@@ -22,26 +22,6 @@ services:
     networks:
       - default
 
-  asrp_backend:
-    container_name: asrp_backend
-    build:
-      context: .
-      dockerfile: compose/backend/Dockerfile
-    depends_on:
-      asrp_database:
-        condition: service_healthy
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
-    volumes:
-      - ./app/:/app/app/
-      - ./alembic/:/app/alembic
-      - ./logs/:/app/logs
-    networks:
-      - default
-
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -81,19 +61,6 @@ services:
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_DEVICE_NAME: docker-stripe-cli
     command: listen --forward-to http://host.docker.internal:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
-
-  certbot:
-    image: certbot/certbot
-    depends_on:
-      - nginx
-    container_name: certbot
-    restart: "no"
-    volumes:
-      - etc-letsencrypt:/etc/letsencrypt
-      - www-html:/var/www/html
-    command: certonly --webroot --webroot-path=/var/www/html --email admin@asrpath.org --agree-tos --no-eff-email -d asrpath.org
-    networks:
-      - default
 
 
 volumes:
