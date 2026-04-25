@@ -86,6 +86,7 @@ s3_storage = S3BaseStorage(
     endpoint_url=settings.S3_ENDPOINT,
     default_bucket_name=settings.S3_DEFAULT_BUCKET,
     region_name=settings.S3_REGION,
+    public_url=settings.S3_PUBLIC_URL,
 )
 fernet = Fernet(settings.fernet_key_bytes)
 

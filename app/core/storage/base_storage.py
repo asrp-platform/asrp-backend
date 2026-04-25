@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import timedelta
+from urllib.parse import urlsplit, urlunsplit
 
 from aiobotocore.session import get_session
 from botocore.exceptions import ClientError as BotocoreClientError
@@ -21,6 +22,7 @@ class S3BaseStorage:
         endpoint_url: str,
         default_bucket_name: str,
         region_name: str,
+        public_url: str | None = None,
     ):
         self.config = {
             "aws_access_key_id": access_key,
@@ -31,6 +33,8 @@ class S3BaseStorage:
         self.default_bucket_name = default_bucket_name
         self.session = get_session()
         self.region_name = region_name
+        self.endpoint_url = endpoint_url.rstrip("/")
+        self.public_url = (public_url or endpoint_url).rstrip("/")
 
     @asynccontextmanager
     async def get_client(self):
@@ -44,12 +48,12 @@ class S3BaseStorage:
         bucket_name: str | None = None,
     ) -> S3UploadedFileData:
         """
-        Uploads file to S3 storage
+        Uploads file to S3 storage.
 
         Returns:
-            A dictionay with information about the uploaded file
-            - ``bucket``: the name of the bucket where the filw was uploaded
-            - ``object_name``: the object key used to store the file
+            Information about the uploaded file:
+            - ``bucket``: the name of the bucket where the file was uploaded
+            - ``object_key``: the object key used to store the file
         """
         bucket = bucket_name or self.default_bucket_name
         await self.__ensure_bucket_exists(bucket)
@@ -63,7 +67,7 @@ class S3BaseStorage:
 
     async def get_presigned_object(self, object_key: str, bucket_name: str | None = None) -> str | None:
         bucket = bucket_name or self.default_bucket_name
-        if not await self._check_object_exists(object_key):
+        if not await self._check_object_exists(object_key, bucket):
             return None
 
         async with self.get_client() as client:
@@ -75,7 +79,7 @@ class S3BaseStorage:
                 },
                 ExpiresIn=int(timedelta(hours=1).total_seconds()),
             )
-            return url
+            return self._replace_url_host(url)
 
     async def delete_object(self, object_key: str, bucket_name: str | None = None) -> None:
         bucket = bucket_name or self.default_bucket_name
@@ -100,9 +104,9 @@ class S3BaseStorage:
         bucket = bucket_name or self.default_bucket_name
         async with self.get_client() as client:
             try:
-                await client.head_bucket(Bucket=bucket)  # существует ли bucket
+                await client.head_bucket(Bucket=bucket)
             except client.exceptions.NoSuchBucket:
-                await client.create_bucket(Bucket=bucket)  # Если не существует, то создаем его
+                await client.create_bucket(Bucket=bucket)
             except Exception:
                 try:
                     await client.create_bucket(Bucket=bucket)
@@ -110,3 +114,21 @@ class S3BaseStorage:
                     error_code = e.response.get("Error", {}).get("Code")
                     if error_code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
                         raise
+
+    def _replace_url_host(self, url: str) -> str:
+        endpoint_parts = urlsplit(self.endpoint_url)
+        public_parts = urlsplit(self.public_url)
+        current_parts = urlsplit(url)
+
+        if current_parts.netloc != endpoint_parts.netloc:
+            return url
+
+        return urlunsplit(
+            (
+                public_parts.scheme,
+                public_parts.netloc,
+                current_parts.path,
+                current_parts.query,
+                current_parts.fragment,
+            )
+        )

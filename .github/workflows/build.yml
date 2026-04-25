@@ -224,3 +224,4 @@ jobs:
             git pull origin develop
 
             docker compose -f local.yml up -d --build
+            docker compose -f local.yml restart asrp_backend
