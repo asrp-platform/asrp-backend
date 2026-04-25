@@ -2,128 +2,116 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 
+from app.core.common.exceptions import InvalidMimeTypeError, PermissionDeniedError
 from app.core.common.responses import PermissionsResponses
-from app.core.config import settings
-from app.core.utils.save_file import save_file
-from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError, InvalidReorderItemsCountError
+from app.domains.directors_board.exceptions import InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
     BoardMemberSchema,
     CardOrderUpdate,
     CreateBoardMemberSchema,
     UpdateBoardMemberSchema,
 )
-from app.domains.directors_board.services import DirectorBoardMemberServiceDep
+from app.domains.directors_board.use_cases.create_directors_board_member import CreateDirectorsBoardMemberUseCaseDep
+from app.domains.directors_board.use_cases.delete_directors_board_member import DeleteDirectorsBoardMemberUseCaseDep
+from app.domains.directors_board.use_cases.get_directors_board_members import GetDirectorsBoardMembersUseCaseDep
+from app.domains.directors_board.use_cases.reorder_directors_board_members import ReorderDirectorsBoardMembersUseCaseDep
+from app.domains.directors_board.use_cases.update_directors_board_member import UpdateDirectorsBoardMemberUseCaseDep
+from app.domains.directors_board.use_cases.upload_directors_board_member_photo import (
+    UploadDirectorsBoardMemberPhotoUseCaseDep,
+)
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
+from app.domains.shared.schemas import UploadedImageSchema
+from app.domains.shared.types import FileData
 
 router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
 
 
-class ViewDirectorResponses(PermissionsResponses):
-    pass
-
-
-@router.get("", responses=ViewDirectorResponses.responses, summary="View all directors board (admin view)")
-async def get_all_director_members(
-    director_service: DirectorBoardMemberServiceDep,
-    permissions: AdminPermissionsDep,
+@router.get("", summary="View all directors board (admin view)")
+async def get_all_directors_board_members(
+    use_case: GetDirectorsBoardMembersUseCaseDep,
 ) -> list[BoardMemberSchema]:
-    if "directors_board.view" not in permissions:
-        raise ViewDirectorResponses.PERMISSION_ERROR
-    data, count = await director_service.get_all_directors()
+    data, count = await use_case.execute()
     return data
 
 
-class CreateDirectorResponses(PermissionsResponses):
+class CreateDirectorsBoardMemberResponses(PermissionsResponses):
     pass
 
 
 @router.post(
     "",
     status_code=201,
-    responses=CreateDirectorResponses.responses,
+    responses=CreateDirectorsBoardMemberResponses.responses,
     summary="Create a director board member",
 )
-async def create_director_member(
+async def create_directors_board_member(
     data: CreateBoardMemberSchema,
     permissions: AdminPermissionsDep,
-    director_service: DirectorBoardMemberServiceDep,
+    use_case: CreateDirectorsBoardMemberUseCaseDep,
 ) -> BoardMemberSchema:
-    if "directors_board.create" not in permissions:
-        raise CreateDirectorResponses.PERMISSION_ERROR
-    return await director_service.create_director_member(**data.model_dump())
+    return await use_case.execute(permissions, **data.model_dump())
 
 
-class UpdateDirectorMemberResponses(PermissionsResponses):
+class UpdateDirectorsBoardMemberResponses(PermissionsResponses):
     DIRECTOR_MEMBER_NOT_FOUND = 404, "Director member with provided ID not found"
 
 
 @router.patch(
     "/{director_member_id}",
-    responses=UpdateDirectorMemberResponses.responses,
+    responses=UpdateDirectorsBoardMemberResponses.responses,
     summary="Update a director board member",
 )
-async def update_director_member(
+async def update_directors_board_member(
     director_member_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
-    director_service: DirectorBoardMemberServiceDep,
+    use_case: UpdateDirectorsBoardMemberUseCaseDep,
     update_data: UpdateBoardMemberSchema,
 ) -> BoardMemberSchema:
-    if "directors_board.update" not in permissions:
-        raise UpdateDirectorMemberResponses.PERMISSION_ERROR
-    try:
-        update_data_dict = update_data.model_dump(exclude_unset=True)
-        updated_director_member = await director_service.update_director_member(director_member_id, update_data_dict)
-        return updated_director_member
-
-    except DirectionBoardMemberNotFoundError:
-        raise UpdateDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+    return await use_case.execute(permissions, director_member_id, **update_data.model_dump(exclude_unset=True))
 
 
-class DeleteDirectorMemberResponses(PermissionsResponses):
-    DIRECTOR_MEMBER_NOT_FOUND = 404, "Director member with provided ID not found"
+class DeleteDirectorsBoardMemberResponses(UpdateDirectorsBoardMemberResponses):
+    pass
 
 
 @router.delete(
     "/{director_member_id}",
-    responses=DeleteDirectorMemberResponses.responses,
+    responses=DeleteDirectorsBoardMemberResponses.responses,
     summary="Delete a director board member",
 )
-async def delete_director_member(
+async def delete_directors_board_member(
     director_member_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
-    director_service: DirectorBoardMemberServiceDep,
+    use_case: DeleteDirectorsBoardMemberUseCaseDep,
 ) -> int:
-    if "directors_board.delete" not in permissions:
-        raise DeleteDirectorMemberResponses.PERMISSION_ERROR
-    try:
-        deleted_id = await director_service.delete_director_member(director_member_id)
-        return deleted_id
-    except DirectionBoardMemberNotFoundError:
-        raise DeleteDirectorMemberResponses.DIRECTOR_MEMBER_NOT_FOUND
+    return await use_case.execute(permissions, director_member_id)
 
 
 class UploadImageResponses(PermissionsResponses):
     INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
 
-@router.post(
+@router.put(
     "/images",
-    status_code=201,
     responses=UploadImageResponses.responses,
     summary="Upload image for a director member",
 )
-async def upload_director_member_photo(
+async def upload_directors_board_member_photo(
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
-) -> dict:
-    if "directors_board.update" not in permissions:
-        raise UploadImageResponses.PERMISSION_ERROR
-    if not file.content_type.startswith("image/"):
+    use_case: UploadDirectorsBoardMemberPhotoUseCaseDep,
+) -> UploadedImageSchema:
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
+
+    try:
+        file_path = await use_case.execute(permissions, file_data)
+        return UploadedImageSchema(path=file_path)
+    except InvalidMimeTypeError:
         raise UploadImageResponses.INVALID_CONTENT_TYPE
-
-    relative_filepath = await save_file(file, settings.DIRECTORS_BOARD_UPLOADS_PATH)
-
-    return {"path": relative_filepath.as_posix()}
 
 
 class ReorderCardResponses(PermissionsResponses):
@@ -137,12 +125,12 @@ class ReorderCardResponses(PermissionsResponses):
 )
 async def reorder_cards(
     items: list[CardOrderUpdate],
-    director_service: DirectorBoardMemberServiceDep,
     permissions: AdminPermissionsDep,
+    use_case: ReorderDirectorsBoardMembersUseCaseDep,
 ):
-    if "directors_board.update" not in permissions:
-        raise ReorderCardResponses.PERMISSION_ERROR
     try:
-        await director_service.update_order(items)
+        await use_case.execute(permissions, items)
+    except PermissionDeniedError:
+        raise ReorderCardResponses.PERMISSION_ERROR
     except InvalidReorderItemsCountError:
         raise ReorderCardResponses.INVALID_REORDER_ITEMS_COUNT

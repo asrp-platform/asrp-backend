@@ -67,6 +67,14 @@ jobs:
           STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
           STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
+          S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET=${{ secrets.S3_BUCKET }}
+          S3_REGION=${{ secrets.S3_REGION }}
+
+          S3_ENDPOINT=http://localhost:9000
+          S3_PUBLIC_URL=http://localhost:9000
+
           EOF
 
           echo ".env written (secrets hidden)"
@@ -141,11 +149,19 @@ jobs:
           STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
           STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
+          S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET=${{ secrets.S3_BUCKET }}
+          S3_REGION=${{ secrets.S3_REGION }}
+
+          S3_ENDPOINT=http://localhost:9000
+          S3_PUBLIC_URL=http://localhost:9000
+
           EOF
 
       - name: Start DB with docker compose
         run: |
-          docker compose -f local.yml up -d asrp_database
+          docker compose -f local.yml up -d asrp_database minio
           docker compose -f local.yml ps
           docker compose -f local.yml logs --no-color --tail=50 asrp_database || true
 

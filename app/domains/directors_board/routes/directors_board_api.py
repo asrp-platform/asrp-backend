@@ -10,5 +10,5 @@ router = APIRouter(prefix="/directors-board", tags=["Directors board"])
 async def get_all_director_members(
     director_service: DirectorBoardMemberServiceDep,
 ) -> list[BoardMemberSchema]:
-    data, count = await director_service.get_all_directors()
+    data, count = await director_service.get_directors_board_members()
     return data
