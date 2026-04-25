@@ -72,8 +72,8 @@ jobs:
           S3_BUCKET=${{ secrets.S3_BUCKET }}
           S3_REGION=${{ secrets.S3_REGION }}
 
-          S3_ENDPOINT=http://minio:9000
-          S3_PUBLIC_URL=http://minio:9000
+          S3_ENDPOINT=http://localhost:9000
+          S3_PUBLIC_URL=http://localhost:9000
 
           EOF
 
