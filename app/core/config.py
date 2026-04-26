@@ -3,7 +3,7 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings
 
 from app.core.storage.base_storage import S3BaseStorage
@@ -35,10 +35,8 @@ class GmailConfig(BaseModel):
 class S3Config(BaseModel):
     S3_ACCESS_KEY: str = "minioadmin"
     S3_SECRET_KEY: str = "minioadmin"
-    S3_DEFAULT_BUCKET: str = "uploads"
+    S3_DEFAULT_BUCKET: str = Field(default="uploads", validation_alias=AliasChoices("S3_DEFAULT_BUCKET", "S3_BUCKET"))
     S3_REGION: str = "us-east-1"
-    S3_ENDPOINT: str = "http://localhost:9000"
-    S3_PUBLIC_URL: str = "http://localhost:9000"
 
 
 class Settings(BaseSettings, GmailConfig, S3Config):
@@ -67,8 +65,18 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     STRIPE_API_KEY: str
     STRIPE_WEBHOOK_SECRET: str
 
+    BACKEND_DOMAIN: str = "http://localhost"
+
     FRONTEND_DOMAIN_HTTP: str
     FRONTEND_DOMAIN: str
+
+    @property
+    def s3_endpoint_url(self) -> str:
+        return "http://localhost:9000" if DEV_MODE else "http://minio:9000"
+
+    @property
+    def s3_public_url(self) -> str:
+        return "http://localhost:9000" if DEV_MODE else self.BACKEND_DOMAIN
 
     @property
     def fernet_key_bytes(self):
@@ -83,10 +91,10 @@ settings = Settings()
 s3_storage = S3BaseStorage(
     access_key=settings.S3_ACCESS_KEY,
     secret_key=settings.S3_SECRET_KEY,
-    endpoint_url=settings.S3_ENDPOINT,
+    endpoint_url=settings.s3_endpoint_url,
     default_bucket_name=settings.S3_DEFAULT_BUCKET,
     region_name=settings.S3_REGION,
-    public_url=settings.S3_PUBLIC_URL,
+    public_url=settings.s3_public_url,
 )
 fernet = Fernet(settings.fernet_key_bytes)
 

@@ -22,6 +22,33 @@ services:
     networks:
       - internal
 
+  asrp_backend:
+    container_name: asrp_backend
+    build:
+      context: .
+      dockerfile: compose/backend/Dockerfile
+    depends_on:
+      asrp_database:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DB_HOST: asrp_database
+      DB_PORT: 5432
+      S3_ENDPOINT: http://minio:9000
+    expose:
+      - "8000"
+    restart: unless-stopped
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./logs:/app/logs
+      - ./media:/app/media
+    networks:
+      - internal
+
   minio:
     container_name: minio
     image: minio/minio:latest
@@ -40,17 +67,33 @@ services:
     networks:
       - internal
 
+  nginx:
+    container_name: nginx
+    image: nginx:1.27-alpine
+    depends_on:
+      - asrp_backend
+      - minio
+    ports:
+      - "80:80"
+    volumes:
+      - ./compose/nginx/nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    networks:
+      - internal
+
   stripe_cli:
     container_name: stripe_cli
     image: stripe/stripe-cli:latest
     profiles:
       - stripe
+    depends_on:
+      - asrp_backend
     env_file:
       - .env
     environment:
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_DEVICE_NAME: docker-stripe-cli
-    command: listen --forward-to http://host.docker.internal:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
+    command: listen --forward-to http://asrp_backend:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
     restart: unless-stopped
     networks:
       - internal

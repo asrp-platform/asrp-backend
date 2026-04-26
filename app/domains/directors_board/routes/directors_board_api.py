@@ -6,7 +6,7 @@ from app.domains.directors_board.services import DirectorBoardMemberServiceDep
 router = APIRouter(prefix="/directors-board", tags=["Directors board"])
 
 
-@router.get("", summary="View all directors board (admin view)")
+@router.get("", summary="View all directors board members")
 async def get_all_director_members(
     director_service: DirectorBoardMemberServiceDep,
 ) -> list[BoardMemberSchema]:
