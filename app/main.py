@@ -6,7 +6,6 @@ from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from starlette.staticfiles import StaticFiles
 
 from app.core.common.exceptions import (
     NotFoundError,
@@ -50,8 +49,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
 )
-
-app.mount(settings.MEDIA_API_PATH, StaticFiles(directory=settings.MEDIA_DIR_NAME), name=settings.MEDIA_DIR_NAME)
 
 
 @app.exception_handler(NotFoundError)

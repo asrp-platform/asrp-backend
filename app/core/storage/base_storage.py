@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import timedelta
-from urllib.parse import urlsplit, urlunsplit
 
 from aiobotocore.session import get_session
 from botocore.exceptions import ClientError as BotocoreClientError
@@ -20,25 +19,46 @@ class S3BaseStorage:
         access_key: str,
         secret_key: str,
         endpoint_url: str,
+        public_url: str,
         default_bucket_name: str,
         region_name: str,
-        public_url: str | None = None,
     ):
-        self.config = {
-            "aws_access_key_id": access_key,
-            "aws_secret_access_key": secret_key,
-            "endpoint_url": endpoint_url,
-            "region_name": region_name,
-        }
         self.default_bucket_name = default_bucket_name
         self.session = get_session()
         self.region_name = region_name
+
         self.endpoint_url = endpoint_url.rstrip("/")
-        self.public_url = (public_url or endpoint_url).rstrip("/")
+        self.public_url = public_url.rstrip("/")
+
+        self.config = {
+            "aws_access_key_id": access_key,
+            "aws_secret_access_key": secret_key,
+            "endpoint_url": self.endpoint_url,
+            "region_name": self.region_name,
+        }
+
+        self.public_config = {
+            "aws_access_key_id": access_key,
+            "aws_secret_access_key": secret_key,
+            "endpoint_url": self.public_url,
+            "region_name": self.region_name,
+        }
 
     @asynccontextmanager
     async def get_client(self):
+        """
+        Client for internal backend -> MinIO operations:
+        upload, delete, list, bucket_exists, etc.
+        """
         async with self.session.create_client("s3", **self.config) as client:
+            yield client
+
+    @asynccontextmanager
+    async def get_public_client(self):
+        """
+        Client only for generating URLs that browser can open.
+        """
+        async with self.session.create_client("s3", **self.public_config) as client:
             yield client
 
     async def upload_file(
@@ -70,7 +90,7 @@ class S3BaseStorage:
         if not await self._check_object_exists(object_key, bucket):
             return None
 
-        async with self.get_client() as client:
+        async with self.get_public_client() as client:
             url = await client.generate_presigned_url(
                 "get_object",
                 Params={
@@ -79,7 +99,7 @@ class S3BaseStorage:
                 },
                 ExpiresIn=int(timedelta(hours=1).total_seconds()),
             )
-            return self._replace_url_host(url)
+            return url
 
     async def delete_object(self, object_key: str, bucket_name: str | None = None) -> None:
         bucket = bucket_name or self.default_bucket_name
@@ -114,21 +134,3 @@ class S3BaseStorage:
                     error_code = e.response.get("Error", {}).get("Code")
                     if error_code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
                         raise
-
-    def _replace_url_host(self, url: str) -> str:
-        endpoint_parts = urlsplit(self.endpoint_url)
-        public_parts = urlsplit(self.public_url)
-        current_parts = urlsplit(url)
-
-        if current_parts.netloc != endpoint_parts.netloc:
-            return url
-
-        return urlunsplit(
-            (
-                public_parts.scheme,
-                public_parts.netloc,
-                current_parts.path,
-                current_parts.query,
-                current_parts.fragment,
-            )
-        )

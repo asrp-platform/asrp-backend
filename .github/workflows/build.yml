@@ -47,7 +47,7 @@ jobs:
 
 
           BACKEND_DOMAIN=asrp_backend
-          BACKEND_PORT=8000
+
 
           FRONTEND_DOMAIN=http://localhost:3000
           FRONTEND_DOMAIN_HTTP=http://localhost:3000
@@ -129,7 +129,6 @@ jobs:
           ALGORITHM=${{ secrets.ALGORITHM }}
 
           BACKEND_DOMAIN=asrp_backend
-          BACKEND_PORT=8000
 
           FRONTEND_DOMAIN=http://localhost:3000
           FRONTEND_DOMAIN_HTTP=http://localhost:3000
