@@ -6,13 +6,15 @@ on:
       - main
       - develop
   pull_request:
-    branches: ["*"]
+  workflow_dispatch:
 
 jobs:
-  prepare:
+  lint:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -20,37 +22,94 @@ jobs:
 
       - name: Install Poetry
         run: |
-          python3 -m pip install --upgrade pip pipx
-          pipx ensurepath
+          python -m pip install --upgrade pip pipx
           pipx install poetry
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           poetry --version
 
-      - name: Install deps
+      - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Lint (ruff)
+      - name: Write CI .env
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_PASSWORD=test
+          DB_USER=test
+          DB_NAME=test
+
+          DEV_MODE=true
+
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FERNET_KEY=${{ secrets.FERNET_KEY }}
+          ALGORITHM=${{ secrets.ALGORITHM }}
+
+          GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
+          GMAIL_FROM=${{ secrets.GMAIL_FROM }}
+          GMAIL_PORT=${{ secrets.GMAIL_PORT }}
+          GMAIL_SERVER=${{ secrets.GMAIL_SERVER }}
+
+          S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET=${{ secrets.S3_BUCKET }}
+          S3_REGION=${{ secrets.S3_REGION }}
+
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+
+          BACKEND_DOMAIN=http://localhost:8000
+          FRONTEND_DOMAIN_HTTP=http://localhost:3000
+          FRONTEND_DOMAIN=http://localhost:3000
+          EOF
+
+      - name: Lint
         run: poetry run ruff check .
 
-  migrations:
+      - name: Validate dev-server compose
+        run: docker compose -f docker-compose.dev.yml config
+
+      - name: Validate local compose
+        run: docker compose -f local.yml config
+
+  migrations_dev_server:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write .env
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip pipx
+          pipx install poetry
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          poetry --version
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Write CI .env
         shell: bash
         run: |
           cat > .env <<'EOF'
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_PASSWORD=test
+          DB_USER=test
+          DB_NAME=test
+
+          DEV_MODE=true
+
           SECRET_KEY=${{ secrets.SECRET_KEY }}
           FERNET_KEY=${{ secrets.FERNET_KEY }}
           ALGORITHM=${{ secrets.ALGORITHM }}
-
-
-          BACKEND_DOMAIN=asrp_backend
-
-
-          FRONTEND_DOMAIN=http://localhost:3000
-          FRONTEND_DOMAIN_HTTP=http://localhost:3000
 
           GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
           GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
@@ -58,80 +117,86 @@ jobs:
           GMAIL_PORT=${{ secrets.GMAIL_PORT }}
           GMAIL_SERVER=${{ secrets.GMAIL_SERVER }}
 
-          DB_PORT=5432
-          DB_PASSWORD=test
-          DB_USER=test
-          DB_NAME=test
-          DB_HOST=localhost
-
-          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
-          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-
           S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
           S3_BUCKET=${{ secrets.S3_BUCKET }}
           S3_REGION=${{ secrets.S3_REGION }}
 
-          S3_ENDPOINT=http://localhost:9000
-          S3_PUBLIC_URL=http://localhost:9000
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
+          BACKEND_DOMAIN=http://localhost:8000
+          FRONTEND_DOMAIN_HTTP=http://localhost:3000
+          FRONTEND_DOMAIN=http://localhost:3000
           EOF
 
-          echo ".env written (secrets hidden)"
+      - name: Build backend image
+        run: docker compose -f docker-compose.dev.yml build asrp_backend
 
-      - name: Start DB with docker compose
-        run: |
-          docker compose -f local.yml up -d asrp_database
-          docker compose -f local.yml ps
-          docker compose -f local.yml logs --no-color --tail=50 asrp_database || true
+      - name: Start dev-server migration services
+        run: docker compose -f docker-compose.dev.yml up -d asrp_database minio
 
       - name: Wait for Postgres
         shell: bash
         run: |
           for i in {1..12}; do
-            if docker compose -f local.yml exec -T asrp_database pg_isready -U test; then
-              echo "PostgreSQL is ready"; exit 0
+            if docker compose -f docker-compose.dev.yml exec -T asrp_database pg_isready -U test -d test; then
+              echo "PostgreSQL is ready"
+              exit 0
             fi
             echo "Waiting for PostgreSQL... ($i/12)"
             sleep 5
           done
-          echo "PostgreSQL failed to start"
-          docker compose -f local.yml logs asrp_database || true
+          docker compose -f docker-compose.dev.yml logs asrp_database || true
           exit 1
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-
-      - name: Install Poetry & deps
-        run: |
-          python3 -m pip install --upgrade pip pipx
-          pipx ensurepath
-          pipx install poetry
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          poetry install --with dev
-
-      - name: Run Alembic migrations
+      - name: Apply migrations
         run: poetry run alembic upgrade head
 
-  tests:
+      - name: Dump dev-server service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.dev.yml logs --no-color || true
+
+      - name: Stop dev-server migration services
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v
+
+  tests_dev_server:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write .env
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip pipx
+          pipx install poetry
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          poetry --version
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Write CI .env
         shell: bash
         run: |
           cat > .env <<'EOF'
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_PASSWORD=test
+          DB_USER=test
+          DB_NAME=test
+
+          DEV_MODE=true
+
           SECRET_KEY=${{ secrets.SECRET_KEY }}
           FERNET_KEY=${{ secrets.FERNET_KEY }}
           ALGORITHM=${{ secrets.ALGORITHM }}
-
-          BACKEND_DOMAIN=asrp_backend
-
-          FRONTEND_DOMAIN=http://localhost:3000
-          FRONTEND_DOMAIN_HTTP=http://localhost:3000
 
           GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
           GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
@@ -139,74 +204,146 @@ jobs:
           GMAIL_PORT=${{ secrets.GMAIL_PORT }}
           GMAIL_SERVER=${{ secrets.GMAIL_SERVER }}
 
-          DB_PORT=5432
-          DB_PASSWORD=test
-          DB_USER=test
-          DB_NAME=test
-          DB_HOST=localhost
-
-          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
-          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-
           S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
           S3_BUCKET=${{ secrets.S3_BUCKET }}
           S3_REGION=${{ secrets.S3_REGION }}
 
-          S3_ENDPOINT=http://localhost:9000
-          S3_PUBLIC_URL=http://localhost:9000
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
+          BACKEND_DOMAIN=http://localhost:8000
+          FRONTEND_DOMAIN_HTTP=http://localhost:3000
+          FRONTEND_DOMAIN=http://localhost:3000
           EOF
 
-      - name: Start DB with docker compose
-        run: |
-          docker compose -f local.yml up -d asrp_database minio
-          docker compose -f local.yml ps
-          docker compose -f local.yml logs --no-color --tail=50 asrp_database || true
+      - name: Start dev-server test services
+        run: docker compose -f docker-compose.dev.yml up -d asrp_database minio
 
       - name: Wait for Postgres
         shell: bash
         run: |
           for i in {1..12}; do
-            if docker compose -f local.yml exec -T asrp_database pg_isready -U test; then
-              echo "PostgreSQL is ready"; exit 0
+            if docker compose -f docker-compose.dev.yml exec -T asrp_database pg_isready -U test -d test; then
+              echo "PostgreSQL is ready"
+              exit 0
             fi
             echo "Waiting for PostgreSQL... ($i/12)"
             sleep 5
           done
-          echo "PostgreSQL failed to start"
-          docker compose -f local.yml logs asrp_database || true
+          docker compose -f docker-compose.dev.yml logs asrp_database || true
           exit 1
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-
-      - name: Install Poetry & deps
-        run: |
-          python3 -m pip install --upgrade pip pipx
-          pipx ensurepath
-          pipx install poetry
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          poetry install --with dev
-          mkdir -p media/directors_board_uploads
-
-      - name: Ensure schema up
+      - name: Apply migrations
         run: poetry run alembic upgrade head
 
       - name: Run tests
         run: poetry run pytest
 
+      - name: Dump dev-server service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.dev.yml logs --no-color || true
+
+      - name: Stop dev-server test services
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v
+
+  smoke_local:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip pipx
+          pipx install poetry
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          poetry --version
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Write local CI .env
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_PASSWORD=test
+          DB_USER=test
+          DB_NAME=test
+
+          DEV_MODE=true
+
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FERNET_KEY=${{ secrets.FERNET_KEY }}
+          ALGORITHM=${{ secrets.ALGORITHM }}
+
+          GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
+          GMAIL_FROM=${{ secrets.GMAIL_FROM }}
+          GMAIL_PORT=${{ secrets.GMAIL_PORT }}
+          GMAIL_SERVER=${{ secrets.GMAIL_SERVER }}
+
+          S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET=${{ secrets.S3_BUCKET }}
+          S3_REGION=${{ secrets.S3_REGION }}
+
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+
+          BACKEND_DOMAIN=http://localhost:8000
+          FRONTEND_DOMAIN_HTTP=http://localhost:3000
+          FRONTEND_DOMAIN=http://localhost:3000
+          EOF
+
+      - name: Start local-dev services
+        run: docker compose -f local.yml up -d asrp_database minio
+
+      - name: Wait for Postgres
+        shell: bash
+        run: |
+          for i in {1..12}; do
+            if docker compose -f local.yml exec -T asrp_database pg_isready -U test -d test; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... ($i/12)"
+            sleep 5
+          done
+          docker compose -f local.yml logs asrp_database || true
+          exit 1
+
+      - name: Apply migrations against local stack
+        run: poetry run alembic upgrade head
+
+      - name: Dump local service logs on failure
+        if: failure()
+        run: docker compose -f local.yml logs --no-color || true
+
+      - name: Stop local-dev services
+        if: always()
+        run: docker compose -f local.yml down -v
+
   deploy_dev:
-    needs: [prepare, migrations, tests]
+    needs:
+      - lint
+      - migrations_dev_server
+      - tests_dev_server
+      - smoke_local
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to dev server via SSH
+      - name: Deploy to dev server
         uses: appleboy/ssh-action@v1.2.0
-
         with:
           host: ${{ secrets.DEV_HOST }}
           username: ${{ secrets.DEV_USER }}
@@ -220,7 +357,6 @@ jobs:
 
             git fetch origin
             git checkout develop
-            git pull origin develop
+            git pull --ff-only origin develop
 
-            docker compose -f local.yml up -d --build
-            docker compose -f local.yml restart asrp_backend
+            docker compose -f docker-compose.dev.yml up -d --build
