@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 
-from app.core.common.exceptions import InvalidMimeTypeError, PermissionDeniedError
+from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.common.responses import PermissionsResponses
 from app.domains.directors_board.exceptions import InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
@@ -130,7 +130,5 @@ async def reorder_cards(
 ):
     try:
         await use_case.execute(permissions, items)
-    except PermissionDeniedError:
-        raise ReorderCardResponses.PERMISSION_ERROR
     except InvalidReorderItemsCountError:
         raise ReorderCardResponses.INVALID_REORDER_ITEMS_COUNT

@@ -21,8 +21,7 @@ class CreateDirectorsBoardMemberUseCase:
     async def execute(self, permissions, **kwargs) -> DirectorBoardMember:
         check_permissions("directors_board.create", permissions)
         async with self.__transaction_manager:
-            member = await self.__directors_board_service.create_director_member(**kwargs)
-        return await self.__directors_board_service.hydrate_photo_url(member)
+            return await self.__directors_board_service.create_director_member(**kwargs)
 
 
 def get_use_case(

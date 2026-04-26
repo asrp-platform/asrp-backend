@@ -16,7 +16,13 @@ class DirectorsBoardService:
         self.bucket_name = settings.S3_DEFAULT_BUCKET
 
     async def get_directors_board_members(self):
-        return await self.transaction_manager.directors_board_member_repository.list()
+        members, count = await self.transaction_manager.directors_board_member_repository.list()
+
+        for member in members:
+            if member.photo_url:
+                member.photo_url = await self.get_photo_url_by_object_key(member.photo_url)
+
+        return members, count
 
     async def create_director_member(self, **kwargs):
         max_order = (
@@ -51,18 +57,7 @@ class DirectorsBoardService:
             )
             await self.transaction_manager._session.commit()
 
-    async def hydrate_photo_urls(self, members: list[DirectorBoardMember]) -> None:
-        for member in members:
-            member.photo_url = await self._get_fresh_photo_url(member.photo_url)
-
-    async def hydrate_photo_url(self, member: DirectorBoardMember) -> DirectorBoardMember:
-        member.photo_url = await self._get_fresh_photo_url(member.photo_url)
-        return member
-
-    async def _get_fresh_photo_url(self, stored_value: str | None) -> str | None:
-        object_key = self._extract_object_key(stored_value)
-        if object_key is None:
-            return None
+    async def get_photo_url_by_object_key(self, object_key: str) -> str:
         return await self.file_storage.get_presigned_object(object_key)
 
     def _extract_object_key(self, stored_value: str | None) -> str | None:

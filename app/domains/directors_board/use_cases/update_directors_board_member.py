@@ -21,8 +21,7 @@ class UpdateDirectorsBoardMemberUseCase:
     async def execute(self, permissions, director_member_id: int, **kwargs) -> DirectorBoardMember:
         check_permissions("directors_board.update", permissions)
         async with self.__transaction_manager:
-            member = await self.__directors_board_service.update_director_member(director_member_id, **kwargs)
-        return await self.__directors_board_service.hydrate_photo_url(member)
+            return await self.__directors_board_service.update_director_member(director_member_id, **kwargs)
 
 
 def get_use_case(
