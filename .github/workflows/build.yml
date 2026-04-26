@@ -74,7 +74,7 @@ jobs:
       - name: Validate local compose
         run: docker compose -f local.yml config
 
-  migrations_dev_server:
+  migrations:
     runs-on: ubuntu-latest
 
     steps:
@@ -161,7 +161,7 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.dev.yml down -v
 
-  tests_dev_server:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -248,7 +248,7 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.dev.yml down -v
 
-  smoke_local:
+  check_local:
     runs-on: ubuntu-latest
 
     steps:
@@ -335,9 +335,8 @@ jobs:
   deploy_dev:
     needs:
       - lint
-      - migrations_dev_server
-      - tests_dev_server
-      - smoke_local
+      - migrations
+      - tests
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 

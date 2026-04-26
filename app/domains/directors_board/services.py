@@ -58,7 +58,10 @@ class DirectorsBoardService:
             await self.transaction_manager._session.commit()
 
     async def get_photo_url_by_object_key(self, object_key: str) -> str:
-        return await self.file_storage.get_presigned_object(object_key)
+        normalized_object_key = self._extract_object_key(object_key)
+        if normalized_object_key is None:
+            return object_key
+        return await self.file_storage.get_presigned_object(normalized_object_key)
 
     def _extract_object_key(self, stored_value: str | None) -> str | None:
         if stored_value is None:
