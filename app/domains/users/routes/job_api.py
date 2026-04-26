@@ -31,8 +31,7 @@ async def get_user_jobs(
     user_id: int,
     service: JobServiceDep,
 ) -> list[JobViewSchema]:
-    user_jobs = await service.list_for_user(user_id)
-    return [JobViewSchema.model_validate(job) for job in user_jobs]
+    return await service.list_for_user(user_id)
 
 
 class GetSingleUserJobResponses(GetUserJobsResponses):
@@ -49,11 +48,10 @@ async def get_single_user_job(
     job_id: int,
     service: JobServiceDep,
 ) -> JobViewSchema:
-    user_job = await service.get_for_user(
+    return await service.get_for_user(
         user_id=user_id,
         resource_id=job_id,
     )
-    return JobViewSchema.model_validate(user_job)
 
 
 class CreateUserJobResponses(GetUserJobsResponses):
