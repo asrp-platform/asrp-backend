@@ -4,9 +4,9 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.core.common.exceptions import NotFoundError
 from app.domains.memberships.exceptions import (
     MembershipRequestAlreadyExistsError,
-    MembershipRequestNotFoundError,
     MembershipTypeNotFoundError,
 )
 from app.domains.memberships.models import MembershipRequest, MembershipType, MembershipTypeEnum
@@ -38,11 +38,13 @@ class MembershipService:
             )
 
     async def get_membership_request_by_id(self, membership_request_id: int) -> MembershipRequest:
+        stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
         membership_request = await self.transaction_manager.membership_requests_repository.get_first_by_kwargs(
-            id=membership_request_id
+            stmt=stmt,
+            id=membership_request_id,
         )
         if membership_request is None:
-            raise MembershipRequestNotFoundError("Membership request with provided ID not found")
+            raise NotFoundError("Membership request with provided ID not found")
         return membership_request
 
     async def get_membership_type(self, membership_type: MembershipTypeEnum) -> MembershipType:
@@ -74,7 +76,7 @@ class MembershipService:
             id=membership_request_id
         )
         if membership_request is None:
-            raise MembershipRequestNotFoundError("Membership request with provided ID not found")
+            raise NotFoundError("Membership request with provided ID not found")
         return await self.transaction_manager.membership_requests_repository.update(membership_request_id, **kwargs)
 
 

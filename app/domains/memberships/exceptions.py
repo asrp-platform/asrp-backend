@@ -1,10 +1,6 @@
 from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
 
 
-class MembershipRequestNotFoundError(NotFoundError):
-    pass
-
-
 class MembershipNotActiveError(Exception):
     pass
 

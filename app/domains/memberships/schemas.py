@@ -51,3 +51,8 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
     model_config = {
         "from_attributes": True,
     }
+
+
+class MembershipRequestUpdateAdminSchema(BaseModel):
+    status: MembershipRequestStatusEnum
+    admin_comment: str

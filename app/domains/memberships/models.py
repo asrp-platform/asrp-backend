@@ -69,8 +69,13 @@ class MembershipRequest(Base, UCIMixin):
     reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     admin_comment: Mapped[str | None] = mapped_column(nullable=True)
 
+    reviewer_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewer: Mapped["User"] = relationship(
+        "User", back_populates="reviewed_membership_request", foreign_keys=[reviewer_id]
+    )
+
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="membership_request")
+    user: Mapped["User"] = relationship("User", back_populates="membership_request", foreign_keys=[user_id])
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="membership_requests")

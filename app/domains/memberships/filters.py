@@ -7,4 +7,5 @@ from app.domains.memberships.models import MembershipRequestStatusEnum
 
 
 class MembershipRequestsFilters(BaseModel):
+    user_id: Annotated[int | None, Query(description="Membership request user ID filter")] = None
     status: Annotated[MembershipRequestStatusEnum | None, Query(description="Membership request status filter")] = None
