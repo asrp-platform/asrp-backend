@@ -1,22 +1,6 @@
 # ASRP Backend
 
-
-
-
-## Backend Setup Guide
-
-This guide explains how to run the **PostgreSQL database** and the **FastAPI backend** for the ASRP project in two common scenarios:
-
-1. Running **Database + Backend via Docker**
-2. Running **only the Database via Docker** and starting the backend locally from an IDE
-
-
-
-
-
-
-## Setup development environment using Docker
-
+## Local development setup guide
 
 ### Environment Configuration
 
@@ -33,27 +17,34 @@ Necessary envs:
 
 - `DEV_MODE=true`
 
+
 - `SECRET_KEY`
 - `FERNET_KEY`
 - `ALGORITHM=HS256`
+
 
 - `S3_ACCESS_KEY=minio_admin`
 - `S3_SECRET_KEY=minio_admin`
 - `S3_BUCKET=uploads`
 - `S3_REGION=us-east-1`
 
-- `S3_ENDPOINT=http://localhost:9000`
-- `S3_PUBLIC_URL=http://localhost:9000`
+
+- `STRIPE_API_KEY` - call team lead to get if needed
+- `STRIPE_WEBHOOK_SECRET` - can be gotten from stripe-cli
+
+
+- `FRONTEND_DOMAIN_HTTP=http://localhost:3000`
+- `FRONTEND_DOMAIN=http://localhost:3000`
 
 `SECRET_KEY` and `FERNET_KEY` must be generated manually
 
 #### DB_HOST
 
-When running backend inside Docker:
-DB_HOST=asrp_database
+When running backend locally using IDE:
+`DB_HOST=localhost`
 
-When running backend locally from IDE:
-DB_HOST=localhost
+When running backend inside Docker (deployment case):
+`DB_HOST=asrp_database`
 
 #### DEV_MODE
 
@@ -86,7 +77,7 @@ Ask team lead to get restricted stripe api key
 
 #### Stripe Webhook Secret
 
-STRIPE_WEBHOOK_SECRET can be retrieved from the stripe-cli docker container. Check the container logs after it started
+`STRIPE_WEBHOOK_SECRET` can be retrieved from the stripe-cli docker container. Check the container logs after it started
 
 
 ### Start and build containers
@@ -95,39 +86,37 @@ STRIPE_WEBHOOK_SECRET can be retrieved from the stripe-cli docker container. Che
 docker compose -f ./local.yml up --build -d
 ```
 
-Database migrations are applied automatically using `alembic upgrade head` command in *compose/backend/entrypoint.sh*
-
-For deployment the `DB_HOST` environment variable should match the database service name specified in `local.yml`.
-For local development set `DB_HOST` to `localhost`.
-
-
-### Setup development environment using IDE
-
-#### Start and build database container (DEV)
-
-```shell
-docker compose -f local.yml up -d asrp_database minio stripe-cli
-```
-
-#### Install dependencies
+### Install dependencies
 
 ```shell
 poetry install
 ```
 
-#### Apply database migrations
+### Install pre-commit
+
+```bash
+pre-commit install
+```
+
+### Apply database migrations
 
 ```shell
 alembic upgrade head
 ```
 
-#### Run the app
+### Run the app
 
 ```shell
 uvicorn app.main:app --reload
 ```
 
+### Run tests
 
+All tests are run using a dedicated test database.
+
+```shell
+pytest -v tests
+```
 
 
 ## Naming
@@ -164,50 +153,73 @@ We use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) to
 - chore: (msg) — for maintenance tasks
 
 
-## Main services
+## Services
 
 ### App
 
-Root URL of api must start with `api/` prefix. For example:
+FastAPI application is defined in `app/main.py`.
+
+When the app is started locally with Uvicorn, it is available at:
+
+```shell
+http://localhost:8000
+```
+
+API routes are mounted under the `/api` prefix. For example:
 
 ```
 http://localhost:8000/api/users/1
 ```
 
+Healthcheck endpoint:
+
+```shell
+http://localhost:8000/healthcheck
+```
+
 ### Database
+
+PostgreSQL is used as the main database.
 
 
 ### File storage
 
-We use MinIO as a file storage. Minio web interface is accessible via
+MinIO is used as S3-compatible file storage.
 
+S3 API endpoint:
+
+```shell
+http://localhost:9000
 ```
+
+MinIO web console:
+
+```shell
 http://localhost:9001/login
 ```
 
+Credentials are taken from `S3_ACCESS_KEY` and `S3_SECRET_KEY`.
+
+The default bucket is configured by `S3_BUCKET` or `S3_DEFAULT_BUCKET`.
+
+
 ### Stripe CLI
 
-If backend is running as a docker-container command in `local.yml` need must be:
+Stripe CLI is used to forward Stripe webhook events to the backend.
 
-```yml
-listen --forward-to http://asrp_backend:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
-```
-
-If backend runs on a host mush be set as a `host.docker.internal`:
-
-```yml
-listen --forward-to http://host.docker.internal:8000/api/payments/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,payment_intent.succeeded,payment_intent.payment_failed
-```
-
-
-### Tests
-
-All tests are run using a dedicated test database.
+In `local.yml`, the service command points to:
 
 ```shell
-pytest -v tests
+http://localhost:8000/api/payments/stripe/webhook
 ```
 
+The service listens for these events:
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
 
 ## Troubleshooting
 
@@ -229,5 +241,5 @@ WHERE NOT EXISTS (
 ### Update nginx config in container
 
 ```shell
-docker exec nginx_server service nginx restart
+docker exec nginx service nginx restart
 ```
