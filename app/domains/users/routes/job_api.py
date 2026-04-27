@@ -31,8 +31,7 @@ async def get_user_jobs(
     user_id: int,
     service: JobServiceDep,
 ) -> list[JobViewSchema]:
-    user_jobs = await service.get_by_user_id(user_id)
-    return [JobViewSchema.model_validate(job) for job in user_jobs]
+    return await service.list_for_user(user_id)
 
 
 class GetSingleUserJobResponses(GetUserJobsResponses):
@@ -49,11 +48,10 @@ async def get_single_user_job(
     job_id: int,
     service: JobServiceDep,
 ) -> JobViewSchema:
-    user_job = await service.get_user_job_by_id(
+    return await service.get_for_user(
         user_id=user_id,
-        job_id=job_id,
+        resource_id=job_id,
     )
-    return JobViewSchema.model_validate(user_job)
 
 
 class CreateUserJobResponses(GetUserJobsResponses):
@@ -74,7 +72,7 @@ async def create_job_for_user(
     job_creation_data: JobCreateSchema,
 ) -> JobViewSchema:
     try:
-        user_job = await service.create_user_job(
+        user_job = await service.create_for_user(
             user_id,
             current_user.id,
             **job_creation_data.model_dump(),
@@ -102,7 +100,7 @@ async def update_user_job(
     job_update_data: JobUpdateSchema,
 ) -> JobViewSchema:
     try:
-        user_job = await service.update_user_job(
+        user_job = await service.update_for_user(
             user_id,
             current_user.id,
             job_id,
@@ -132,7 +130,7 @@ async def delete_user_job(
     current_user: CurrentUserDep,
     service: JobServiceDep,
 ) -> int:
-    return await service.delete_user_job(
+    return await service.delete_for_user(
         user_id,
         current_user.id,
         job_id,

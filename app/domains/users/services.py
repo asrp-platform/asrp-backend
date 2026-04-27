@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Generic, Literal, TypeVar
 from uuid import uuid4
 
 from fastapi import Depends
@@ -163,18 +163,31 @@ class ProfessionalInformationService:
                 return await self.transaction_manager.professional_information_repository.create(**data)
 
 
-class ProfessionalExperienceBaseService:
-    def __init__(self, transaction_manager):
+ProfessionalExperienceT = TypeVar("ProfessionalExperienceT")
+
+
+class BaseUserOwnedService(Generic[ProfessionalExperienceT]):
+    def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
+
+    @property
+    def _repository(self):
+        raise NotImplementedError
+
+    @property
+    def _not_found_error(self):
+        raise NotImplementedError
+
+    @property
+    def _entity_name(self) -> str:
+        raise NotImplementedError
 
     async def _check_resource_owner(
         self,
         user_id: int,
         *,
-        current_user_id: int = None,
-        residency_id: int = None,
-        fellowship_id: int = None,
-        job_id: int = None,
+        current_user_id: int | None = None,
+        resource_id: int | None = None,
     ) -> None:
         user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
@@ -184,24 +197,72 @@ class ProfessionalExperienceBaseService:
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
-        if residency_id is not None:
-            residency = await self.transaction_manager.residency_repository.get_first_by_kwargs(
-                id=residency_id, user_id=user_id
-            )
-            if residency is None:
-                raise ResidencyNotFoundError("Residency with provided ID not found")
+        if resource_id is not None:
+            resource = await self._repository.get_first_by_kwargs(id=resource_id, user_id=user_id)
+            if resource is None:
+                raise self._not_found_error(f"{self._entity_name} with provided ID not found")
 
-        if fellowship_id is not None:
-            fellowship = await self.transaction_manager.fellowship_repository.get_first_by_kwargs(
-                id=fellowship_id, user_id=user_id
-            )
-            if fellowship is None:
-                raise FellowshipNotFoundError("Fellowship with provided ID not found")
+    async def list_for_user(self, user_id: int) -> list[ProfessionalExperienceT]:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id)
+            return await self._repository.get_all_by_kwargs(user_id=user_id)
 
-        if job_id is not None:
-            job = await self.transaction_manager.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
-            if job is None:
-                raise JobNotFoundError("Job with provided ID not found")
+    async def get_for_user(self, user_id: int, resource_id: int) -> ProfessionalExperienceT:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id, resource_id=resource_id)
+            return await self._repository.get_first_by_kwargs(id=resource_id, user_id=user_id)
+
+    async def create_for_user(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalExperienceT:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id)
+            return await self._repository.create(user_id=user_id, **kwargs)
+
+    async def update_for_user(
+        self,
+        user_id: int,
+        current_user_id: int,
+        resource_id: int,
+        update_data: dict,
+    ) -> ProfessionalExperienceT:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, resource_id=resource_id)
+            return await self._repository.update(resource_id, **update_data)
+
+    async def delete_for_user(
+        self,
+        user_id: int,
+        current_user_id: int,
+        resource_id: int,
+    ) -> int:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, resource_id=resource_id)
+            return await self._repository.mark_as_deleted(resource_id)
+
+
+class ProfessionalExperienceBaseService(BaseUserOwnedService[ProfessionalExperienceT]):
+    async def create_for_user(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalExperienceT:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id)
+
+            if kwargs.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
+            return await self._repository.create(user_id=user_id, **kwargs)
+
+    async def update_for_user(
+        self,
+        user_id: int,
+        current_user_id: int,
+        resource_id: int,
+        update_data: dict,
+    ) -> ProfessionalExperienceT:
+        async with self.transaction_manager:
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, resource_id=resource_id)
+
+            if update_data.get("current_position"):
+                await self._check_current_position_selected(user_id)
+
+            return await self._repository.update(resource_id, **update_data)
 
     async def _check_current_position_selected(self, user_id: int) -> None:
         residency = await self.transaction_manager.residency_repository.get_first_by_kwargs(
@@ -216,181 +277,58 @@ class ProfessionalExperienceBaseService:
             raise ProfessionalExperienceCurrentPositionExistsError("Current position has already been selected")
 
 
-class ResidencyService(ProfessionalExperienceBaseService):
-    async def get_by_user_id(self, user_id: int) -> list[Residency]:
+class ResidencyService(ProfessionalExperienceBaseService[Residency]):
+    @property
+    def _repository(self):
+        return self.transaction_manager.residency_repository
+
+    @property
+    def _not_found_error(self):
+        return ResidencyNotFoundError
+
+    @property
+    def _entity_name(self) -> str:
+        return "Residency"
+
+    async def delete_for_user(self, user_id: int, current_user_id: int, resource_id: int) -> int:
         async with self.transaction_manager:
-            await self._check_resource_owner(user_id)
+            await self._check_resource_owner(user_id, current_user_id=current_user_id, resource_id=resource_id)
 
-            return await self.transaction_manager.residency_repository.get_all_by_kwargs(user_id=user_id)
-
-    async def get_user_residency_by_id(self, user_id: int, residency_id: int) -> Residency:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, residency_id=residency_id)
-
-            residency = await self.transaction_manager.residency_repository.get_first_by_kwargs(
-                id=residency_id, user_id=user_id
-            )
-            return residency
-
-    async def create_user_residency(self, user_id: int, current_user_id: int, **kwargs) -> Residency:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id)
-
-            if kwargs.get("current_position"):
-                await self._check_current_position_selected(user_id)
-
-            return await self.transaction_manager.residency_repository.create(user_id=user_id, **kwargs)
-
-    async def update_user_residency(
-        self,
-        user_id: int,
-        current_user_id: int,
-        residency_id: int,
-        update_data: dict,
-    ) -> Residency:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
-
-            if update_data.get("current_position"):
-                await self._check_current_position_selected(user_id)
-
-            return await self.transaction_manager.residency_repository.update(residency_id, **update_data)
-
-    async def delete_user_residency(self, user_id: int, current_user_id: int, residency_id: int) -> int:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id, residency_id=residency_id)
-
-            remaining = await self.transaction_manager.residency_repository.get_count(user_id=user_id)
+            remaining = await self._repository.get_count(user_id=user_id)
 
             if remaining <= 1:
                 raise CannotDeleteLastResidencyError("Cannot delete last residency for user")
 
-            return await self.transaction_manager.residency_repository.mark_as_deleted(residency_id)
+            await self._repository.mark_as_deleted(resource_id)
+            return resource_id
 
 
-class FellowshipService(ProfessionalExperienceBaseService):
-    async def get_by_user_id(self, user_id: int) -> list[Fellowship]:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id)
+class FellowshipService(ProfessionalExperienceBaseService[Fellowship]):
+    @property
+    def _repository(self):
+        return self.transaction_manager.fellowship_repository
 
-            return await self.transaction_manager.fellowship_repository.get_all_by_kwargs(user_id=user_id)
+    @property
+    def _not_found_error(self):
+        return FellowshipNotFoundError
 
-    async def get_user_fellowship_by_id(
-        self,
-        user_id: int,
-        fellowship_id: int,
-    ) -> Fellowship:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, fellowship_id=fellowship_id)
-
-            return await self.transaction_manager.fellowship_repository.get_first_by_kwargs(
-                id=fellowship_id,
-                user_id=user_id,
-            )
-
-    async def create_user_fellowship(
-        self,
-        user_id: int,
-        current_user_id: int,
-        **kwargs,
-    ) -> Fellowship:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id)
-
-            if kwargs.get("current_position"):
-                await self._check_current_position_selected(user_id)
-
-            return await self.transaction_manager.fellowship_repository.create(
-                user_id=user_id,
-                **kwargs,
-            )
-
-    async def update_user_fellowship(
-        self,
-        user_id: int,
-        current_user_id: int,
-        fellowship_id: int,
-        update_data: dict,
-    ) -> Fellowship:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
-
-            if update_data.get("current_position"):
-                await self._check_current_position_selected(user_id)
-
-            return await self.transaction_manager.fellowship_repository.update(
-                fellowship_id,
-                **update_data,
-            )
-
-    async def delete_user_fellowship(
-        self,
-        user_id: int,
-        current_user_id: int,
-        fellowship_id: int,
-    ) -> int:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id, fellowship_id=fellowship_id)
-
-            return await self.transaction_manager.fellowship_repository.mark_as_deleted(fellowship_id)
+    @property
+    def _entity_name(self) -> str:
+        return "Fellowship"
 
 
-class JobService(ProfessionalExperienceBaseService):
-    async def get_by_user_id(self, user_id: int) -> list[Job]:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id)
+class JobService(ProfessionalExperienceBaseService[Job]):
+    @property
+    def _repository(self):
+        return self.transaction_manager.job_repository
 
-            return await self.transaction_manager.job_repository.get_all_by_kwargs(user_id=user_id)
+    @property
+    def _not_found_error(self):
+        return JobNotFoundError
 
-    async def get_user_job_by_id(
-        self,
-        user_id: int,
-        job_id: int,
-    ) -> Job:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, job_id=job_id)
-
-            return await self.transaction_manager.job_repository.get_first_by_kwargs(id=job_id, user_id=user_id)
-
-    async def create_user_job(
-        self,
-        user_id: int,
-        current_user_id: int,
-        **kwargs,
-    ) -> Job:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id)
-
-            if kwargs.get("current_position"):
-                await self._check_current_position_selected(user_id)
-
-            return await self.transaction_manager.job_repository.create(user_id=user_id, **kwargs)
-
-    async def update_user_job(
-        self,
-        user_id: int,
-        current_user_id: int,
-        job_id: int,
-        update_data: dict,
-    ) -> Job:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
-
-            if update_data.get("current_position"):
-                await self._check_current_position_selected(user_id)
-
-            return await self.transaction_manager.job_repository.update(job_id, **update_data)
-
-    async def delete_user_job(
-        self,
-        user_id: int,
-        current_user_id: int,
-        job_id: int,
-    ) -> int:
-        async with self.transaction_manager:
-            await self._check_resource_owner(user_id, current_user_id=current_user_id, job_id=job_id)
-
-            return await self.transaction_manager.job_repository.mark_as_deleted(job_id)
+    @property
+    def _entity_name(self) -> str:
+        return "Job"
 
 
 class NameChangeRequestService:

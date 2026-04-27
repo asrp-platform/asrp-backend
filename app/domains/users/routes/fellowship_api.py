@@ -28,7 +28,7 @@ async def get_user_fellowships(
     user_id: int,
     service: FellowshipServiceDep,
 ) -> list[FellowshipViewSchema]:
-    return await service.get_by_user_id(user_id)
+    return await service.list_for_user(user_id)
 
 
 class GetSingleUserFellowshipResponses(GetUserFellowshipsResponses):
@@ -45,9 +45,9 @@ async def get_single_user_fellowship(
     fellowship_id: int,
     service: FellowshipServiceDep,
 ) -> FellowshipViewSchema:
-    return await service.get_user_fellowship_by_id(
+    return await service.get_for_user(
         user_id=user_id,
-        fellowship_id=fellowship_id,
+        resource_id=fellowship_id,
     )
 
 
@@ -68,7 +68,7 @@ async def create_fellowship_for_user(
     service: FellowshipServiceDep,
     fellowship_creation_data: FellowshipCreateSchema,
 ) -> FellowshipViewSchema:
-    return await service.create_user_fellowship(
+    return await service.create_for_user(
         user_id,
         current_user.id,
         **fellowship_creation_data.model_dump(),
@@ -91,7 +91,7 @@ async def update_user_fellowship(
     service: FellowshipServiceDep,
     fellowship_update_data: FellowshipUpdateSchema,
 ) -> FellowshipViewSchema:
-    return await service.update_user_fellowship(
+    return await service.update_for_user(
         user_id,
         current_user.id,
         fellowship_id,
@@ -117,7 +117,7 @@ async def delete_user_fellowship(
     current_user: CurrentUserDep,
     service: FellowshipServiceDep,
 ) -> int:
-    return await service.delete_user_fellowship(
+    return await service.delete_for_user(
         user_id,
         current_user.id,
         fellowship_id,

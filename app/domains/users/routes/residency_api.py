@@ -7,7 +7,6 @@ from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
     ProfessionalExperienceCurrentPositionExistsError,
     ResidencyNotFoundError,
-    UserNotFoundError,
 )
 from app.domains.users.schemas import ResidencyCreateSchema, ResidencyUpdateSchema, ResidencyViewSchema
 from app.domains.users.services import ResidencyServiceDep
@@ -28,11 +27,7 @@ async def get_user_residencies(
     user_id: int,
     service: ResidencyServiceDep,
 ) -> list[ResidencyViewSchema]:
-    try:
-        user_residencies = await service.get_by_user_id(user_id)
-        return [ResidencyViewSchema.model_validate(residency) for residency in user_residencies]
-    except UserNotFoundError:
-        raise GetUserResidenciesResponses.USER_NOT_FOUND
+    return await service.list_for_user(user_id)
 
 
 class GetSingleUserResidencyResponses(GetUserResidenciesResponses):
@@ -48,11 +43,7 @@ async def get_single_user_residency(
     service: ResidencyServiceDep,
 ) -> ResidencyViewSchema:
     try:
-        user_residency = await service.get_user_residency_by_id(user_id=user_id, residency_id=residency_id)
-        return ResidencyViewSchema.model_validate(user_residency)
-
-    except UserNotFoundError:
-        raise GetSingleUserResidencyResponses.USER_NOT_FOUND
+        return await service.get_for_user(user_id=user_id, resource_id=residency_id)
 
     except ResidencyNotFoundError:
         raise GetSingleUserResidencyResponses.RESIDENCY_NOT_FOUND
@@ -76,16 +67,10 @@ async def create_residency_for_user(
     residency_creation_data: ResidencyCreateSchema,
 ) -> ResidencyViewSchema:
     try:
-        user_residency = await service.create_user_residency(
-            user_id, current_user.id, **residency_creation_data.model_dump()
-        )
-        return ResidencyViewSchema.model_validate(user_residency)
+        return await service.create_for_user(user_id, current_user.id, **residency_creation_data.model_dump())
 
     except NotResourceOwnerError:
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
-
-    except UserNotFoundError:
-        raise CreateUserResidencyResponses.USER_NOT_FOUND
 
     except ProfessionalExperienceCurrentPositionExistsError:
         raise CreateUserResidencyResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
@@ -108,16 +93,10 @@ async def update_user_residency(
     residency_update_data: ResidencyUpdateSchema,
 ) -> ResidencyViewSchema:
     try:
-        user_residency = await service.update_user_residency(
-            user_id, current_user.id, residency_id, residency_update_data.model_dump()
-        )
-        return ResidencyViewSchema.model_validate(user_residency)
+        return await service.update_for_user(user_id, current_user.id, residency_id, residency_update_data.model_dump())
 
     except NotResourceOwnerError:
         raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
-
-    except UserNotFoundError:
-        raise CreateUserResidencyResponses.USER_NOT_FOUND
 
     except ProfessionalExperienceCurrentPositionExistsError:
         raise UpdateResidencyResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
@@ -139,6 +118,6 @@ async def delete_user_residency(
     service: ResidencyServiceDep,
 ) -> int:
     try:
-        return await service.delete_user_residency(user_id, current_user.id, residency_id)
+        return await service.delete_for_user(user_id, current_user.id, residency_id)
     except CannotDeleteLastResidencyError:
         raise DeleteResidencyResponses.CANNOT_DELETE_LAST_RESIDENCY
