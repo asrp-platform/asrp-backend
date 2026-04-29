@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
-from app.domains.memberships.models import MembershipRequest
+from app.domains.memberships.models import MembershipRequest, UserMembership
 
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
@@ -78,6 +78,7 @@ class User(Base):
         "FeedbackAdditionalInfo", back_populates="user"
     )
     payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
+    membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="user")
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -41,6 +41,7 @@ class MembershipType(Base):
     membership_requests: Mapped[list["MembershipRequest"]] = relationship(
         "MembershipRequest", back_populates="membership_type"
     )
+    user_membership: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="membership_type")
 
 
 class MembershipRequestStatusEnum(str, Enum):
@@ -79,3 +80,28 @@ class MembershipRequest(Base, UCIMixin):
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="membership_requests")
+
+    user_membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="membership_request")
+
+
+class UserMembership(Base, UCIMixin):
+    __tablename__ = "users_memberships"
+
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="membership")
+
+    membership_request_id: Mapped[int] = mapped_column(
+        ForeignKey("membership_requests.id"), nullable=False, unique=True
+    )
+    membership_request: Mapped["MembershipRequest"] = relationship(
+        "MembershipRequest", back_populates="user_membership"
+    )
+
+    membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
+    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_membership")
+
+    @property
+    def is_active(self) -> bool:
+        return datetime.now(timezone.utc) < self.expires_at
