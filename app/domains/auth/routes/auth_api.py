@@ -62,20 +62,22 @@ async def login(
 
     access_token = create_access_token({"email": user.email})
     refresh_token = create_refresh_token({"email": user.email}, remember_me=remember)
+    max_age = (
+        settings.refresh_token_cookie_max_age_seconds_remember
+        if remember
+        else settings.refresh_token_cookie_max_age_seconds
+    )
 
     # Optional adding access_token into Headers
     response.headers["Authorization"] = f"Bearer {access_token}"
-    max_age_seconds = (
-        (settings.REFRESH_TOKEN_LIFETIME_DAYS if remember else settings.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS)
-        * 24
-        * 60
-        * 60
-    )
+
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        max_age=max_age_seconds,
+        max_age=max_age,
+        samesite="none",
+        secure=True,
     )
 
     return JWTTokenResponse(access_token=access_token, refresh_token=refresh_token)

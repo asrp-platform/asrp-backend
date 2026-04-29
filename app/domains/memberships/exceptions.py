@@ -15,3 +15,7 @@ class MembershipTypeNotFoundError(NotFoundError):
 
 class MembershipRequestAlreadyExistsError(ResourceAlreadyExistsError):
     pass
+
+
+class MembershipAlreadyPaidError(Exception):
+    pass

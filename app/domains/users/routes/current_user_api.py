@@ -5,9 +5,13 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.domains.memberships.exceptions import MembershipAlreadyPaidError
 from app.domains.memberships.schemas import (
     MembershipRequestCreateSchema,
     MembershipRequestViewSchema,
+)
+from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
+    CreateMembershipApplicationPaymentAttemptUseCaseDep,
 )
 from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
 from app.domains.payments.filters import PaymentsFilter
@@ -189,6 +193,27 @@ async def create_membership_request(
         membership_request_data=create_membership_request_data.membership.model_dump(),
         feedback_additional_info_data=create_membership_request_data.feedback_additional_info.model_dump(),
     )
+
+
+class CreateNewPaymentAttemptResponses(Responses):
+    MEMBERSHIP_REQUEST_NOT_FOUND = 404, "Membership request for the current user not found"
+    MEMBERSHIP_REQUEST_ALREADY_PAID = 409, "Membership request for the current user already paid"
+
+
+@router.post(
+    "/membership-requests/payments",
+    status_code=201,
+    responses=CreateNewPaymentAttemptResponses.responses,
+    summary="Create a new payment attempt for the unpaid membership request",
+)
+async def create_new_payment_attempt(
+    current_user: CurrentUserDep,
+    use_case: CreateMembershipApplicationPaymentAttemptUseCaseDep,
+):
+    try:
+        return await use_case.execute(current_user)
+    except MembershipAlreadyPaidError:
+        raise CreateNewPaymentAttemptResponses.MEMBERSHIP_REQUEST_ALREADY_PAID
 
 
 @router.get("/payments")

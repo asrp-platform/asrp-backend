@@ -61,4 +61,4 @@ async def stripe_webhook(
     elif event_type in {"checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed"}:
         await process_checkout_session_async_payment_use_case.execute(event)
     else:
-        stripe_logger.info()
+        stripe_logger.info("Unexpected event type: {}", event_type)

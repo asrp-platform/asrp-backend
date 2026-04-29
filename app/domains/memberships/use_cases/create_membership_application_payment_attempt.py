@@ -1,0 +1,123 @@
+from typing import Annotated
+
+from fastapi import Depends
+from loguru import logger
+
+from app.core.common.exceptions import NotFoundError
+from app.core.config import settings
+from app.core.database.base_transaction_manager import BaseTransactionManager
+from app.core.logging import PAYMENTS_CHANNEL
+from app.domains.memberships.exceptions import MembershipAlreadyPaidError
+from app.domains.memberships.models import MembershipRequestStatusEnum
+from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
+from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.users.models import User
+
+payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
+
+
+class CreateMembershipApplicationPaymentAttemptUseCase:
+    def __init__(
+        self,
+        transaction_manager: BaseTransactionManager,
+        membership_service: MembershipService,
+        payment_service: PaymentService,
+    ):
+        self.__transaction_manager = transaction_manager
+        self.__membership_service = membership_service
+        self.__payment_service = payment_service
+
+    def __check_membership_already_paid(self, membership_request_status: MembershipRequestStatusEnum):
+        if membership_request_status in (
+            MembershipRequestStatusEnum.PAID,
+            MembershipRequestStatusEnum.REJECTED,
+            MembershipRequestStatusEnum.APPROVED,
+        ):
+            raise MembershipAlreadyPaidError("Membership request already paid")
+
+    async def execute(self, current_user: User):
+        async with self.__transaction_manager:
+            current_user_membership_request = await self.__membership_service.get_user_membership_request(
+                user_id=current_user.id
+            )
+            if current_user_membership_request is None:
+                raise NotFoundError("Membership request for the current user not found")
+
+            self.__check_membership_already_paid(current_user_membership_request.status)
+
+            membership_type = await self.__membership_service.get_membership_type(
+                current_user_membership_request.membership_type.type
+            )
+
+            membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
+            membership_type_line_items = [
+                {
+                    "price_data": {
+                        "currency": "usd",
+                        "unit_amount": membership_type_price_cents,
+                        "product_data": {
+                            "name": membership_type.name,
+                            "description": membership_type.description,
+                        },
+                    },
+                    "quantity": 1,
+                }
+            ]
+            payment = await self.__payment_service.create_payment(
+                provider=PaymentProvider.STRIPE,
+                amount=membership_type_price_cents,
+                status=PaymentStatusEnum.PENDING,
+                purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+                user_id=current_user.id,
+                provider_data=None,
+            )
+            # Need to get payment id
+            await self.__transaction_manager._session.flush()
+
+            payment_metadata = {
+                "membership_request_id": current_user_membership_request.id,
+                "payment_id": str(payment.id),
+                "payment_purpose": PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+            }
+
+            checkout_session = await create_checkout_session(
+                membership_type_line_items,
+                metadata=payment_metadata,
+                success_url=f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+            )
+
+            provider_data = {
+                "membership_request_id": current_user_membership_request.id,
+                "payment_id": str(payment.id),
+                "checkout_session_id": checkout_session.id,
+                "checkout_session_status": checkout_session.status,
+                "payment_intent_status": checkout_session.payment_status,
+                "url": checkout_session.url,
+            }
+
+            await self.__payment_service.update_payment(payment.id, provider_data=provider_data)
+
+            payments_logger.info(
+                "Retry membership request payment: membership_request_id={} payment_id={} checkout_session_id={}",
+                current_user_membership_request.id,
+                payment.id,
+                checkout_session.id,
+            )
+
+        return checkout_session.url
+
+
+def get_use_case(
+    transaction_manager: TransactionManagerDep,
+    membership_service: MembershipServiceDep,
+    payment_service: PaymentServiceDep,
+) -> CreateMembershipApplicationPaymentAttemptUseCase:
+    return CreateMembershipApplicationPaymentAttemptUseCase(transaction_manager, membership_service, payment_service)
+
+
+CreateMembershipApplicationPaymentAttemptUseCaseDep = Annotated[
+    CreateMembershipApplicationPaymentAttemptUseCase, Depends(get_use_case)
+]
