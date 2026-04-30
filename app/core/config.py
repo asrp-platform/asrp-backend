@@ -1,3 +1,4 @@
+from enum import Enum
 from os import getenv
 from pathlib import Path
 
@@ -5,8 +6,6 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings
-
-from app.core.storage.base_storage import S3BaseStorage
 
 load_dotenv()
 
@@ -22,6 +21,9 @@ CONVENTION = {
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
     "pk": "pk_%(table_name)s",
 }
+
+class FileStorageTypeEnum(str, Enum):
+    S3_STORAGE = "s3"
 
 
 class GmailConfig(BaseModel):
@@ -62,6 +64,9 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     NEWS_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "news_uploads"
     DIRECTORS_BOARD_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "directors_board_uploads"
 
+    FILE_STORAGE_TYPE: FileStorageTypeEnum = FileStorageTypeEnum.S3_STORAGE
+    FILE_STORAGE_URL_EXPIRES_IN: int = 3600 # sec
+
     STRIPE_API_KEY: str
     STRIPE_WEBHOOK_SECRET: str
 
@@ -88,14 +93,6 @@ class Settings(BaseSettings, GmailConfig, S3Config):
 
 settings = Settings()
 
-s3_storage = S3BaseStorage(
-    access_key=settings.S3_ACCESS_KEY,
-    secret_key=settings.S3_SECRET_KEY,
-    endpoint_url=settings.s3_endpoint_url,
-    default_bucket_name=settings.S3_DEFAULT_BUCKET,
-    region_name=settings.S3_REGION,
-    public_url=settings.s3_public_url,
-)
 fernet = Fernet(settings.fernet_key_bytes)
 
 DB_URL: str = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"

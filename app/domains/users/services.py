@@ -5,7 +5,9 @@ from uuid import uuid4
 from fastapi import Depends
 
 from app.core.common.exceptions import NotResourceOwnerError
-from app.core.config import s3_storage, settings
+from app.core.config import settings
+from app.core.storage.base_storage import BaseFileStorage
+from app.core.storage.storage_factory import get_file_storage
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
@@ -32,9 +34,9 @@ from app.domains.users.models import (
 
 
 class UserService:
-    def __init__(self, transaction_manager: TransactionManager):
+    def __init__(self, transaction_manager: TransactionManager, file_storage: BaseFileStorage):
         self.transaction_manager = transaction_manager
-        self.file_storage = s3_storage
+        self.file_storage = file_storage
 
     async def check_resource_owner(self, user_id: int, *, current_user: User):
         """
@@ -82,7 +84,7 @@ class UserService:
             avatar_object_key = user.avatar_path
             if avatar_object_key is None:
                 return None
-        return await self.file_storage.get_presigned_object(avatar_object_key)
+        return await self.file_storage.get_file_url(avatar_object_key)
 
     async def upload_avatar(self, user_id: int, file):
         try:
@@ -90,8 +92,7 @@ class UserService:
             file_content = await file.read()
             upload_result = await self.file_storage.upload_file(
                 filename,
-                file_content,
-                "uploads",
+                file_content
             )
             async with self.transaction_manager:
                 await self.transaction_manager.user_repository.update(user_id, avatar_path=filename)
@@ -529,8 +530,11 @@ class CommunicationPreferencesService:
         )
 
 
-def get_user_service(transaction_manager: TransactionManagerDep) -> UserService:
-    return UserService(transaction_manager)
+def get_user_service(
+    transaction_manager: TransactionManagerDep,
+    file_storage: Annotated[BaseFileStorage, Depends(get_file_storage)],
+) -> UserService:
+    return UserService(transaction_manager, file_storage)
 
 
 def get_professional_information_service(
