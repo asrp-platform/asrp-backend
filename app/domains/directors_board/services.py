@@ -4,15 +4,19 @@ from urllib.parse import unquote, urlsplit
 from fastapi import Depends
 from sqlalchemy import func, select, update
 
-from app.core.config import s3_storage, settings
+from app.core.common.exceptions import InvalidMimeTypeError
+from app.core.config import settings
+from app.core.storage.base_storage import BaseFileStorage
+from app.core.storage.storage_factory import get_file_storage
 from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.shared.types import FileData
 
 
 class DirectorsBoardService:
-    def __init__(self, transaction_manager):
+    def __init__(self, transaction_manager, file_storage: BaseFileStorage):
         self.transaction_manager = transaction_manager
-        self.file_storage = s3_storage
+        self.file_storage = file_storage
         self.bucket_name = settings.S3_DEFAULT_BUCKET
 
     async def get_directors_board_members(self):
@@ -57,11 +61,21 @@ class DirectorsBoardService:
             )
             await self.transaction_manager._session.commit()
 
+    async def upload_photo(self, file_data: FileData) -> str:
+        if not file_data.content_type.startswith("image/"):
+            raise InvalidMimeTypeError("Invalid image content type")
+
+        file_data = await self.file_storage.upload_file(
+            object_key=f"directors_board/{file_data.filename}",
+            file_content=file_data.content
+        )
+        return await self.file_storage.get_file_url(file_data.object_key)
+
     async def get_photo_url_by_object_key(self, object_key: str) -> str:
         normalized_object_key = self._extract_object_key(object_key)
         if normalized_object_key is None:
             return object_key
-        return await self.file_storage.get_presigned_object(normalized_object_key)
+        return await self.file_storage.get_file_url(normalized_object_key)
 
     def _extract_object_key(self, stored_value: str | None) -> str | None:
         if stored_value is None:
@@ -83,8 +97,11 @@ class DirectorsBoardService:
         return None
 
 
-def get_director_board_member_service(transaction_manager: TransactionManagerDep) -> DirectorsBoardService:
-    return DirectorsBoardService(transaction_manager)
+def get_director_board_member_service(
+    transaction_manager: TransactionManagerDep,
+    file_storage: Annotated[BaseFileStorage, Depends(get_file_storage)],
+) -> DirectorsBoardService:
+    return DirectorsBoardService(transaction_manager, file_storage)
 
 
 DirectorBoardMemberServiceDep = Annotated[DirectorsBoardService, Depends(get_director_board_member_service)]
