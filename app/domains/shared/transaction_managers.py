@@ -11,7 +11,11 @@ from app.domains.feedback.repositories import (
     ContactMessageRepository,
     FeedbackAdditionalInfoRepository,
 )
-from app.domains.memberships.repositories import MembershipRequestsRepository, MembershipTypeRepository
+from app.domains.memberships.repositories import (
+    MembershipRequestsRepository,
+    MembershipTypeRepository,
+    UserMembershipRepository,
+)
 from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
 from app.domains.users.repositories import (
@@ -26,6 +30,7 @@ from app.domains.users.repositories import (
 
 
 class TransactionManager(SQLAlchemyTransactionManagerBase):
+    # Membership
     @property
     def membership_requests_repository(self):
         return MembershipRequestsRepository(self._session)
@@ -33,6 +38,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def membership_type_repository(self):
         return MembershipTypeRepository(self._session)
+
+    @property
+    def user_membership_repository(self):
+        return UserMembershipRepository(self._session)
 
     @property
     def payment_repository(self):

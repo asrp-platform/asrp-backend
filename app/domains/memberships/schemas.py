@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from pydantic_core import PydanticCustomError
 
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
@@ -55,4 +56,13 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
 
 class MembershipRequestUpdateAdminSchema(BaseModel):
     status: MembershipRequestStatusEnum
-    admin_comment: str
+    admin_comment: str | None
+
+    @model_validator(mode="after")
+    def check_reason_rejecting(self):
+        if self.status == MembershipRequestStatusEnum.REJECTED and self.admin_comment is None:
+            raise PydanticCustomError(
+                "admin_comment necessary when rejected",
+                "Admin comment is required when rejecting user membership request",
+            )
+        return self

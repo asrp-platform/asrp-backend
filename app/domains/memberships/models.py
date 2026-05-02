@@ -87,7 +87,7 @@ class MembershipRequest(Base, UCIMixin):
 class UserMembership(Base, UCIMixin):
     __tablename__ = "users_memberships"
 
-    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
     user: Mapped["User"] = relationship("User", back_populates="membership")
