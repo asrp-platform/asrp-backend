@@ -3,14 +3,18 @@ from datetime import datetime
 from pydantic import BaseModel, model_validator
 from pydantic_core import PydanticCustomError
 
+from app.core.database.mixins import UCIMixinSchema
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
 
 
-class MembershipTypeSchema(BaseModel):
+class MembershipTypeShortSchema(BaseModel):
     id: int
     name: str
     type: MembershipTypeEnum
+
+
+class MembershipTypeSchema(MembershipTypeShortSchema):
     price_usd: float
     duration: int
     description: str | None = None
@@ -66,3 +70,15 @@ class MembershipRequestUpdateAdminSchema(BaseModel):
                 "Admin comment is required when rejecting user membership request",
             )
         return self
+
+
+class UserMembershipSchema(UCIMixinSchema):
+    expires_at: datetime
+    user_id: int
+    membership_request_id: int
+    membership_type_id: int
+    is_active: bool
+
+    membership_type: MembershipTypeShortSchema
+
+    model_config = {"from_attributes": True}

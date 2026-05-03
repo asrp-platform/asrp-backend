@@ -9,6 +9,7 @@ from app.domains.memberships.exceptions import MembershipAlreadyPaidError
 from app.domains.memberships.schemas import (
     MembershipRequestCreateSchema,
     MembershipRequestViewSchema,
+    UserMembershipSchema,
 )
 from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
@@ -16,7 +17,7 @@ from app.domains.memberships.use_cases.create_membership_application_payment_att
 from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
-from app.domains.shared.deps import CurrentUserDep
+from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
 from app.domains.users.exceptions import (
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
@@ -91,8 +92,8 @@ async def upload_user_avatar(
     return await use_case.execute(current_user, file)
 
 
-class DeleteUserAvatarResponses(UpdateUserDataResponses):
-    pass
+class DeleteUserAvatarResponses(Responses):
+    USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
 @router.delete(
@@ -164,7 +165,7 @@ class CurrentUserMembershipResponses(Responses):
     "/membership-requests",
     responses=CurrentUserMembershipResponses.responses,
 )
-async def get_current_user_membership(
+async def get_current_user_membership_request(
     current_user: CurrentUserDep, use_case: GetCurrentUserMembershipRequestUseCaseDep
 ) -> MembershipRequestViewSchema | None:
     return await use_case.execute(current_user)
@@ -237,3 +238,10 @@ async def get_current_user_payments(
         page=params["page"],
         page_size=params["page_size"],
     )
+
+
+@router.get("/membership")
+async def get_current_user_membership(
+    current_user_membership: CurrentUserMembershipDep,
+) -> UserMembershipSchema | None:
+    return current_user_membership
