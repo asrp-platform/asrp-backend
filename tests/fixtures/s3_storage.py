@@ -2,28 +2,29 @@ from unittest.mock import patch
 
 import pytest
 
-from app.core.storage.base_storage import S3BaseStorage
+from app.core.storage.storage_factory import get_file_storage
 
+FileStorage = get_file_storage()
 
 @pytest.fixture()
-def spy_s3_storage():
+def spy_file_storage():
     with (
-        patch.object(S3BaseStorage, "upload_file", autospec=True, wraps=S3BaseStorage.upload_file) as upload_file,
+        patch.object(FileStorage, "upload_file", autospec=True, wraps=FileStorage.upload_file) as upload_file,
         patch.object(
-            S3BaseStorage,
-            "get_presigned_object",
+            FileStorage,
+            "get_file_url",
             autospec=True,
-            wraps=S3BaseStorage.get_presigned_object,
-        ) as get_presigned_object,
+            wraps=FileStorage.get_file_url,
+        ) as get_file_url,
         patch.object(
-            S3BaseStorage,
-            "delete_object",
+            FileStorage,
+            "delete_file",
             autospec=True,
-            wraps=S3BaseStorage.delete_object,
-        ) as delete_object,
+            wraps=FileStorage.delete_file,
+        ) as delete_file,
     ):
         yield {
             "upload_file": upload_file,
-            "get_presigned_object": get_presigned_object,
-            "delete_object": delete_object,
+            "get_file_url": get_file_url,
+            "delete_file": delete_file,
         }

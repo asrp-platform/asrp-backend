@@ -1,9 +1,12 @@
+from functools import lru_cache
+
 from app.core.common.exceptions import InvalidStorageTypeError
 from app.core.config import FileStorageTypeEnum, settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.s3_storage import S3Storage
 
 
+@lru_cache
 def get_file_storage() -> BaseFileStorage:
     if settings.FILE_STORAGE_TYPE == FileStorageTypeEnum.S3_STORAGE:
         return S3Storage(
