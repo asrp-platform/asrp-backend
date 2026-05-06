@@ -7,7 +7,7 @@ from sqlalchemy import func, select, update
 from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
-from app.core.storage.storage_factory import get_file_storage
+from app.core.storage.storage_factory import FileStorageDep
 from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
@@ -99,7 +99,7 @@ class DirectorsBoardService:
 
 def get_director_board_member_service(
     transaction_manager: TransactionManagerDep,
-    file_storage: Annotated[BaseFileStorage, Depends(get_file_storage)],
+    file_storage: FileStorageDep,
 ) -> DirectorsBoardService:
     return DirectorsBoardService(transaction_manager, file_storage)
 

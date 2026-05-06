@@ -7,7 +7,7 @@ from fastapi import Depends
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
-from app.core.storage.storage_factory import get_file_storage
+from app.core.storage.storage_factory import FileStorageDep
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
@@ -532,7 +532,7 @@ class CommunicationPreferencesService:
 
 def get_user_service(
     transaction_manager: TransactionManagerDep,
-    file_storage: Annotated[BaseFileStorage, Depends(get_file_storage)],
+    file_storage: FileStorageDep,
 ) -> UserService:
     return UserService(transaction_manager, file_storage)
 

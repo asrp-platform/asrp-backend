@@ -4,7 +4,7 @@ from fastapi import Depends
 
 from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.storage.base_storage import BaseFileStorage
-from app.core.storage.storage_factory import get_file_storage
+from app.core.storage.storage_factory import FileStorageDep
 from app.domains.legal_documents.types import LegalDocument
 from app.domains.shared.types import FileData
 
@@ -36,7 +36,7 @@ def get_bylaws_document() -> LegalDocument:
 
 def get_bylaws_service(
     document: Annotated[LegalDocument, Depends(get_bylaws_document)],
-    file_storage: Annotated[BaseFileStorage, Depends(get_file_storage)],
+    file_storage: FileStorageDep,
 ) -> LegalDocumentsService:
     return LegalDocumentsService(document, file_storage)
 

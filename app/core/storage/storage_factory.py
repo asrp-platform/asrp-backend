@@ -1,4 +1,7 @@
 from functools import lru_cache
+from typing import Annotated
+
+from fastapi import Depends
 
 from app.core.common.exceptions import InvalidStorageTypeError
 from app.core.config import FileStorageTypeEnum, settings
@@ -20,3 +23,6 @@ def get_file_storage() -> BaseFileStorage:
 )
     else:
         raise InvalidStorageTypeError("Unknown storage type")
+
+
+FileStorageDep = Annotated[BaseFileStorage, Depends(get_file_storage)]
