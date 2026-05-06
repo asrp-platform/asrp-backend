@@ -26,3 +26,7 @@ class InvalidMimeTypeError(Exception):
 
 class PermissionDeniedError(Exception):
     pass
+
+
+class InvalidStorageTypeError(Exception):
+    pass

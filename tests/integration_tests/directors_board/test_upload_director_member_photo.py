@@ -19,7 +19,7 @@ async def test_upload_director_member_photo(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     fake_file,
-    spy_s3_storage,
+    spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -35,14 +35,14 @@ async def test_upload_director_member_photo(
     assert "path" in data
     assert "directors_board" in data["path"].split("/")
 
-    spy_s3_storage["upload_file"].assert_awaited_once()
+    spy_file_storage["upload_file"].assert_awaited_once()
 
 
 async def test_upload_director_member_photo_no_permissions(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     fake_file,
-    spy_s3_storage,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -54,14 +54,14 @@ async def test_upload_director_member_photo_no_permissions(
 
     assert response.status_code == 403
 
-    spy_s3_storage["upload_file"].assert_not_awaited()
+    spy_file_storage["upload_file"].assert_not_awaited()
 
 
 async def test_upload_director_member_photo_by_user(
     client: AsyncClient,
     auth_headers: AuthHeaders,
     fake_file,
-    spy_s3_storage,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -73,13 +73,13 @@ async def test_upload_director_member_photo_by_user(
 
     assert response.status_code == 403
 
-    spy_s3_storage["upload_file"].assert_not_awaited()
+    spy_file_storage["upload_file"].assert_not_awaited()
 
 
 async def test_upload_director_member_photo_not_authenticated(
     client: AsyncClient,
     fake_file,
-    spy_s3_storage,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -90,7 +90,7 @@ async def test_upload_director_member_photo_not_authenticated(
 
     assert response.status_code == 401
 
-    spy_s3_storage["upload_file"].assert_not_awaited()
+    spy_file_storage["upload_file"].assert_not_awaited()
 
 
 async def test_upload_director_member_photo_invalid_content_type(
@@ -98,7 +98,7 @@ async def test_upload_director_member_photo_invalid_content_type(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     fake_file,
-    spy_s3_storage,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -110,4 +110,4 @@ async def test_upload_director_member_photo_invalid_content_type(
 
     assert response.status_code == 415
 
-    spy_s3_storage["upload_file"].assert_not_awaited()
+    spy_file_storage["upload_file"].assert_not_awaited()
