@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError
-from app.domains.memberships.models import MembershipRequestStatusEnum
+from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
@@ -30,13 +30,24 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
         self.__membership_service = membership_service
         self.__payment_service = payment_service
 
-    def __check_membership_already_paid(self, membership_request_status: MembershipRequestStatusEnum):
+    @staticmethod
+    def __check_membership_already_paid(membership_request_status: MembershipRequestStatusEnum):
         if membership_request_status in (
             MembershipRequestStatusEnum.PAID,
             MembershipRequestStatusEnum.REJECTED,
             MembershipRequestStatusEnum.APPROVED,
         ):
             raise MembershipAlreadyPaidError("Membership request already paid")
+
+    async def __ensure_no_succeeded_membership_application_payment(
+        self,
+        membership_request: MembershipRequest,
+    ) -> None:
+        payment = await self.__payment_service.get_successful_user_membership_application_payment(
+            membership_request.user_id
+        )
+        if payment is not None:
+            raise MembershipAlreadyPaidError("Membership application payment already succeeded")
 
     async def execute(self, current_user: User):
         async with self.__transaction_manager:
@@ -47,6 +58,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
                 raise NotFoundError("Membership request for the current user not found")
 
             self.__check_membership_already_paid(current_user_membership_request.status)
+            await self.__ensure_no_succeeded_membership_application_payment(current_user_membership_request)
 
             membership_type = await self.__membership_service.get_membership_type(
                 current_user_membership_request.membership_type.type
@@ -73,6 +85,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
                 purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
                 user_id=current_user.id,
                 provider_data=None,
+                membership_request_id=current_user_membership_request.id,
             )
             # Need to get payment id
             await self.__transaction_manager._session.flush()

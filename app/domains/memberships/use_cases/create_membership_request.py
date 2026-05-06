@@ -56,6 +56,8 @@ class CreateUserMembershipRequestUseCase:
                 status=MembershipRequestStatusEnum.PAYMENT_PENDING,
                 **membership_request_data,
             )
+            # Need to get membership_request id
+            await self.__transaction_manager._session.flush()
 
             await self.__feedback_additional_info_service.create_feedback_additional_info(
                 user_id,
@@ -90,6 +92,7 @@ class CreateUserMembershipRequestUseCase:
                 purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
                 user_id=user_id,
                 provider_data=None,
+                membership_request_id=membership_request.id,
             )
             # Need to get payment id
             await self.__transaction_manager._session.flush()

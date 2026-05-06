@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
+from app.domains.payments.models import Payment
 
 if TYPE_CHECKING:
     from app.domains.users.models import User
@@ -82,6 +83,7 @@ class MembershipRequest(Base, UCIMixin):
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="membership_requests")
 
     user_membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="membership_request")
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="membership_request", uselist=True)
 
 
 class UserMembership(Base, UCIMixin):

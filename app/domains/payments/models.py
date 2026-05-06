@@ -4,13 +4,14 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SQLAEnum, ForeignKey, Uuid, func, text
+from sqlalchemy import DateTime, Enum as SQLAEnum, ForeignKey, Index, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.setup_db import Base
 
 if TYPE_CHECKING:
+    from app.domains.memberships.models import MembershipRequest
     from app.domains.users.models import User
 
 
@@ -69,6 +70,22 @@ class Payment(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
     user: Mapped["User"] = relationship("User", back_populates="payments")
+
+    membership_request_id: Mapped[int] = mapped_column(ForeignKey("membership_requests.id"), nullable=True)
+    membership_request: Mapped["MembershipRequest"] = relationship("MembershipRequest", back_populates="payments")
+
+    __table_args__ = (
+        Index(
+            "uq_payments_one_membership_application_per_membership_request",
+            "membership_request_id",
+            unique=True,
+            postgresql_where=(
+                (purpose == PaymentPurposeEnum.MEMBERSHIP_APPLICATION)
+                & (membership_request_id.isnot(None))
+                & (status == PaymentStatusEnum.SUCCEEDED)
+            ),
+        ),
+    )
 
 
 class ProcessedWebhookEvent(Base):
