@@ -19,3 +19,7 @@ class MembershipRequestAlreadyExistsError(ResourceAlreadyExistsError):
 
 class MembershipAlreadyPaidError(Exception):
     pass
+
+
+class MissingRejectingCommentError(Exception):
+    pass

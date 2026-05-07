@@ -43,9 +43,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
         self,
         membership_request: MembershipRequest,
     ) -> None:
-        payment = await self.__payment_service.get_successful_user_membership_application_payment(
-            membership_request.user_id
-        )
+        payment = await self.__payment_service.get_succeeded_application_payment_for_request(membership_request.id)
         if payment is not None:
             raise MembershipAlreadyPaidError("Membership application payment already succeeded")
 

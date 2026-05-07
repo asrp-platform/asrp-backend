@@ -34,9 +34,9 @@ class PaymentService:
     async def get_processed_webhook_event_by_kwargs(self, **kwargs) -> ProcessedWebhookEvent:
         return await self.__transaction_manager.processed_webhook_event_repository.get_first_by_kwargs(**kwargs)
 
-    async def get_successful_user_membership_application_payment(self, user_id: int) -> Payment | None:
+    async def get_succeeded_application_payment_for_request(self, membership_request_id: int) -> Payment | None:
         return await self.__transaction_manager.payment_repository.get_first_by_kwargs(
-            user_id=user_id,
+            membership_request_id=membership_request_id,
             status=PaymentStatusEnum.SUCCEEDED,
             purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
         )

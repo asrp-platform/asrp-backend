@@ -85,6 +85,7 @@ class Payment(Base):
                 & (status == PaymentStatusEnum.SUCCEEDED)
             ),
         ),
+        # CheckConstraint("amount > 0", name="ck_payments_amount_positive"),
     )
 
 

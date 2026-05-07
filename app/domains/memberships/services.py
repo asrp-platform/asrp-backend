@@ -101,7 +101,7 @@ class UserMembershipService:
             )
         )
 
-        user = self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
             raise NotFoundError("User with provided ID not found")

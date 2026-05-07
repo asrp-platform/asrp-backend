@@ -9,7 +9,7 @@ from app.domains.memberships.filters import MembershipRequestsFilters
 from app.domains.memberships.schemas import MembershipRequestUpdateAdminSchema, MembershipRequestViewSchema
 from app.domains.memberships.use_cases.get_membership_request_by_id import GetMembershipRequestByIdUseCaseDep
 from app.domains.memberships.use_cases.get_membership_requests_admin import GetMembershipRequestsAdminUseCaseDep
-from app.domains.memberships.use_cases.update_membership_request import UpdateMembershipRequestByIdUseCaseDep
+from app.domains.memberships.use_cases.review_membership_request import ReviewMembershipRequestUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 
 router = APIRouter(prefix="/membership-requests", tags=["Admin: Membership Requests"])
@@ -66,6 +66,6 @@ async def update_membership_request(
     body: MembershipRequestUpdateAdminSchema,
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
-    use_case: UpdateMembershipRequestByIdUseCaseDep,
+    use_case: ReviewMembershipRequestUseCaseDep,
 ):
     return await use_case.execute(membership_request_id, admin, permissions, **body.model_dump())
