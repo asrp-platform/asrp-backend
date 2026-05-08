@@ -5,6 +5,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.filters import MembershipRequestsFilters
 from app.domains.memberships.schemas import MembershipRequestUpdateAdminSchema, MembershipRequestViewSchema
 from app.domains.memberships.use_cases.get_membership_request_by_id import GetMembershipRequestByIdUseCaseDep
@@ -56,16 +57,26 @@ async def get_membership_request(
     return await use_case.execute(membership_request_id, admin, permissions)
 
 
+class ReviewMembershipRequestResponses(GetMembershipRequestResponses):
+    MISSING_MEMBERSHIP_REQUEST_PAYMENT = 409, "Can't review approve or reject unpaid membership request"
+    MISSING_REJECTING_COMMENT = 422, "When status is REJECTED admin_comment must be provided"
+
+
 @router.patch(
     "/{membership_request_id}",
-    responses=GetMembershipRequestResponses.responses,
+    responses=ReviewMembershipRequestResponses.responses,
     summary="Updated membership request by ID",
 )
-async def update_membership_request(
+async def review_membership_request(
     membership_request_id: int,
     body: MembershipRequestUpdateAdminSchema,
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
     use_case: ReviewMembershipRequestUseCaseDep,
 ):
-    return await use_case.execute(membership_request_id, admin, permissions, **body.model_dump())
+    try:
+        return await use_case.execute(membership_request_id, admin, permissions, **body.model_dump())
+    except MissingMembershipRequestPayment:
+        raise ReviewMembershipRequestResponses.MISSING_MEMBERSHIP_REQUEST_PAYMENT
+    except MissingRejectingCommentError:
+        raise ReviewMembershipRequestResponses.MISSING_REJECTING_COMMENT

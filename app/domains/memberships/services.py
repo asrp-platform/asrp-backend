@@ -21,7 +21,10 @@ class MembershipService:
     async def get_membership_requests_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> [list[MembershipRequest], int]:
-        stmt = select(MembershipRequest).options(selectinload(MembershipRequest.membership_type))
+        stmt = select(MembershipRequest).options(
+            selectinload(MembershipRequest.membership_type),
+            selectinload(MembershipRequest.user),
+        )
         async with self.__transaction_manager:
             return await self.__transaction_manager.membership_requests_repository.list(
                 limit, offset, order_by, filters, stmt=stmt

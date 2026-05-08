@@ -6,6 +6,7 @@ from pydantic_core import PydanticCustomError
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
+from app.domains.users.schemas import UserShortSchema
 
 
 class MembershipTypeShortSchema(BaseModel):
@@ -50,6 +51,7 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
     status: MembershipRequestStatusEnum
     current_period_end: datetime | None = None
     user_id: int
+    user: UserShortSchema
     membership_type_id: int
     membership_type: MembershipTypeSchema
 
@@ -60,7 +62,7 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
 
 class MembershipRequestUpdateAdminSchema(BaseModel):
     status: MembershipRequestStatusEnum
-    admin_comment: str | None
+    admin_comment: str | None = None
 
     @model_validator(mode="after")
     def check_reason_rejecting(self):

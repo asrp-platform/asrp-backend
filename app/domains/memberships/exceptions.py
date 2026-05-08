@@ -23,3 +23,7 @@ class MembershipAlreadyPaidError(Exception):
 
 class MissingRejectingCommentError(Exception):
     pass
+
+
+class MissingMembershipRequestPayment(Exception):
+    pass

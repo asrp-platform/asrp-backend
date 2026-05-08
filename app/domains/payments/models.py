@@ -4,7 +4,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SQLAEnum, ForeignKey, Index, Uuid, func, text
+from sqlalchemy import CheckConstraint, DateTime, Enum as SQLAEnum, ForeignKey, Index, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -85,7 +85,7 @@ class Payment(Base):
                 & (status == PaymentStatusEnum.SUCCEEDED)
             ),
         ),
-        # CheckConstraint("amount > 0", name="ck_payments_amount_positive"),
+        CheckConstraint("amount > 0", name="amount_positive"),
     )
 
 

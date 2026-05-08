@@ -9,7 +9,7 @@ from loguru import logger
 from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.logging import PAYMENTS_CHANNEL
 from app.core.utils.permissions import check_permissions
-from app.domains.memberships.exceptions import MissingRejectingCommentError
+from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import (
     MembershipService,
@@ -230,6 +230,11 @@ class ReviewMembershipRequestUseCase:
                 idempotency_key,
             )
 
+    async def __check_membership_request_paid(self, membership_request_id: int):
+        membership_request = await self.__membership_service.get_membership_request_by_id(membership_request_id)
+        if membership_request.status != MembershipRequestStatusEnum.PAID:
+            raise MissingMembershipRequestPayment("Can't review approve or reject unpaid membership request")
+
     async def execute(
         self,
         membership_request_id: int,
@@ -240,6 +245,7 @@ class ReviewMembershipRequestUseCase:
         """kwargs may include (status) when approved or (status, admin_comment) when rejected"""
         async with self.__transaction_manager:
             check_permissions("memberships.update", permissions)
+            await self.__check_membership_request_paid(membership_request_id)
             approval_status = kwargs.get("status")
 
             if approval_status == MembershipRequestStatusEnum.APPROVED:

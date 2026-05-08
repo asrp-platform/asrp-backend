@@ -30,6 +30,11 @@ def validate_year_range(value: str) -> str:
 YearRange = Annotated[str, AfterValidator(validate_year_range)]
 
 
+class UserShortSchema(BaseModel):
+    id: int
+    email: str
+
+
 class UserSchema(BaseModel):
     id: int
     firstname: str
