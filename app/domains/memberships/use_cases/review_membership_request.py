@@ -20,7 +20,6 @@ from app.domains.memberships.services import (
 from app.domains.payments.models import Payment, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
 from app.domains.payments.stripe.utils import create_stripe_refund
-from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
@@ -239,7 +238,7 @@ class ReviewMembershipRequestUseCase:
         self,
         membership_request_id: int,
         reviewer: User,
-        permissions: list[Permission],
+        permissions: list[str],
         **kwargs,
     ):
         """kwargs may include (status) when approved or (status, admin_comment) when rejected"""
