@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
 from app.domains.memberships.exceptions import (
@@ -35,13 +35,16 @@ class MembershipService:
             user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
-            stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
+            stmt = select(MembershipRequest).options(
+                selectinload(MembershipRequest.membership_type),
+                selectinload(MembershipRequest.user),
+            )
             return await self.__transaction_manager.membership_requests_repository.get_first_by_kwargs(
                 stmt=stmt, user_id=user_id
             )
 
     async def get_membership_request_by_id(self, membership_request_id: int) -> MembershipRequest:
-        stmt = select(MembershipRequest).options(joinedload(MembershipRequest.membership_type))
+        stmt = select(MembershipRequest).options(selectinload(MembershipRequest.membership_type))
         membership_request = await self.__transaction_manager.membership_requests_repository.get_first_by_kwargs(
             stmt=stmt,
             id=membership_request_id,
