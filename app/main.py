@@ -26,6 +26,7 @@ from app.domains.legal_documents.routes.admin_api import router as legal_documen
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.news.api import router as news_router
+from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
 from app.domains.users.routes.current_user_api import router as current_user_router
@@ -125,6 +126,7 @@ app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 app.include_router(contact_messages_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
+app.include_router(payments_admin_router, prefix="/api/admin")
 
 
 if DEV_MODE:
