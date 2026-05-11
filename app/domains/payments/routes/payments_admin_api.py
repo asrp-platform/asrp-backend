@@ -31,10 +31,9 @@ async def get_payments(
             limit=params["limit"],
             offset=params["offset"],
         )
-        data = [PaymentReadSchema.model_validate(p) for p in payments]
         return PaginatedResponse(
             count=count,
-            data=data,
+            data=payments,
             page=params["page"],
             page_size=params["page_size"],
         )
