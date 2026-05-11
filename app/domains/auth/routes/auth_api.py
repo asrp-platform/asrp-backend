@@ -26,6 +26,15 @@ from app.domains.users.services import UserServiceDep
 router = APIRouter(tags=["Authentication"], prefix="/auth")
 
 
+REFRESH_COOKIE_KWARGS = {
+    "key": "refresh_token",
+    "path": "/",
+    "httponly": True,
+    "secure": True,
+    "samesite": "none",
+}
+
+
 class RegisterResponses(Responses):
     EMAIL_ALREADY_IN_USE = 409, "Provided email is already in use"
 
@@ -62,20 +71,19 @@ async def login(
 
     access_token = create_access_token({"email": user.email})
     refresh_token = create_refresh_token({"email": user.email}, remember_me=remember)
+    max_age = (
+        settings.refresh_token_cookie_max_age_seconds_remember
+        if remember
+        else settings.refresh_token_cookie_max_age_seconds
+    )
 
     # Optional adding access_token into Headers
     response.headers["Authorization"] = f"Bearer {access_token}"
-    max_age_seconds = (
-        (settings.REFRESH_TOKEN_LIFETIME_DAYS if remember else settings.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS)
-        * 24
-        * 60
-        * 60
-    )
+
     response.set_cookie(
-        key="refresh_token",
+        **REFRESH_COOKIE_KWARGS,
         value=refresh_token,
-        httponly=True,
-        max_age=max_age_seconds,
+        max_age=max_age,
     )
 
     return JWTTokenResponse(access_token=access_token, refresh_token=refresh_token)
@@ -107,11 +115,8 @@ class LogoutResponses(Responses):
     "/logout",
     responses=LogoutResponses.responses,
 )
-async def logout(
-    response: Response,
-    current_user: CurrentUserDep,  # noqa auth dependency
-) -> str:
-    response.delete_cookie("refresh_token")
+async def logout(response: Response) -> str:
+    response.delete_cookie(**REFRESH_COOKIE_KWARGS)
     return "Successfully logged out"
 
 

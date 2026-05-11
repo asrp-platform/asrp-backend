@@ -14,6 +14,7 @@ from app.core.common.exceptions import (
     ResourceAlreadyExistsError,
 )
 from app.core.config import DEV_MODE, settings
+from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.logging import REQUESTS_CHANNEL, configure_logging
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
@@ -69,6 +70,16 @@ async def resource_already_exists_error_handler(request: Request, exc: ResourceA
 @app.exception_handler(PermissionDeniedError)
 async def permission_denied_error_handler(request: Request, exc: PermissionDeniedError):
     return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(InvalidOrderAttributeError)
+async def invalid_order_attribute_error_handler(request: Request, exc: InvalidOrderAttributeError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(InvalidFilterError)
+async def invalid_filter_error_handler(request: Request, exc: InvalidFilterError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 # --- Обработчик ошибок 422 ---

@@ -19,15 +19,9 @@ async def permissions(test_transaction_manager: TransactionManager) -> list[Perm
 
 
 @pytest.fixture(scope="function")
-async def user_permissions_factory(
-    test_transaction_manager: TransactionManager,
-    permissions: list[Permission],
-) -> PermissionFactory:
-    async def _factory(user: User):
-        user_permissions = [{"permission_id": p.id, "user_id": user.id} for p in permissions]
-        return await test_transaction_manager.user_permission_repository.bulk_create(user_permissions)
-
-    return _factory
+async def permissions_action_list(test_transaction_manager: TransactionManager) -> list[Permission]:
+    permissions, _ = await test_transaction_manager.permission_repository.list()
+    return list(map(lambda p: p.action, permissions))
 
 
 @pytest.fixture(scope="function")
