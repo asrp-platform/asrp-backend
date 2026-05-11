@@ -13,13 +13,14 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
+COPY ./app ./app
 
 RUN poetry install --without dev --no-root
 
 COPY ./compose/backend/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-COPY ./alembic ./
+COPY ./alembic ./alembic
 COPY alembic.ini ./
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -22,6 +22,7 @@ CONVENTION = {
     "pk": "pk_%(table_name)s",
 }
 
+
 class FileStorageTypeEnum(str, Enum):
     S3_STORAGE = "s3"
 
@@ -39,6 +40,9 @@ class S3Config(BaseModel):
     S3_SECRET_KEY: str = "minioadmin"
     S3_DEFAULT_BUCKET: str = Field(default="uploads", validation_alias=AliasChoices("S3_DEFAULT_BUCKET", "S3_BUCKET"))
     S3_REGION: str = "us-east-1"
+
+    S3_ENDPOINT: str | None = None
+    S3_PUBLIC_URL: str | None = None
 
 
 class Settings(BaseSettings, GmailConfig, S3Config):
@@ -65,7 +69,7 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     DIRECTORS_BOARD_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "directors_board_uploads"
 
     FILE_STORAGE_TYPE: FileStorageTypeEnum = FileStorageTypeEnum.S3_STORAGE
-    FILE_STORAGE_URL_EXPIRES_IN: int = 3600 # sec
+    FILE_STORAGE_URL_EXPIRES_IN: int = 3600  # sec
 
     STRIPE_API_KEY: str
     STRIPE_WEBHOOK_SECRET: str
@@ -85,11 +89,11 @@ class Settings(BaseSettings, GmailConfig, S3Config):
 
     @property
     def s3_endpoint_url(self) -> str:
-        return "http://localhost:9000" if DEV_MODE else "http://minio:9000"
+        return self.S3_ENDPOINT or ("http://localhost:9000" if DEV_MODE else "http://minio:9000")
 
     @property
     def s3_public_url(self) -> str:
-        return "http://localhost:9000" if DEV_MODE else self.BACKEND_DOMAIN
+        return self.S3_PUBLIC_URL or ("http://localhost:9000" if DEV_MODE else self.BACKEND_DOMAIN)
 
     @property
     def fernet_key_bytes(self):
