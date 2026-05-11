@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
+from app.domains.payments.models import Payment
 
 if TYPE_CHECKING:
     from app.domains.users.models import User
@@ -41,6 +42,7 @@ class MembershipType(Base):
     membership_requests: Mapped[list["MembershipRequest"]] = relationship(
         "MembershipRequest", back_populates="membership_type"
     )
+    user_membership: Mapped[list["UserMembership"]] = relationship("UserMembership", back_populates="membership_type")
 
 
 class MembershipRequestStatusEnum(str, Enum):
@@ -69,8 +71,39 @@ class MembershipRequest(Base, UCIMixin):
     reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     admin_comment: Mapped[str | None] = mapped_column(nullable=True)
 
+    reviewer_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewer: Mapped["User"] = relationship(
+        "User", back_populates="reviewed_membership_request", foreign_keys=[reviewer_id]
+    )
+
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
-    user: Mapped["User"] = relationship("User", back_populates="membership_request")
+    user: Mapped["User"] = relationship("User", back_populates="membership_request", foreign_keys=[user_id])
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="membership_requests")
+
+    user_membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="membership_request")
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="membership_request", uselist=True)
+
+
+class UserMembership(Base, UCIMixin):
+    __tablename__ = "users_memberships"
+
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True)
+    user: Mapped["User"] = relationship("User", back_populates="membership")
+
+    membership_request_id: Mapped[int] = mapped_column(
+        ForeignKey("membership_requests.id"), nullable=False, unique=True
+    )
+    membership_request: Mapped["MembershipRequest"] = relationship(
+        "MembershipRequest", back_populates="user_membership"
+    )
+
+    membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
+    membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_membership")
+
+    @property
+    def is_active(self) -> bool:
+        return datetime.now(timezone.utc) < self.expires_at

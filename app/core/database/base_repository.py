@@ -34,11 +34,11 @@ class BaseRepository(ABC):
 T = TypeVar("T")
 
 
-class InvalidOrderAttributeError(BaseException):
+class InvalidOrderAttributeError(Exception):
     pass
 
 
-class InvalidFilterError(BaseException):
+class InvalidFilterError(Exception):
     pass
 
 
@@ -59,7 +59,7 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
             try:
                 conditions = build_conditions(self.model, filters)
             except ValueError as e:
-                raise InvalidFilterError(f"Invalid filter for <{self.model.__name__}>. Error: {e}")
+                raise InvalidFilterError(f"Invalid filter for {self.model.__name__}. Error: {e}")
             stmt = stmt.filter(*conditions)
             count_stmt = count_stmt.filter(*conditions)
 
@@ -69,7 +69,7 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
                 field_name = param.strip("-")
 
                 if not hasattr(self.model, param.strip("-")):
-                    raise InvalidOrderAttributeError(f"Model <{self.model.__name__}> don't have attribute <{param}>")
+                    raise InvalidOrderAttributeError(f"{self.model.__name__} don't have attribute <{param}>")
                 stmt = stmt.order_by(desc(field_name) if desc_order else asc(field_name))
 
         if limit is not None and offset is not None:

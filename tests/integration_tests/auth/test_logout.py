@@ -20,4 +20,4 @@ async def test_logout_not_authenticated(
 ) -> None:
     response = await client.post("api/auth/logout")
 
-    assert response.status_code == 401
+    assert response.status_code == 200

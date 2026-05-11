@@ -9,6 +9,8 @@ from starlette import status
 from starlette.exceptions import HTTPException
 
 from app.core.config import settings
+from app.domains.memberships.models import UserMembership
+from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.users.models import User
@@ -103,7 +105,15 @@ async def get_users_permissions(
     return list(map(lambda permissions: permissions.action, user_permissions))
 
 
+async def get_current_user_membership(
+    current_user: Annotated[User, Depends(get_current_user)],
+    user_membership_service: UserMembershipServiceDep,
+) -> UserMembership | None:
+    return await user_membership_service.get_user_membership_by_user_id(current_user.id)
+
+
 RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+CurrentUserMembershipDep = Annotated[UserMembership | None, Depends(get_current_user_membership)]
 AdminUserDep = Annotated[User, Depends(get_admin_user)]
 AdminPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]
