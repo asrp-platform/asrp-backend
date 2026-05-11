@@ -1,0 +1,91 @@
+services:
+  asrp_database:
+    container_name: asrp_database
+    image: postgres:16
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  asrp_backend:
+    container_name: asrp_backend
+    build:
+      context: .
+      dockerfile: compose/backend/Dockerfile
+    depends_on:
+      asrp_database:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DEV_MODE: "false"
+      DB_HOST: asrp_database
+      DB_PORT: 5432
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_DEFAULT_BUCKET: ${S3_DEFAULT_BUCKET:-uploads}
+    expose:
+      - "8000"
+    volumes:
+      - backend_logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - internal
+
+  asrp_frontend:
+    container_name: asrp_frontend
+    image: max31ru12/asrp-prod-frontend:latest
+    pull_policy: always
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - internal
+
+  nginx:
+    container_name: nginx
+    image: nginx:1.27-alpine
+    depends_on:
+      - asrp_backend
+      - asrp_frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./compose/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/html:/var/www/html
+    restart: unless-stopped
+    networks:
+      - internal
+
+  certbot:
+    container_name: certbot
+    image: certbot/certbot:latest
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/html:/var/www/html
+    entrypoint: certbot
+    profiles:
+      - certbot
+
+volumes:
+  postgres_data:
+  backend_logs:
+
+networks:
+  internal:
+    driver: bridge
