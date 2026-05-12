@@ -55,8 +55,8 @@ async def test_get_payments_admin_success(
     await payment_factory()
 
     response = await client.get("/api/admin/payments", headers=admin_auth_headers)
+    data = response.json()
 
     assert response.status_code == 200
-    data = response.json()
     assert data["count"] >= 1
     assert len(data["data"]) >= 1
