@@ -106,7 +106,8 @@ async def test_user_with_data(
     user_data: dict[str | Any],
 ) -> [User, dict]:
     user_creation_data = user_data.copy()
-    user = await test_transaction_manager.user_repository.create(**user_creation_data)
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.create(**user_creation_data)
 
     return user, user_data
 

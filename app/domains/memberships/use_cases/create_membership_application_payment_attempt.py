@@ -86,7 +86,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
                 membership_request_id=current_user_membership_request.id,
             )
             # Need to get payment id
-            await self.__transaction_manager._session.flush()
+            await self.__transaction_manager._session.commit()
 
             payment_metadata = {
                 "membership_request_id": current_user_membership_request.id,

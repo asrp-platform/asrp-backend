@@ -61,21 +61,24 @@ async def test_create_user_membership_request(
             feedback_additional_info_data=feedback_additional_info,
         )
 
-    stmt = select(MembershipRequest).options(selectinload(MembershipRequest.membership_type))
-    membership_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
-        stmt=stmt,
-        user_id=test_user.id,
-    )
-    payment = await test_transaction_manager.payment_repository.get_first_by_kwargs(
-        user_id=test_user.id,
-        purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
-    )
-    feedback = await test_transaction_manager.feedback_additional_info_repository.get_first_by_kwargs(
-        user_id=test_user.id,
-    )
-    communication_preferences = await test_transaction_manager.communication_preferences_repository.get_first_by_kwargs(
-        user_id=test_user.id,
-    )
+    async with test_transaction_manager:
+        stmt = select(MembershipRequest).options(selectinload(MembershipRequest.membership_type))
+        membership_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
+            stmt=stmt,
+            user_id=test_user.id,
+        )
+        payment = await test_transaction_manager.payment_repository.get_first_by_kwargs(
+            user_id=test_user.id,
+            purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+        )
+        feedback = await test_transaction_manager.feedback_additional_info_repository.get_first_by_kwargs(
+            user_id=test_user.id,
+        )
+        communication_preferences = (
+            await test_transaction_manager.communication_preferences_repository.get_first_by_kwargs(
+                user_id=test_user.id,
+            )
+        )
 
     assert result == "https://checkout.stripe.com/test-session"
 

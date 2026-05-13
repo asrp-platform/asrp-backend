@@ -69,12 +69,13 @@ async def test_approve_membership_request(
 
     after_review = datetime.now(timezone.utc)
 
-    updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
-        id=paid_membership_request.id
-    )
-    created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=paid_membership_request.id
-    )
+    async with test_transaction_manager:
+        updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
+            id=paid_membership_request.id
+        )
+        created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=paid_membership_request.id
+        )
 
     assert updated_request.status == MembershipRequestStatusEnum.APPROVED
     assert updated_request.reviewer_id == admin_user.id
@@ -110,12 +111,13 @@ async def test_reject_membership_request_without_payment(
 
     after_review = datetime.now(timezone.utc)
 
-    updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
-        id=paid_membership_request.id
-    )
-    created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=paid_membership_request.id
-    )
+    async with test_transaction_manager:
+        updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
+            id=paid_membership_request.id
+        )
+        created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=paid_membership_request.id
+        )
 
     assert updated_request.status == MembershipRequestStatusEnum.REJECTED
     assert updated_request.reviewer_id == admin_user.id
@@ -140,12 +142,13 @@ async def test_reject_membership_request_without_admin_comment(
             status=MembershipRequestStatusEnum.REJECTED,
         )
 
-    updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
-        id=paid_membership_request.id
-    )
-    created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=paid_membership_request.id
-    )
+    async with test_transaction_manager:
+        updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
+            id=paid_membership_request.id
+        )
+        created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=paid_membership_request.id
+        )
 
     assert updated_request.status == MembershipRequestStatusEnum.PAID
     assert updated_request.reviewer_id is None
@@ -188,15 +191,16 @@ async def test_reject_membership_request_with_succeeded_payment_creates_refund(
         admin_comment=admin_comment,
     )
 
-    updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
-        id=paid_membership_request.id
-    )
-    updated_payment = await test_transaction_manager.payment_repository.get_first_by_kwargs(
-        id=succeeded_membership_application_payment.id
-    )
-    created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=paid_membership_request.id
-    )
+    async with test_transaction_manager:
+        updated_request = await test_transaction_manager.membership_requests_repository.get_first_by_kwargs(
+            id=paid_membership_request.id
+        )
+        updated_payment = await test_transaction_manager.payment_repository.get_first_by_kwargs(
+            id=succeeded_membership_application_payment.id
+        )
+        created_user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=paid_membership_request.id
+        )
 
     assert updated_request.status == MembershipRequestStatusEnum.REJECTED
     assert updated_request.reviewer_id == admin_user.id
@@ -232,9 +236,10 @@ async def test_reject_unpaid_membership_request(
             admin_comment="Application rejected",
         )
 
-    user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=user_membership_request.id
-    )
+    async with test_transaction_manager:
+        user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=user_membership_request.id
+        )
 
     assert user_membership is None
 
@@ -251,9 +256,10 @@ async def test_approve_unpaid_membership_request(
             user_membership_request.id, admin_user, permissions_action_list, status=MembershipRequestStatusEnum.APPROVED
         )
 
-    user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=user_membership_request.id
-    )
+    async with test_transaction_manager:
+        user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=user_membership_request.id
+        )
     assert user_membership is None
 
 
@@ -271,7 +277,8 @@ async def test_execute_no_permissions(
             paid_membership_request.id, admin_user, permissions, status=MembershipRequestStatusEnum.APPROVED
         )
 
-    user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
-        membership_request_id=paid_membership_request.id
-    )
+    async with test_transaction_manager:
+        user_membership = await test_transaction_manager.user_membership_repository.get_first_by_kwargs(
+            membership_request_id=paid_membership_request.id
+        )
     assert user_membership is None
