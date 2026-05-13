@@ -4,15 +4,14 @@ from fastapi import Depends
 from loguru import logger
 
 from app.core.common.exceptions import NotFoundError
-from app.core.config import settings
 from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.memberships.exceptions import MembershipAlreadyPaidError
+from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
-from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
+from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
@@ -63,19 +62,6 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
             )
 
             membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
-            membership_type_line_items = [
-                {
-                    "price_data": {
-                        "currency": "usd",
-                        "unit_amount": membership_type_price_cents,
-                        "product_data": {
-                            "name": membership_type.name,
-                            "description": membership_type.description,
-                        },
-                    },
-                    "quantity": 1,
-                }
-            ]
             payment = await self.__payment_service.create_payment(
                 provider=PaymentProvider.STRIPE,
                 amount=membership_type_price_cents,
@@ -86,39 +72,42 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
                 membership_request_id=current_user_membership_request.id,
             )
             # Need to get payment id
-            await self.__transaction_manager._session.commit()
+            await self.__transaction_manager.commit()
 
-            payment_metadata = {
-                "membership_request_id": current_user_membership_request.id,
-                "payment_id": str(payment.id),
-                "payment_purpose": PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
-            }
+            try:
+                checkout = await create_membership_application_checkout_session(
+                    membership_request=current_user_membership_request,
+                    membership_type=membership_type,
+                    payment=payment,
+                )
+            except Exception as exc:
+                payments_logger.exception(
+                    "Failed to create membership payment attempt checkout session: membership_request_id={} payment_id={}",
+                    current_user_membership_request.id,
+                    payment.id,
+                )
+                await self.__payment_service.update_payment(
+                    payment.id,
+                    status=PaymentStatusEnum.FAILED,
+                    provider_data={
+                        "membership_request_id": current_user_membership_request.id,
+                        "payment_id": str(payment.id),
+                        "error_type": "checkout_session_error",
+                    },
+                )
+                await self.__transaction_manager.commit()
+                raise MembershipApplicationCheckoutError("Failed to create checkout session") from exc
 
-            checkout_session = await create_checkout_session(
-                membership_type_line_items,
-                metadata=payment_metadata,
-                success_url=f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
-            )
-
-            provider_data = {
-                "membership_request_id": current_user_membership_request.id,
-                "payment_id": str(payment.id),
-                "checkout_session_id": checkout_session.id,
-                "checkout_session_status": checkout_session.status,
-                "payment_intent_status": checkout_session.payment_status,
-                "url": checkout_session.url,
-            }
-
-            await self.__payment_service.update_payment(payment.id, provider_data=provider_data)
+            await self.__payment_service.update_payment(payment.id, provider_data=checkout.provider_data)
 
             payments_logger.info(
                 "Retry membership request payment: membership_request_id={} payment_id={} checkout_session_id={}",
                 current_user_membership_request.id,
                 payment.id,
-                checkout_session.id,
+                checkout.session.id,
             )
 
-        return checkout_session.url
+        return checkout.session.url
 
 
 def get_use_case(

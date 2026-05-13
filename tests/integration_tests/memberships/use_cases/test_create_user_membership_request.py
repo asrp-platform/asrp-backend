@@ -50,7 +50,7 @@ async def test_create_user_membership_request(
     )
 
     with patch(
-        "app.domains.memberships.use_cases.create_membership_request.create_checkout_session",
+        "app.domains.payments.stripe.utils.create_checkout_session",
         new=AsyncMock(return_value=fake_checkout_session),
     ):
         result = await test_create_user_membership_use_case.execute(

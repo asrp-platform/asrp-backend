@@ -39,3 +39,6 @@ class SQLAlchemyTransactionManagerBase(BaseTransactionManager):
 
     async def commit(self):
         await self._session.commit()
+
+    async def flush(self):
+        await self._session.flush()

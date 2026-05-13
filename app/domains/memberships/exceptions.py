@@ -21,9 +21,21 @@ class MembershipAlreadyPaidError(Exception):
     pass
 
 
+class MembershipRequestCannotBeReappliedError(Exception):
+    pass
+
+
+class MembershipApplicationCheckoutError(Exception):
+    pass
+
+
 class MissingRejectingCommentError(Exception):
     pass
 
 
 class MissingMembershipRequestPayment(Exception):
+    pass
+
+
+class CantBuyHonoraryMembership(Exception):
     pass

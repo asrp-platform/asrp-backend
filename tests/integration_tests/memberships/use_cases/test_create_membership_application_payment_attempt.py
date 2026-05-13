@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.domains.memberships.exceptions import MembershipAlreadyPaidError
+from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCase,
@@ -57,11 +57,37 @@ async def test_create_membership_application_payment_attempt_fails_when_successf
 
     with (
         patch(
-            "app.domains.memberships.use_cases.create_membership_application_payment_attempt.create_checkout_session",
+            "app.domains.memberships.use_cases.create_membership_application_payment_attempt.create_membership_application_checkout_session",
             new=AsyncMock(),
-        ) as create_checkout_session_mock,
+        ) as create_membership_application_checkout_session_mock,
         pytest.raises(MembershipAlreadyPaidError),
     ):
         await test_create_membership_application_payment_attempt_use_case.execute(test_user)
 
-    create_checkout_session_mock.assert_not_awaited()
+    create_membership_application_checkout_session_mock.assert_not_awaited()
+
+
+async def test_create_membership_application_payment_attempt_marks_payment_failed_when_checkout_creation_fails(
+    test_transaction_manager: TransactionManager,
+    test_create_membership_application_payment_attempt_use_case: CreateMembershipApplicationPaymentAttemptUseCase,
+    test_user: User,
+    user_membership_request,
+):
+    with (
+        patch(
+            "app.domains.memberships.use_cases.create_membership_application_payment_attempt.create_membership_application_checkout_session",
+            new=AsyncMock(side_effect=RuntimeError("stripe is down")),
+        ) as create_membership_application_checkout_session_mock,
+        pytest.raises(MembershipApplicationCheckoutError),
+    ):
+        await test_create_membership_application_payment_attempt_use_case.execute(test_user)
+
+    async with test_transaction_manager:
+        payment = await test_transaction_manager.payment_repository.get_first_by_kwargs(
+            user_id=test_user.id,
+            purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+        )
+
+    assert create_membership_application_checkout_session_mock.await_count == 1
+    assert payment.status == PaymentStatusEnum.FAILED
+    assert payment.provider_data["error_type"] == "checkout_session_error"

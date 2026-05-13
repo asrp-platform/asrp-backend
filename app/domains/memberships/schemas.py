@@ -44,6 +44,10 @@ class MembershipRequestCreateSchema(BaseModel):
     }
 
 
+class MembershipRequestReapplySchema(MembershipRequestDataSchema):
+    membership_type_id: int
+
+
 class MembershipRequestViewSchema(MembershipRequestDataSchema):
     id: int
     created_at: datetime
