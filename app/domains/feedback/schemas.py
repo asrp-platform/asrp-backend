@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.feedback.models import ContactMessageTypeEnum
@@ -15,16 +15,19 @@ class GetInvolvedMessage(BaseModel):
     future_committee_working: bool
     future_leadership_positions: bool
     receive_updates: bool
+    model_config = ConfigDict(extra="forbid")
 
 
 class CommitteesGetInvolvedMessage(BaseModel):
     role_affiliation: Annotated[str | None, Field(min_length=2)] = None
     get_involved_message: Annotated[str | None, Field(min_length=10)] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class ContactMessage(BaseModel):
     subject: Annotated[str | None, Field(min_length=2)] = None
     contact_message: Annotated[str | None, Field(min_length=10)] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class CreateContactMessageSchema(BaseModel):
@@ -33,16 +36,26 @@ class CreateContactMessageSchema(BaseModel):
     type: ContactMessageTypeEnum
     message_content: ContactMessage | CommitteesGetInvolvedMessage | GetInvolvedMessage
 
+    @model_validator(mode="after")
+    def validate_message_content(self) -> "CreateContactMessageSchema":
+        mapping = {
+            ContactMessageTypeEnum.CONTACT: ContactMessage,
+            ContactMessageTypeEnum.GET_INVOLVED: CommitteesGetInvolvedMessage,
+            ContactMessageTypeEnum.GET_INVOLVED_COMMITTEES: GetInvolvedMessage,
+        }
+        schema = mapping.get(self.type)
+        if schema:
+            data = self.message_content if isinstance(self.message_content, dict) else self.message_content.model_dump()
+            self.message_content = schema.model_validate(data)
+        return self
+
 
 class ContactMessageResponseSchema(CreateContactMessageSchema):
     id: int
     created_at: datetime
     updated_at: datetime
     answered: bool
-
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ContactMessageReplyCreate(BaseModel):
