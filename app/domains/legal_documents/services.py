@@ -1,4 +1,3 @@
-import uuid
 from typing import Annotated
 
 from fastapi import Depends
@@ -6,10 +5,10 @@ from fastapi import Depends
 from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
+from app.domains.legal_documents.models import Sponsor
 from app.domains.legal_documents.types import LegalDocument
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
-from app.domains.legal_documents.models import Sponsor
 
 
 class LegalDocumentsService:
@@ -91,7 +90,7 @@ def get_bylaws_service(
 BylawsServiceDep = Annotated[LegalDocumentsService, Depends(get_bylaws_service)]
 
 def get_sponsors_service(
-    file_storage: FileStorageDep, 
+    file_storage: FileStorageDep,
     transaction_manager: TransactionManagerDep
 ) -> SponsorsService:
     return SponsorsService(transaction_manager, file_storage)

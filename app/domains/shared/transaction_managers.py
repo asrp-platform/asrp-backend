@@ -11,6 +11,7 @@ from app.domains.feedback.repositories import (
     ContactMessageRepository,
     FeedbackAdditionalInfoRepository,
 )
+from app.domains.legal_documents.repositories import SponsorRepository
 from app.domains.memberships.repositories import (
     MembershipRequestsRepository,
     MembershipTypeRepository,
@@ -27,7 +28,6 @@ from app.domains.users.repositories import (
     ResidencyRepository,
     UserRepository,
 )
-from app.domains.legal_documents.repositories import SponsorRepository
 
 
 class TransactionManager(SQLAlchemyTransactionManagerBase):
