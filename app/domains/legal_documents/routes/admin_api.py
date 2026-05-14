@@ -27,6 +27,30 @@ class BylawsAdminResponses(PermissionsResponses):
     INVALID_CONTENT_TYPE = 415, "Invalid file type. Only PDF allowed."
 
 
+class CreateSponsorResponses(PermissionsResponses):
+    pass
+
+
+class GetAdminSponsorsResponses(PermissionsResponses):
+    pass
+
+
+class SponsorResponses(PermissionsResponses):
+    NOT_FOUND = 404, "Sponsor with provided ID not found"
+
+
+class UpdateSponsorResponses(SponsorResponses):
+    pass
+
+
+class DeleteSponsorResponses(SponsorResponses):
+    pass
+
+
+class UploadLogoResponses(PermissionsResponses):
+    INVALID_CONTENT_TYPE = 415, "Invalid image content type"
+
+
 @router.put(
     "/bylaws",
     summary="Upload or replace bylaws document",
@@ -57,6 +81,7 @@ async def upsert_bylaws(
     "/bylaws",
     summary="Delete bylaws document",
     status_code=204,
+    responses=BylawsAdminResponses.responses,
 )
 async def delete_bylaws(
     service: BylawsServiceDep,
@@ -73,6 +98,7 @@ async def delete_bylaws(
     "/sponsors",
     status_code=201,
     summary="Create a new sponsor",
+    responses=CreateSponsorResponses.responses,
 )
 async def create_sponsor(
     data: CreateSponsorSchema,
@@ -85,6 +111,7 @@ async def create_sponsor(
 @router.get(
     "/sponsors",
     summary="Get list of all sponsors (Admin)",
+    responses=GetAdminSponsorsResponses.responses,
 )
 async def get_admin_sponsors(
     use_case: GetSponsorsUseCaseDep,
@@ -98,6 +125,7 @@ async def get_admin_sponsors(
 @router.patch(
     "/sponsors/{sponsor_id}",
     summary="Update a sponsor",
+    responses=UpdateSponsorResponses.responses,
 )
 async def update_sponsor(
     sponsor_id: Annotated[int, Path(...)],
@@ -112,6 +140,7 @@ async def update_sponsor(
     "/sponsors/{sponsor_id}",
     status_code=204,
     summary="Delete a sponsor",
+    responses=DeleteSponsorResponses.responses,
 )
 async def delete_sponsor(
     sponsor_id: Annotated[int, Path(...)],
@@ -124,7 +153,7 @@ async def delete_sponsor(
 @router.put(
     "/sponsors/logos",
     summary="Upload sponsor logo",
-    responses=BylawsAdminResponses.responses,
+    responses=UploadLogoResponses.responses,
 )
 async def upload_sponsor_logo(
     use_case: UploadSponsorLogoUseCaseDep,
@@ -132,7 +161,7 @@ async def upload_sponsor_logo(
     file: Annotated[UploadFile, File(...)],
 ) -> ViewLegalDocumentSchema:
     if "legal_documents.update" not in permissions:
-        raise BylawsAdminResponses.PERMISSION_ERROR
+        raise UploadLogoResponses.PERMISSION_ERROR
 
     file_data = FileData(
         content=await file.read(),
@@ -144,4 +173,4 @@ async def upload_sponsor_logo(
         url = await use_case.execute(file_data)
         return ViewLegalDocumentSchema(url=url)
     except InvalidMimeTypeError:
-        raise BylawsAdminResponses.INVALID_CONTENT_TYPE
+        raise UploadLogoResponses.INVALID_CONTENT_TYPE

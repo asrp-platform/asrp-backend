@@ -26,7 +26,15 @@ async def get_bylaws(
     return ViewLegalDocumentSchema(url=url)
 
 
-@router.get("/sponsors", summary="Get list of sponsors")
+class GetSponsorsResponses(Responses):
+    pass
+
+
+@router.get(
+    "/sponsors",
+    summary="Get list of sponsors",
+    responses=GetSponsorsResponses.responses,
+)
 async def get_sponsors(
     use_case: GetSponsorsUseCaseDep,
 ) -> list[SponsorSchema]:
