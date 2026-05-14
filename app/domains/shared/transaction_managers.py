@@ -27,6 +27,7 @@ from app.domains.users.repositories import (
     ResidencyRepository,
     UserRepository,
 )
+from app.domains.legal_documents.repositories import SponsorRepository
 
 
 class TransactionManager(SQLAlchemyTransactionManagerBase):
@@ -102,6 +103,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def directors_board_member_repository(self):
         return DirectorBoardMemberRepository(self._session)
+
+    @property
+    def sponsor_repository(self):
+        return SponsorRepository(self._session)
 
 
 def get_transaction_manager(
