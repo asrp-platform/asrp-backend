@@ -15,6 +15,7 @@ from app.domains.news.models import News  # noqa
 from app.domains.payments.models import Payment  # noqa
 from app.domains.permissions.models import Permission, UserPermission  # noqa
 from app.domains.users.models import User  # noqa
+from app.domains.legal_documents.models import Sponsor  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
