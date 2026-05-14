@@ -1,12 +1,10 @@
 from datetime import datetime
-from enum import Enum
 from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, Field
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
-
 
 
 class GetInvolvedMessage(BaseModel):
