@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -12,7 +11,7 @@ from app.domains.memberships.exceptions import (
     MembershipApplicationCheckoutError,
     MembershipRequestCannotBeReappliedError,
 )
-from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum, MembershipTypeEnum
+from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipService
 from app.domains.memberships.use_cases.reapply_membership_application import ReapplyMembershipApplicationUseCase
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
@@ -65,42 +64,11 @@ def reapply_data(faker: Faker) -> dict:
     }
 
 
-@pytest.fixture()
-async def purchasable_membership_type(test_transaction_manager: TransactionManager):
-    async with test_transaction_manager:
-        return await test_transaction_manager.membership_type_repository.get_first_by_kwargs(
-            type=MembershipTypeEnum.ACTIVE,
-        )
-
-
-@pytest.fixture()
-async def rejected_membership_request(
-    test_transaction_manager: TransactionManager,
-    test_user: User,
-    admin_user: User,
-    purchasable_membership_type,
-    faker: Faker,
-) -> MembershipRequest:
-    async with test_transaction_manager:
-        return await test_transaction_manager.membership_requests_repository.create(
-            status=MembershipRequestStatusEnum.REJECTED,
-            primary_affiliation=faker.company(),
-            job_title=faker.job(),
-            practice_setting=faker.word(),
-            subspecialty=faker.word(),
-            reviewed_at=datetime.now(timezone.utc),
-            admin_comment=faker.sentence(),
-            reviewer_id=admin_user.id,
-            user_id=test_user.id,
-            membership_type_id=purchasable_membership_type.id,
-        )
-
-
 async def test_reapply_membership_application_creates_checkout_and_logs(
     test_transaction_manager: TransactionManager,
     reapply_use_case: ReapplyMembershipApplicationUseCase,
     rejected_membership_request: MembershipRequest,
-    purchasable_membership_type,
+    purchasable_membership_type_id: int,
     test_user: User,
     reapply_data: dict,
     logger_spy: LoggerSpy,
@@ -135,7 +103,7 @@ async def test_reapply_membership_application_creates_checkout_and_logs(
 
     result = await reapply_use_case.execute(
         test_user,
-        membership_type_id=purchasable_membership_type.id,
+        membership_type_id=purchasable_membership_type_id,
         **reapply_data,
     )
 
@@ -153,7 +121,7 @@ async def test_reapply_membership_application_creates_checkout_and_logs(
     assert membership_request.reviewer_id is None
     assert membership_request.reviewed_at is None
     assert membership_request.admin_comment is None
-    assert membership_request.membership_type_id == purchasable_membership_type.id
+    assert membership_request.membership_type_id == purchasable_membership_type_id
     assert membership_request.primary_affiliation == reapply_data["primary_affiliation"]
 
     assert payment.status == PaymentStatusEnum.PENDING
@@ -174,12 +142,12 @@ async def test_reapply_membership_application_fails_when_request_not_found(
     reapply_use_case: ReapplyMembershipApplicationUseCase,
     test_user: User,
     reapply_data: dict,
-    purchasable_membership_type,
+    purchasable_membership_type_id: int,
 ) -> None:
     with pytest.raises(NotFoundError):
         await reapply_use_case.execute(
             test_user,
-            membership_type_id=purchasable_membership_type.id,
+            membership_type_id=purchasable_membership_type_id,
             **reapply_data,
         )
 
@@ -189,7 +157,7 @@ async def test_reapply_membership_application_fails_when_request_not_rejected(
     user_membership_request: MembershipRequest,
     test_user: User,
     reapply_data: dict,
-    purchasable_membership_type,
+    purchasable_membership_type_id: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     create_checkout_session = AsyncMock()
@@ -202,7 +170,7 @@ async def test_reapply_membership_application_fails_when_request_not_rejected(
     with pytest.raises(MembershipRequestCannotBeReappliedError):
         await reapply_use_case.execute(
             test_user,
-            membership_type_id=purchasable_membership_type.id,
+            membership_type_id=purchasable_membership_type_id,
             **reapply_data,
         )
 
@@ -215,7 +183,7 @@ async def test_reapply_membership_application_fails_when_succeeded_payment_exist
     rejected_membership_request: MembershipRequest,
     test_user: User,
     reapply_data: dict,
-    purchasable_membership_type,
+    purchasable_membership_type_id: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async with test_transaction_manager:
@@ -239,7 +207,7 @@ async def test_reapply_membership_application_fails_when_succeeded_payment_exist
     with pytest.raises(MembershipAlreadyPaidError):
         await reapply_use_case.execute(
             test_user,
-            membership_type_id=purchasable_membership_type.id,
+            membership_type_id=purchasable_membership_type_id,
             **reapply_data,
         )
 
@@ -252,7 +220,7 @@ async def test_reapply_membership_application_marks_payment_failed_when_checkout
     rejected_membership_request: MembershipRequest,
     test_user: User,
     reapply_data: dict,
-    purchasable_membership_type,
+    purchasable_membership_type_id: int,
     logger_spy: LoggerSpy,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -266,7 +234,7 @@ async def test_reapply_membership_application_marks_payment_failed_when_checkout
     with pytest.raises(MembershipApplicationCheckoutError):
         await reapply_use_case.execute(
             test_user,
-            membership_type_id=purchasable_membership_type.id,
+            membership_type_id=purchasable_membership_type_id,
             **reapply_data,
         )
 

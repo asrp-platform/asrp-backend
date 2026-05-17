@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
-from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
+from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.payments.models import PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
@@ -111,14 +111,12 @@ async def test_create_user_membership_already_exists(
 async def test_create_user_membership_honorary_not_allowed(
     client: AsyncClient,
     auth_headers: AuthHeaders,
-    user_membership_request_data,
+    honorary_user_membership_request_data,
 ) -> None:
-    user_membership_request_data["membership_type"] = MembershipTypeEnum.HONORARY.value
-
     response = await client.post(
         "api/users/current-user/membership-requests",
         headers=auth_headers,
-        json=user_membership_request_data,
+        json=honorary_user_membership_request_data,
     )
 
     assert response.status_code == 422
@@ -174,7 +172,7 @@ async def test_create_new_payment_attempt(
         )
 
     assert response.status_code == 201
-    assert response.json() == checkout_session.url
+    assert response.json()["checkout_session_url"] == checkout_session.url
     assert payment.status == PaymentStatusEnum.PENDING
     assert payment.provider_data["checkout_session_id"] == checkout_session.id
 

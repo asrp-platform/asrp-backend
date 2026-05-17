@@ -3,32 +3,13 @@ from types import SimpleNamespace
 import pytest
 from faker import Faker
 
-from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum, MembershipTypeEnum
+from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipService
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCase
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
-
-
-@pytest.fixture(scope="function")
-def membership_request_create_data(faker: Faker) -> dict:
-    return {
-        "membership": {
-            "primary_affiliation": faker.company(),
-            "job_title": faker.job(),
-            "practice_setting": faker.word(),
-            "subspecialty": faker.word(),
-        },
-        "membership_type": faker.random_element([item for item in MembershipTypeEnum]),
-        "feedback_additional_info": {
-            "hear_about_asrp": faker.sentence(),
-            "tg_username": f"@{faker.user_name()[:20]}",
-            "interest_description": faker.text(max_nb_chars=200),
-        },
-        "is_agrees_communications": faker.boolean(),
-    }
 
 
 @pytest.fixture()
@@ -46,14 +27,13 @@ def process_payment_use_case(
 
 @pytest.fixture()
 async def membership_request_payment_pending(
-    faker: Faker,
     test_user: User,
     membership_service: MembershipService,
     membership_request_create_data,
 ):
     membership_request = await membership_service.create_membership_request(
         test_user.id,
-        faker.random_element([item for item in MembershipTypeEnum]),
+        membership_request_create_data["membership_type"],
         status=MembershipRequestStatusEnum.PAYMENT_PENDING,
         **membership_request_create_data["membership"],
     )

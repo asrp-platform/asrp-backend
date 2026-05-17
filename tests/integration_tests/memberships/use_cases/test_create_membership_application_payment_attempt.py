@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
-from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCase,
 )
@@ -31,20 +30,9 @@ async def test_create_membership_application_payment_attempt_fails_when_successf
     test_transaction_manager: TransactionManager,
     test_create_membership_application_payment_attempt_use_case: CreateMembershipApplicationPaymentAttemptUseCase,
     test_user: User,
-    membership_request_create_data,
+    payment_pending_membership_request,
 ):
     async with test_transaction_manager:
-        membership_type = await test_transaction_manager.membership_type_repository.get_first_by_kwargs(
-            type=membership_request_create_data["membership_type"].value,
-        )
-        membership_request = await test_transaction_manager.membership_requests_repository.create(
-            user_id=test_user.id,
-            membership_type_id=membership_type.id,
-            status=MembershipRequestStatusEnum.PAYMENT_PENDING,
-            **membership_request_create_data["membership"],
-        )
-        await test_transaction_manager._session.flush()
-
         await test_transaction_manager.payment_repository.create(
             provider=PaymentProvider.STRIPE,
             amount=2000,
@@ -52,7 +40,7 @@ async def test_create_membership_application_payment_attempt_fails_when_successf
             purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
             user_id=test_user.id,
             provider_data=None,
-            membership_request_id=membership_request.id,
+            membership_request_id=payment_pending_membership_request.id,
         )
 
     with (
