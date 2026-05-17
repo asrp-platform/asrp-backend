@@ -36,3 +36,7 @@ class FeedbackAdditionalInfoCreateSchema(BaseModel):
 
 class UploadedImageSchema(BaseModel):
     path: str
+
+
+class PaymentCheckoutSchema(BaseModel):
+    checkout_session_url: str

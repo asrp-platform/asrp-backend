@@ -27,6 +27,7 @@ from app.domains.memberships.use_cases.reapply_membership_application import Rea
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
+from app.domains.shared.schemas import PaymentCheckoutSchema
 from app.domains.users.exceptions import (
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
@@ -197,15 +198,16 @@ async def create_membership_request(
     create_membership_request_data: MembershipRequestCreateSchema,
     current_user: CurrentUserDep,
     use_case: CreateMembershipRequestUseCaseDep,
-) -> str:
+) -> PaymentCheckoutSchema:
     try:
-        return await use_case.execute(
+        checkout_session_url = await use_case.execute(
             user_id=current_user.id,
             is_agrees_communications=create_membership_request_data.is_agrees_communications,
             membership_type=create_membership_request_data.membership_type,
             membership_request_data=create_membership_request_data.membership.model_dump(),
             feedback_additional_info_data=create_membership_request_data.feedback_additional_info.model_dump(),
         )
+        return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except CantBuyHonoraryMembership:
         raise MembershipCreateResponses.CANT_BUY_HONORARY_MEMBERSHIP
     except MembershipRequestAlreadyExistsError:
@@ -231,9 +233,10 @@ class CreateNewPaymentAttemptResponses(Responses):
 async def create_new_payment_attempt(
     current_user: CurrentUserDep,
     use_case: CreateMembershipApplicationPaymentAttemptUseCaseDep,
-):
+) -> PaymentCheckoutSchema:
     try:
-        return await use_case.execute(current_user)
+        checkout_session_url = await use_case.execute(current_user)
+        return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except MembershipAlreadyPaidError:
         raise CreateNewPaymentAttemptResponses.MEMBERSHIP_REQUEST_ALREADY_PAID
     except MembershipApplicationCheckoutError:
@@ -258,9 +261,10 @@ async def create_membership_request_reapply(
     current_user: CurrentUserDep,
     body: MembershipRequestReapplySchema,
     use_case: ReapplyMembershipApplicationUseCaseDep,
-):
+) -> PaymentCheckoutSchema:
     try:
-        return await use_case.execute(current_user, **body.model_dump())
+        checkout_session_url = await use_case.execute(current_user, **body.model_dump())
+        return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except MembershipAlreadyPaidError:
         raise ReapplyMembershipRequestResponses.MEMBERSHIP_REQUEST_ALREADY_PAID
     except MembershipRequestCannotBeReappliedError:

@@ -58,6 +58,7 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
     user: UserShortSchema
     membership_type_id: int
     membership_type: MembershipTypeSchema
+    admin_comment: str | None
 
     model_config = {
         "from_attributes": True,
