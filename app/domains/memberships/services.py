@@ -18,6 +18,15 @@ class MembershipService:
     def __init__(self, transaction_manager: TransactionManager):
         self.__transaction_manager = transaction_manager
 
+    async def get_membership_types(
+        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+    ) -> list[MembershipType]:
+        async with self.__transaction_manager:
+            membership_types, _ = await self.__transaction_manager.membership_type_repository.list(
+                limit, offset, order_by, filters
+            )
+            return membership_types
+
     async def get_membership_requests_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> [list[MembershipRequest], int]:
@@ -60,6 +69,15 @@ class MembershipService:
 
         if membership_type is None:
             raise MembershipTypeNotFoundError("Provided membership type not found")
+        return membership_type
+
+    async def get_membership_type_by_id(self, membership_type_id: int) -> MembershipType:
+        membership_type = await self.__transaction_manager.membership_type_repository.get_first_by_kwargs(
+            id=membership_type_id
+        )
+
+        if membership_type is None:
+            raise MembershipTypeNotFoundError("Membership type with provided ID not found")
         return membership_type
 
     async def create_membership_request(self, user_id: int, membership_type: MembershipTypeEnum, **kwargs):

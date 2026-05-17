@@ -44,6 +44,10 @@ class MembershipRequestCreateSchema(BaseModel):
     }
 
 
+class MembershipRequestReapplySchema(MembershipRequestDataSchema):
+    membership_type_id: int
+
+
 class MembershipRequestViewSchema(MembershipRequestDataSchema):
     id: int
     created_at: datetime
@@ -54,6 +58,7 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
     user: UserShortSchema
     membership_type_id: int
     membership_type: MembershipTypeSchema
+    admin_comment: str | None
 
     model_config = {
         "from_attributes": True,

@@ -5,9 +5,17 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.domains.memberships.exceptions import MembershipAlreadyPaidError
+from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
+from app.domains.memberships.exceptions import (
+    CantBuyHonoraryMembership,
+    MembershipAlreadyPaidError,
+    MembershipApplicationCheckoutError,
+    MembershipRequestAlreadyExistsError,
+    MembershipRequestCannotBeReappliedError,
+)
 from app.domains.memberships.schemas import (
     MembershipRequestCreateSchema,
+    MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
     UserMembershipSchema,
 )
@@ -15,9 +23,11 @@ from app.domains.memberships.use_cases.create_membership_application_payment_att
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
 )
 from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
+from app.domains.memberships.use_cases.reapply_membership_application import ReapplyMembershipApplicationUseCaseDep
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
+from app.domains.shared.schemas import PaymentCheckoutSchema
 from app.domains.users.exceptions import (
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
@@ -174,6 +184,8 @@ async def get_current_user_membership_request(
 class MembershipCreateResponses(Responses):
     MEMBERSHIP_ALREADY_EXISTS = 409, "Membership for provided User already exists"
     FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS = 409, "Additional Detail for provided User already exists"
+    CANT_BUY_HONORARY_MEMBERSHIP = 422, "Can't purchase HONORARY membership"
+    CHECKOUT_SESSION_CREATION_FAILED = 502, "Failed to create checkout session"
 
 
 @router.post(
@@ -186,19 +198,30 @@ async def create_membership_request(
     create_membership_request_data: MembershipRequestCreateSchema,
     current_user: CurrentUserDep,
     use_case: CreateMembershipRequestUseCaseDep,
-) -> str:
-    return await use_case.execute(
-        user_id=current_user.id,
-        is_agrees_communications=create_membership_request_data.is_agrees_communications,
-        membership_type=create_membership_request_data.membership_type,
-        membership_request_data=create_membership_request_data.membership.model_dump(),
-        feedback_additional_info_data=create_membership_request_data.feedback_additional_info.model_dump(),
-    )
+) -> PaymentCheckoutSchema:
+    try:
+        checkout_session_url = await use_case.execute(
+            user_id=current_user.id,
+            is_agrees_communications=create_membership_request_data.is_agrees_communications,
+            membership_type=create_membership_request_data.membership_type,
+            membership_request_data=create_membership_request_data.membership.model_dump(),
+            feedback_additional_info_data=create_membership_request_data.feedback_additional_info.model_dump(),
+        )
+        return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
+    except CantBuyHonoraryMembership:
+        raise MembershipCreateResponses.CANT_BUY_HONORARY_MEMBERSHIP
+    except MembershipRequestAlreadyExistsError:
+        raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
+    except FeedbackAdditionalInfoAlreadyExistsError:
+        raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
+    except MembershipApplicationCheckoutError:
+        raise MembershipCreateResponses.CHECKOUT_SESSION_CREATION_FAILED
 
 
 class CreateNewPaymentAttemptResponses(Responses):
     MEMBERSHIP_REQUEST_NOT_FOUND = 404, "Membership request for the current user not found"
     MEMBERSHIP_REQUEST_ALREADY_PAID = 409, "Membership request for the current user already paid"
+    CHECKOUT_SESSION_CREATION_FAILED = 502, "Failed to create checkout session"
 
 
 @router.post(
@@ -210,11 +233,46 @@ class CreateNewPaymentAttemptResponses(Responses):
 async def create_new_payment_attempt(
     current_user: CurrentUserDep,
     use_case: CreateMembershipApplicationPaymentAttemptUseCaseDep,
-):
+) -> PaymentCheckoutSchema:
     try:
-        return await use_case.execute(current_user)
+        checkout_session_url = await use_case.execute(current_user)
+        return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except MembershipAlreadyPaidError:
         raise CreateNewPaymentAttemptResponses.MEMBERSHIP_REQUEST_ALREADY_PAID
+    except MembershipApplicationCheckoutError:
+        raise CreateNewPaymentAttemptResponses.CHECKOUT_SESSION_CREATION_FAILED
+
+
+class ReapplyMembershipRequestResponses(Responses):
+    MEMBERSHIP_REQUEST_NOT_FOUND = 404, "Membership request for the current user not found"
+    MEMBERSHIP_REQUEST_CANNOT_BE_REAPPLIED = 409, "Cannot reapply not rejected membership request"
+    MEMBERSHIP_REQUEST_ALREADY_PAID = 409, "Membership request for the current user already paid"
+    CANT_BUY_HONORARY_MEMBERSHIP = 422, "Can't purchase HONORARY membership"
+    CHECKOUT_SESSION_CREATION_FAILED = 502, "Failed to create checkout session"
+
+
+@router.post(
+    "/membership-requests/reapplies",
+    status_code=201,
+    responses=ReapplyMembershipRequestResponses.responses,
+    summary="Reapply for a membership if membership request was rejected",
+)
+async def create_membership_request_reapply(
+    current_user: CurrentUserDep,
+    body: MembershipRequestReapplySchema,
+    use_case: ReapplyMembershipApplicationUseCaseDep,
+) -> PaymentCheckoutSchema:
+    try:
+        checkout_session_url = await use_case.execute(current_user, **body.model_dump())
+        return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
+    except MembershipAlreadyPaidError:
+        raise ReapplyMembershipRequestResponses.MEMBERSHIP_REQUEST_ALREADY_PAID
+    except MembershipRequestCannotBeReappliedError:
+        raise ReapplyMembershipRequestResponses.MEMBERSHIP_REQUEST_CANNOT_BE_REAPPLIED
+    except CantBuyHonoraryMembership:
+        raise ReapplyMembershipRequestResponses.CANT_BUY_HONORARY_MEMBERSHIP
+    except MembershipApplicationCheckoutError:
+        raise ReapplyMembershipRequestResponses.CHECKOUT_SESSION_CREATION_FAILED
 
 
 @router.get("/payments")

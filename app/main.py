@@ -25,6 +25,7 @@ from app.domains.feedback.routes.contact_messages_api import router as contact_m
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
+from app.domains.memberships.routes.membership_types_api import router as membership_types_router
 from app.domains.news.api import router as news_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
@@ -118,6 +119,7 @@ app.include_router(residency_router, prefix="/api")
 app.include_router(fellowship_router, prefix="/api")
 app.include_router(job_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
+app.include_router(membership_types_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")

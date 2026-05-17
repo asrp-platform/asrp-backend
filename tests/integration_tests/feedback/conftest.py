@@ -96,4 +96,5 @@ def get_involved_committees_message_data(faker: Faker) -> dict:
 async def contact_message_db(
     test_transaction_manager: TransactionManager, get_involved_committees_message_data: dict
 ) -> ContactMessage:
-    return await test_transaction_manager.contact_message_repository.create(**get_involved_committees_message_data)
+    async with test_transaction_manager:
+        return await test_transaction_manager.contact_message_repository.create(**get_involved_committees_message_data)

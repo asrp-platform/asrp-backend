@@ -15,7 +15,8 @@ async def test_register(
     user_registration_data,
 ) -> None:
     response = await client.post("api/auth/register", json=user_registration_data)
-    user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
 
     assert response.status_code == 201
     assert user is not None
@@ -28,7 +29,8 @@ async def test_email_already_in_use(
 ) -> None:
     user_creation_data = user_data.copy()
 
-    await test_transaction_manager.user_repository.create(**user_creation_data)
+    async with test_transaction_manager:
+        await test_transaction_manager.user_repository.create(**user_creation_data)
 
     response = await client.post(
         "api/auth/register",
@@ -49,7 +51,8 @@ async def test_password_dont_match(
 ) -> None:
     response = await client.post("api/auth/register", json={**user_registration_data, "repeat_password": faker.pystr()})
 
-    user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
 
     assert response.status_code == 422
     assert user is None
