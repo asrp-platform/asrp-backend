@@ -12,11 +12,19 @@ if TYPE_CHECKING:
     from app.domains.users.models import User
 
 
+class DonationTypeEnum(str, Enum):
+    INDIVIDUAL = "Individual donation"
+    MONTHLY = "Monthly supporter"
+    CORPORATION = "Corporation sponsorship"
+    CUSTOM = "Custom"
+
+
 # Добавление новых типов через ручное написание миграции
 class ContactMessageTypeEnum(str, Enum):
     CONTACT = "CONTACT"
     GET_INVOLVED = "GET_INVOLVED"
     GET_INVOLVED_COMMITTEES = "GET_INVOLVED_COMMITTEES"
+    DONATION_SPONSORSHIP = "DONATION_SPONSORSHIP"
 
 
 class ContactMessage(Base, UCIMixin):

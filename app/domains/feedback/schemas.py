@@ -4,7 +4,7 @@ from typing import Annotated
 from pydantic import BaseModel, EmailStr, Field
 
 from app.core.database.mixins import UCIMixinSchema
-from app.domains.feedback.models import ContactMessageTypeEnum
+from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
 
 
 class GetInvolvedMessage(BaseModel):
@@ -26,12 +26,17 @@ class ContactMessage(BaseModel):
     subject: Annotated[str | None, Field(min_length=2)] = None
     contact_message: Annotated[str | None, Field(min_length=10)] = None
 
+class DonationSponsorshipMessage(BaseModel):
+    organization: Annotated[str | None, Field(min_length=2)] = None
+    donation_type: DonationTypeEnum
+    message: Annotated[str | None, Field(min_length=10)] = None
+
 
 class CreateContactMessageSchema(BaseModel):
     name: str = Field(min_length=2, max_length=256)
     email: EmailStr
     type: ContactMessageTypeEnum
-    message_content: ContactMessage | CommitteesGetInvolvedMessage | GetInvolvedMessage
+    message_content: ContactMessage | CommitteesGetInvolvedMessage | GetInvolvedMessage | DonationSponsorshipMessage
 
 
 class ContactMessageResponseSchema(CreateContactMessageSchema):
