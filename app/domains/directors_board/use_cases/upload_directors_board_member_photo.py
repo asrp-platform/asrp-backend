@@ -14,11 +14,12 @@ class UploadDirectorsBoardMemberPhotoUseCase:
     ):
         self.__directors_board_service = directors_board_service
 
-    async def execute(self, permissions, file_data: FileData) -> str:
+    async def execute(self, permissions, director_member_id: int, file_data: FileData) -> str:
         """Returns presigned URL for uploaded image."""
         check_permissions("directors_board.update", permissions)
 
-        return await self.__directors_board_service.upload_photo(file_data)
+        object_key = await self.__directors_board_service.upload_photo(director_member_id, file_data)
+        return await self.__directors_board_service.get_photo_url_by_object_key(object_key)
 
 
 def get_use_case(directors_board_service: DirectorBoardMemberServiceDep) -> UploadDirectorsBoardMemberPhotoUseCase:

@@ -3,6 +3,7 @@ from typing import Annotated, Any, Generic, Literal, TypeVar
 from uuid import uuid4
 
 from fastapi import Depends
+from loguru import logger
 
 from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import settings
@@ -70,10 +71,11 @@ class UserService:
             return await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
 
     async def update_user(self, user_id: int, **kwargs) -> User:
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise UserNotFoundError("User with provided ID not found")
-        await self.transaction_manager.user_repository.update(user_id, **kwargs)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise UserNotFoundError("User with provided ID not found")
+            await self.transaction_manager.user_repository.update(user_id, **kwargs)
         return user
 
     async def get_user_avatar_url(self, user_id: int):
@@ -87,25 +89,44 @@ class UserService:
         return await self.file_storage.get_file_url(avatar_object_key)
 
     async def upload_avatar(self, user_id: int, file):
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+        if user is None:
+            raise UserNotFoundError("user with provided email not found")
+
+        old_filename = user.avatar_path
+        new_filename = f"avatars/{uuid4()}.{file.filename.split('.')[-1]}"
+
+        file_content = await file.read()
+        upload_result = await self.file_storage.upload_file(
+            new_filename,
+            file_content
+        )
+
         try:
-            filename = f"avatars/{uuid4()}.{file.filename.split('.')[-1]}"
-            file_content = await file.read()
-            upload_result = await self.file_storage.upload_file(
-                filename,
-                file_content
-            )
             async with self.transaction_manager:
-                await self.transaction_manager.user_repository.update(user_id, avatar_path=filename)
-            return upload_result
-        except Exception as e:
-            raise e
+                await self.transaction_manager.user_repository.update(user_id, avatar_path=new_filename)
+        except Exception:
+            await self.file_storage.delete_file(new_filename)
+
+        try:
+            if old_filename is not None:
+                await self.file_storage.delete_file(old_filename)
+        except Exception:
+            logger.exception(f"Failed to delete file {old_filename}")
+
+        return upload_result
 
     async def delete_user_avatar(self, user_id: int) -> None:
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise UserNotFoundError("User with provided ID not found")
+
+            avatar_path = user.avatar_path
             await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
+
+        await self.file_storage.delete_file(avatar_path)
 
     async def change_password(
         self,
