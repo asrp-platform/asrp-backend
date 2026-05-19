@@ -3,12 +3,14 @@ from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
 from fastapi import Depends
+from loguru import logger
 from sqlalchemy import func, select, update
 
 from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
+from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
@@ -62,16 +64,41 @@ class DirectorsBoardService:
             )
             await self.transaction_manager._session.commit()
 
-    async def upload_photo(self, file_data: FileData) -> str:
+    async def upload_photo(self, director_member_id: int, file_data: FileData) -> str:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
-        object_key = f"directors_board/{uuid4()}_{file_data.filename}"
-        file_data = await self.file_storage.upload_file(
-            object_key=object_key,
-            file_content=file_data.content,
+        async with self.transaction_manager:
+            director_member = await self.transaction_manager.directors_board_member_repository.get_first_by_kwargs(
+                id=director_member_id
+            )
+        if director_member is None:
+            raise DirectionBoardMemberNotFoundError("DirectionBoardMember with provided id not found")
+
+        old_filename = director_member.photo_url
+        new_filename = f"directors_board/{uuid4()}.{file_data.filename.split('.')[-1]}"
+
+        upload_result = await self.file_storage.upload_file(
+            new_filename,
+            file_data.content
         )
-        return await self.file_storage.get_file_url(file_data.object_key)
+
+
+        try:
+            async with self.transaction_manager:
+                await self.transaction_manager.directors_board_member_repository.update(
+                    director_member_id, photo_url=new_filename
+                )
+        except Exception:
+            await self.file_storage.delete_file(new_filename)
+
+        try:
+            if old_filename is not None:
+                await self.file_storage.delete_file(old_filename)
+        except Exception:
+            logger.exception(f"Failed to delete file {old_filename}")
+
+        return upload_result.object_key
 
     async def get_photo_url_by_object_key(self, object_key: str) -> str:
         normalized_object_key = self._extract_object_key(object_key)
