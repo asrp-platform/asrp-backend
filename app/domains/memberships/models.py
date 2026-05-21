@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Enum as SQLAEnum, ForeignKey, Numeric, String, text
+from sqlalchemy import CheckConstraint, DateTime, Enum as SQLAEnum, ForeignKey, Index, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
@@ -125,4 +125,12 @@ class UserMembershipTypeChangeRequests(Base, UCIMixin):
 
     pending: Mapped[bool] = mapped_column(default=True, server_default=text("true"), nullable=False)
 
-    __table_args__ = (CheckConstraint("approved = TRUE or admin_comment IS NOT NULL"),)
+    __table_args__ = (
+        CheckConstraint("approved = TRUE or admin_comment IS NOT NULL"),
+        Index(
+            "unique_pending_membership_type_change_request_per_user_membership",
+            "user_membership_id",
+            unique=True,
+            postgresql_where=(pending is True),
+        ),
+    )
