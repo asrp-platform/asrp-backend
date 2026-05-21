@@ -10,7 +10,6 @@ from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,
     MembershipAlreadyPaidError,
     MembershipApplicationCheckoutError,
-    MembershipRequestAlreadyExistsError,
     MembershipRequestCannotBeReappliedError,
 )
 from app.domains.memberships.schemas import (
@@ -18,6 +17,7 @@ from app.domains.memberships.schemas import (
     MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
     UserMembershipSchema,
+    UserMembershipTypeChangeRequestCreateSchema,
 )
 from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
@@ -210,8 +210,6 @@ async def create_membership_request(
         return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except CantBuyHonoraryMembership:
         raise MembershipCreateResponses.CANT_BUY_HONORARY_MEMBERSHIP
-    except MembershipRequestAlreadyExistsError:
-        raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
     except FeedbackAdditionalInfoAlreadyExistsError:
         raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
     except MembershipApplicationCheckoutError:
@@ -303,3 +301,14 @@ async def get_current_user_membership(
     current_user_membership: CurrentUserMembershipDep,
 ) -> UserMembershipSchema | None:
     return current_user_membership
+
+
+@router.post(
+    "/membership-type-change-request",
+    summary="Create a request to change membership type",
+)
+async def create_membership_type_change_request(
+    current_user_membership: CurrentUserMembershipDep,
+    body: UserMembershipTypeChangeRequestCreateSchema,
+):
+    pass

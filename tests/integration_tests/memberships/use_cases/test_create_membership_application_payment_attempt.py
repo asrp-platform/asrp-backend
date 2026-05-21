@@ -17,11 +17,13 @@ pytestmark = pytest.mark.anyio
 def test_create_membership_application_payment_attempt_use_case(
     test_transaction_manager: TransactionManager,
     membership_service,
+    membership_type_service,
     payment_service,
 ):
     return CreateMembershipApplicationPaymentAttemptUseCase(
         test_transaction_manager,
         membership_service,
+        membership_type_service,
         payment_service,
     )
 

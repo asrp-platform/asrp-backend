@@ -19,7 +19,12 @@ from app.domains.memberships.models import (
     MembershipType,
     MembershipTypeEnum,
 )
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import (
+    MembershipService,
+    MembershipServiceDep,
+    MembershipTypeService,
+    MembershipTypeServiceDep,
+)
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
@@ -34,10 +39,12 @@ class ReapplyMembershipApplicationUseCase:
         self,
         transaction_manager: TransactionManager,
         membership_service: MembershipService,
+        membership_type_service: MembershipTypeService,
         payment_service: PaymentService,
     ):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
+        self.__membership_type_service = membership_type_service
         self.__payment_service = payment_service
 
     @staticmethod
@@ -72,7 +79,7 @@ class ReapplyMembershipApplicationUseCase:
         if membership_type_id is None:
             raise MembershipRequestCannotBeReappliedError("No membership type id provided")
 
-        membership_type = await self.__membership_service.get_membership_type_by_id(membership_type_id)
+        membership_type = await self.__membership_type_service.get_membership_type_by_id(membership_type_id)
         if membership_type.type == MembershipTypeEnum.HONORARY:
             raise CantBuyHonoraryMembership("Can't purchase HONORARY membership")
         return membership_type
@@ -151,11 +158,13 @@ class ReapplyMembershipApplicationUseCase:
 def get_use_case(
     transaction_manager: TransactionManagerDep,
     membership_service: MembershipServiceDep,
+    membership_type_service: MembershipTypeServiceDep,
     payment_service: PaymentServiceDep,
 ) -> ReapplyMembershipApplicationUseCase:
     return ReapplyMembershipApplicationUseCase(
         transaction_manager,
         membership_service,
+        membership_type_service,
         payment_service,
     )
 

@@ -89,3 +89,38 @@ class UserMembershipSchema(UCIMixinSchema):
     membership_type: MembershipTypeSchema
 
     model_config = {"from_attributes": True}
+
+
+class UserMembershipTypeChangeRequestCreateSchema(BaseModel):
+    user_membership_id: int
+    target_membership_type_id: int
+    reason_changing: str
+    upgrade: bool
+
+
+class UserMembershipTypeChangeRequestViewSchema(UCIMixinSchema):
+    target_membership_type_id: int
+    target_membership_type: MembershipTypeSchema
+    user_membership_id: int
+    user_membership: UserMembershipSchema
+    upgrade: bool
+    reason_changing: str
+    approved: bool
+    admin_comment: str | None
+    pending: bool
+
+    model_config = {"from_attributes": True}
+
+
+class UserMembershipTypeChangeRequestUpdateAdminSchema(BaseModel):
+    approved: bool
+    admin_comment: str | None = None
+
+    @model_validator(mode="after")
+    def check_rejection_comment(self):
+        if self.approved is False and self.admin_comment is None:
+            raise PydanticCustomError(
+                "admin_comment necessary when rejected",
+                "Admin comment is required when rejecting user membership type change request",
+            )
+        return self

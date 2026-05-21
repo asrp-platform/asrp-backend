@@ -8,7 +8,12 @@ from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import (
+    MembershipService,
+    MembershipServiceDep,
+    MembershipTypeService,
+    MembershipTypeServiceDep,
+)
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
@@ -23,10 +28,12 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
         self,
         transaction_manager: BaseTransactionManager,
         membership_service: MembershipService,
+        membership_type_service: MembershipTypeService,
         payment_service: PaymentService,
     ):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
+        self.__membership_type_service = membership_type_service
         self.__payment_service = payment_service
 
     @staticmethod
@@ -57,7 +64,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
             self.__check_membership_already_paid(current_user_membership_request.status)
             await self.__ensure_no_succeeded_membership_application_payment(current_user_membership_request)
 
-            membership_type = await self.__membership_service.get_membership_type(
+            membership_type = await self.__membership_type_service.get_membership_type_by_value(
                 current_user_membership_request.membership_type.type
             )
 
@@ -113,9 +120,15 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
 def get_use_case(
     transaction_manager: TransactionManagerDep,
     membership_service: MembershipServiceDep,
+    membership_type_service: MembershipTypeServiceDep,
     payment_service: PaymentServiceDep,
 ) -> CreateMembershipApplicationPaymentAttemptUseCase:
-    return CreateMembershipApplicationPaymentAttemptUseCase(transaction_manager, membership_service, payment_service)
+    return CreateMembershipApplicationPaymentAttemptUseCase(
+        transaction_manager,
+        membership_service,
+        membership_type_service,
+        payment_service,
+    )
 
 
 CreateMembershipApplicationPaymentAttemptUseCaseDep = Annotated[

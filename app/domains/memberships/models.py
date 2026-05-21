@@ -103,6 +103,9 @@ class UserMembership(Base, UCIMixin):
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_membership")
+    membership_type_change_requests: Mapped[list["UserMembershipTypeChangeRequests"]] = relationship(
+        "UserMembershipTypeChangeRequests", back_populates="user_membership"
+    )
 
     @property
     def is_active(self) -> bool:
@@ -113,12 +116,15 @@ class UserMembershipTypeChangeRequests(Base, UCIMixin):
     __tablename__ = "user_membership_type_change_requests"
 
     target_membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
-    target_membership_type = relationship("MembershipType")
+    target_membership_type: Mapped["MembershipType"] = relationship("MembershipType")
 
     user_membership_id: Mapped[int] = mapped_column(ForeignKey("users_memberships.id"), nullable=False)
+    user_membership: Mapped["UserMembership"] = relationship(
+        "UserMembership", back_populates="membership_type_change_requests"
+    )
 
     upgrade: Mapped[bool] = mapped_column(nullable=False)  # in upgrade is False it means downgrade
-    reason_changing: Mapped[str | None] = mapped_column(String(512), nullable=False)
+    reason_changing: Mapped[str] = mapped_column(String(512), nullable=False)
 
     approved: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)
     admin_comment: Mapped[str | None] = mapped_column(nullable=True)
@@ -126,11 +132,14 @@ class UserMembershipTypeChangeRequests(Base, UCIMixin):
     pending: Mapped[bool] = mapped_column(default=True, server_default=text("true"), nullable=False)
 
     __table_args__ = (
-        CheckConstraint("approved = TRUE or admin_comment IS NOT NULL"),
+        CheckConstraint(
+            "pending = TRUE OR approved = TRUE OR admin_comment IS NOT NULL",
+            name="membership_type_change_request_rejection_comment",
+        ),
         Index(
-            "unique_pending_membership_type_change_request_per_user_membership",
+            "unique_pending_membership_type_change_request_per_membership",
             "user_membership_id",
             unique=True,
-            postgresql_where=(pending is True),
+            postgresql_where=text("pending = true AND _deleted = false"),
         ),
     )

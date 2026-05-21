@@ -18,6 +18,7 @@ pytestmark = pytest.mark.anyio
 def test_create_user_membership_use_case(
     test_transaction_manager: TransactionManager,
     membership_service,
+    membership_type_service,
     feedback_additional_info_service,
     communication_preference_service,
     payment_service,
@@ -25,6 +26,7 @@ def test_create_user_membership_use_case(
     return CreateUserMembershipRequestUseCase(
         test_transaction_manager,
         membership_service,
+        membership_type_service,
         feedback_additional_info_service,
         communication_preference_service,
         payment_service,

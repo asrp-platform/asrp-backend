@@ -14,3 +14,11 @@ class MembershipRequestsFilters(BaseModel):
 class MembershipTypesFilters(BaseModel):
     is_purchasable: Annotated[bool | None, Query(description="Is membership type purchasable")] = None
     price_usd__lt: Annotated[int | None, Query(description="Is price less than provided value")] = None
+
+
+class UserMembershipTypeChangeRequestsFilters(BaseModel):
+    user_membership_id: Annotated[int | None, Query(description="User membership ID filter")] = None
+    target_membership_type_id: Annotated[int | None, Query(description="Target membership type ID filter")] = None
+    pending: Annotated[bool | None, Query(description="Pending status filter")] = None
+    approved: Annotated[bool | None, Query(description="Approved status filter")] = None
+    upgrade: Annotated[bool | None, Query(description="Upgrade or downgrade filter")] = None
