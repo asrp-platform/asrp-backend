@@ -16,6 +16,7 @@ from app.domains.memberships.repositories import (
     MembershipRequestsRepository,
     MembershipTypeRepository,
     UserMembershipRepository,
+    UserMembershipTypeChangeRequestsRepository,
 )
 from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
@@ -107,6 +108,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def sponsor_repository(self):
         return SponsorRepository(self._session)
+
+    @property
+    def user_membership_type_change_requests_repository(self):
+        return UserMembershipTypeChangeRequestsRepository(self._session)
 
 
 def get_transaction_manager(

@@ -1,5 +1,10 @@
 from app.core.database.base_repository import SQLAlchemyRepository
-from app.domains.memberships.models import MembershipRequest, MembershipType, UserMembership
+from app.domains.memberships.models import (
+    MembershipRequest,
+    MembershipType,
+    UserMembership,
+    UserMembershipTypeChangeRequests,
+)
 
 
 class MembershipTypeRepository(SQLAlchemyRepository):
@@ -12,3 +17,7 @@ class MembershipRequestsRepository(SQLAlchemyRepository):
 
 class UserMembershipRepository(SQLAlchemyRepository):
     model = UserMembership
+
+
+class UserMembershipTypeChangeRequestsRepository(SQLAlchemyRepository):
+    model = UserMembershipTypeChangeRequests

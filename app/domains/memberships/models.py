@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SQLAEnum, ForeignKey, Numeric, text
+from sqlalchemy import CheckConstraint, DateTime, Enum as SQLAEnum, ForeignKey, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
@@ -107,3 +107,22 @@ class UserMembership(Base, UCIMixin):
     @property
     def is_active(self) -> bool:
         return datetime.now(timezone.utc) < self.expires_at
+
+
+class UserMembershipTypeChangeRequests(Base, UCIMixin):
+    __tablename__ = "user_membership_type_change_requests"
+
+    target_membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
+    target_membership_type = relationship("MembershipType")
+
+    user_membership_id: Mapped[int] = mapped_column(ForeignKey("users_memberships.id"), nullable=False)
+
+    upgrade: Mapped[bool] = mapped_column(nullable=False)  # in upgrade is False it means downgrade
+    reason_changing: Mapped[str | None] = mapped_column(String(512), nullable=False)
+
+    approved: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)
+    admin_comment: Mapped[str | None] = mapped_column(nullable=True)
+
+    pending: Mapped[bool] = mapped_column(default=True, server_default=text("true"), nullable=False)
+
+    __table_args__ = (CheckConstraint("approved = TRUE or admin_comment IS NOT NULL"),)

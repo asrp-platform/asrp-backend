@@ -117,13 +117,7 @@ class UserMembershipService:
         return await self.__transaction_manager.user_membership_repository.create(user_id=user_id, **kwargs)
 
     async def get_user_membership_by_user_id(self, user_id: int) -> UserMembership | None:
-        stmt = select(UserMembership).options(
-            selectinload(UserMembership.membership_type).load_only(
-                MembershipType.id,
-                MembershipType.name,
-                MembershipType.type,
-            )
-        )
+        stmt = select(UserMembership).options(selectinload(UserMembership.membership_type))
 
         user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 

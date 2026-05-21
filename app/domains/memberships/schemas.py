@@ -86,6 +86,6 @@ class UserMembershipSchema(UCIMixinSchema):
     membership_type_id: int
     is_active: bool
 
-    membership_type: MembershipTypeShortSchema
+    membership_type: MembershipTypeSchema
 
     model_config = {"from_attributes": True}

@@ -10,9 +10,9 @@ def get_condition(column, operator: str, value):  # noqa
         return column > value
     elif operator == "gte":
         return column >= value
-    elif operator == "nt":
+    elif operator == "lt":
         return column < value
-    elif operator == "nte":
+    elif operator == "lte":
         return column <= value
 
     elif operator == "icontains":
