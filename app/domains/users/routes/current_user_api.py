@@ -19,6 +19,7 @@ from app.domains.memberships.schemas import (
     UserMembershipSchema,
     UserMembershipTypeChangeRequestCreateSchema,
 )
+from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
 )
@@ -42,6 +43,9 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
+from app.domains.users.use_cases.current_user.create_membership_type_change_request import (
+    CreateMembershipTypeChangeRequestUseCaseDep,
+)
 from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.get_current_user_membership import (
     GetCurrentUserMembershipRequestUseCaseDep,
@@ -298,9 +302,10 @@ async def get_current_user_payments(
 
 @router.get("/membership")
 async def get_current_user_membership(
-    current_user_membership: CurrentUserMembershipDep,
+    current_user: CurrentUserDep,
+    user_membership_service: UserMembershipServiceDep,
 ) -> UserMembershipSchema | None:
-    return current_user_membership
+    return await user_membership_service.get_user_membership_by_user_id(current_user.id)
 
 
 @router.post(
@@ -310,5 +315,6 @@ async def get_current_user_membership(
 async def create_membership_type_change_request(
     current_user_membership: CurrentUserMembershipDep,
     body: UserMembershipTypeChangeRequestCreateSchema,
+    use_case: CreateMembershipTypeChangeRequestUseCaseDep,
 ):
-    pass
+    return await use_case.execute(current_user_membership, **body.model_dump())

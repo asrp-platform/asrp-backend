@@ -92,7 +92,6 @@ class UserMembershipSchema(UCIMixinSchema):
 
 
 class UserMembershipTypeChangeRequestCreateSchema(BaseModel):
-    user_membership_id: int
     target_membership_type_id: int
     reason_changing: str
     upgrade: bool

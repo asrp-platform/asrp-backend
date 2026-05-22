@@ -10,7 +10,6 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
-from app.domains.users.exceptions import NameChangeRequestNotFoundError, UserNotFoundError
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
     NameChangeRequestUpdateByAdminSchema,
@@ -119,10 +118,7 @@ async def update_user_by_admin(
     if update_data.admin and admin.id == user_id:
         raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
 
-    try:
-        return await user_service.update_user(user_id, **update_data.model_dump())
-    except UserNotFoundError:
-        raise UpdateUserByAdminResponses.USER_NOT_FOUND
+    return await user_service.update_user(user_id, admin, update_data.model_dump())
 
 
 class GetPermissionsResponses(PermissionsResponses):
@@ -142,13 +138,7 @@ async def get_user_permissions(
 ) -> list[PermissionSchema]:
     if "permissions.view" not in current_user_permissions:
         raise GetPermissionsResponses.PERMISSION_ERROR
-
-    try:
-        permissions = await permissions_service.get_user_permissions(user_id)
-    except UserNotFoundError:
-        raise GetPermissionsResponses.USER_NOT_FOUND
-
-    return [PermissionSchema.from_orm(permission) for permission in permissions]
+    return await permissions_service.get_user_permissions(user_id)
 
 
 class ManagePermissionsResponses(PermissionsResponses):
@@ -167,10 +157,7 @@ async def set_user_permissions(
     if "permissions.update" not in current_user_permissions:
         raise ManagePermissionsResponses.PERMISSION_ERROR
 
-    try:
-        return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
-    except UserNotFoundError:
-        raise ManagePermissionsResponses.USER_NOT_FOUND
+    return await permissions_service.set_users_permissions(user_id, permissions_ids, admin)
 
 
 @router.get(
@@ -187,15 +174,7 @@ async def get_pending_name_change_request(
     if "name_change_requests.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    try:
-        name_change_request = await service.get_pending_name_change_request(user_id, name_change_request_id)
-        return NameChangeRequestViewSchema.model_validate(name_change_request)
-
-    except UserNotFoundError:
-        raise NameChangeRequestResponses.USER_NOT_FOUND
-
-    except NameChangeRequestNotFoundError:
-        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
+    return await service.get_pending_name_change_request(user_id, name_change_request_id)
 
 
 @router.patch(
@@ -214,13 +193,6 @@ async def update_name_change_request(
     if "name_change_requests.update" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    try:
-        await service.update_name_change_request(
-            user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
-        )
-
-    except UserNotFoundError:
-        raise NameChangeRequestResponses.USER_NOT_FOUND
-
-    except NameChangeRequestNotFoundError:
-        raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_NOT_FOUND
+    await service.update_name_change_request(
+        user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
+    )

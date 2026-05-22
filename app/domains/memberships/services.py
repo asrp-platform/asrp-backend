@@ -13,7 +13,6 @@ from app.domains.memberships.models import (
     UserMembershipTypeChangeRequests,
 )
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
-from app.domains.users.exceptions import UserNotFoundError
 
 
 class MembershipService:
@@ -36,7 +35,7 @@ class MembershipService:
         async with self.__transaction_manager:
             user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
             stmt = select(MembershipRequest).options(
                 selectinload(MembershipRequest.membership_type),
                 selectinload(MembershipRequest.user),
@@ -135,17 +134,17 @@ class UserMembershipService:
         return await self.__transaction_manager.user_membership_repository.create(user_id=user_id, **kwargs)
 
     async def get_user_membership_by_user_id(self, user_id: int) -> UserMembership | None:
-        stmt = select(UserMembership).options(selectinload(UserMembership.membership_type))
+        async with self.__transaction_manager:
+            stmt = select(UserMembership).options(selectinload(UserMembership.membership_type))
+            user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
-        user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
 
-        if user is None:
-            raise NotFoundError("User with provided ID not found")
-
-        return await self.__transaction_manager.user_membership_repository.get_first_by_kwargs(
-            stmt=stmt,
-            user_id=user_id,
-        )
+            return await self.__transaction_manager.user_membership_repository.get_first_by_kwargs(
+                stmt=stmt,
+                user_id=user_id,
+            )
 
 
 class MembershipTypeChangeRequestService:
