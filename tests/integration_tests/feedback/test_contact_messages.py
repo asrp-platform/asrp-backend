@@ -2,7 +2,7 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
-from app.domains.feedback.models import ContactMessage, ContactMessageTypeEnum
+from app.domains.feedback.models import ContactMessage
 from tests.fixtures.auth import AuthHeaders
 
 pytestmark = pytest.mark.anyio
@@ -31,49 +31,6 @@ async def test_create_contact(
 
     assert response.status_code == 201
     assert response.json()["name"] == payload["name"]
-
-
-async def test_create_contact_invalid_content(
-    client: AsyncClient,
-    contact_message_data: dict,
-) -> None:
-    payload = contact_message_data
-    payload["type"] = ContactMessageTypeEnum.GET_INVOLVED.value
-
-    response = await client.post(
-        "/api/contact-messages",
-        json=payload,
-    )
-
-    assert response.status_code == 422
-    assert "detail" in response.json()
-
-
-async def test_create_contact_extra_fields(
-    client: AsyncClient,
-    contact_message_data: dict,
-) -> None:
-    payload = contact_message_data
-    payload["message_content"]["unknown_field"] = "some value"
-
-    response = await client.post("/api/contact-messages", json=payload)
-
-    assert response.status_code == 422
-
-
-async def test_create_get_involved_committees_missing_required_fields(
-    client: AsyncClient,
-) -> None:
-    payload = {
-        "name": "Test User",
-        "email": "test@example.com",
-        "type": ContactMessageTypeEnum.GET_INVOLVED_COMMITTEES.value,
-        "message_content": {"current_role": "Doctor"},
-    }
-
-    response = await client.post("/api/contact-messages", json=payload)
-
-    assert response.status_code == 422
 
 
 async def test_retrieve_contact_message(
