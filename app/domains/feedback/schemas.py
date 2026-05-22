@@ -40,8 +40,8 @@ class CreateContactMessageSchema(BaseModel):
     def validate_message_content(self) -> "CreateContactMessageSchema":
         mapping = {
             ContactMessageTypeEnum.CONTACT: ContactMessage,
-            ContactMessageTypeEnum.GET_INVOLVED: CommitteesGetInvolvedMessage,
-            ContactMessageTypeEnum.GET_INVOLVED_COMMITTEES: GetInvolvedMessage,
+            ContactMessageTypeEnum.GET_INVOLVED: GetInvolvedMessage,
+            ContactMessageTypeEnum.GET_INVOLVED_COMMITTEES: CommitteesGetInvolvedMessage,
         }
         schema = mapping.get(self.type)
         if schema:
