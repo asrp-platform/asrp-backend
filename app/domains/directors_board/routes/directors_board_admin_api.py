@@ -92,12 +92,11 @@ class UploadImageResponses(PermissionsResponses):
 
 
 @router.put(
-    "/{director_member_id}/image",
+    "/images",
     responses=UploadImageResponses.responses,
     summary="Upload image for a director member",
 )
 async def upload_directors_board_member_photo(
-    director_member_id: Annotated[int, Path(...)],
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
     use_case: UploadDirectorsBoardMemberPhotoUseCaseDep,
@@ -109,7 +108,7 @@ async def upload_directors_board_member_photo(
     )
 
     try:
-        file_path = await use_case.execute(permissions, director_member_id, file_data)
+        file_path = await use_case.execute(permissions, file_data)
         return UploadedImageSchema(path=file_path)
     except InvalidMimeTypeError:
         raise UploadImageResponses.INVALID_CONTENT_TYPE

@@ -21,10 +21,9 @@ async def test_upload_director_member_photo(
     admin_all_permissions,
     fake_file,
     spy_file_storage,
-    directors_board_member_db,
 ) -> None:
     response = await client.put(
-        f"/api/admin/directors-board/{directors_board_member_db.id}/image",
+        "/api/admin/directors-board/images",
         headers=admin_auth_headers,
         files={
             "file": ("photo.png", fake_file, "image/png"),
@@ -52,11 +51,10 @@ async def test_upload_director_member_photo_no_permissions(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     fake_file,
-    spy_file_storage,
-    directors_board_member_db,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
-        f"/api/admin/directors-board/{directors_board_member_db.id}/image",
+        "/api/admin/directors-board/images",
         headers=admin_auth_headers,
         files={
             "file": ("photo.png", fake_file, "image/png"),
@@ -72,11 +70,10 @@ async def test_upload_director_member_photo_by_user(
     client: AsyncClient,
     auth_headers: AuthHeaders,
     fake_file,
-    spy_file_storage,
-    directors_board_member_db,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
-        f"/api/admin/directors-board/{directors_board_member_db.id}/image",
+        "/api/admin/directors-board/images",
         headers=auth_headers,
         files={
             "file": ("photo.png", fake_file, "image/png"),
@@ -91,11 +88,10 @@ async def test_upload_director_member_photo_by_user(
 async def test_upload_director_member_photo_not_authenticated(
     client: AsyncClient,
     fake_file,
-    spy_file_storage,
-    directors_board_member_db,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
-        f"/api/admin/directors-board/{directors_board_member_db.id}/image",
+        "/api/admin/directors-board/images",
         files={
             "file": ("photo.png", fake_file, "image/png"),
         },
@@ -111,11 +107,10 @@ async def test_upload_director_member_photo_invalid_content_type(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     fake_file,
-    spy_file_storage,
-    directors_board_member_db,
+        spy_file_storage,
 ) -> None:
     response = await client.put(
-        f"/api/admin/directors-board/{directors_board_member_db.id}/image",
+        "/api/admin/directors-board/images",
         headers=admin_auth_headers,
         files={
             "file": ("file.txt", fake_file, "text/plain"),
