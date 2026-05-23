@@ -1,5 +1,6 @@
 from typing import Annotated
 from urllib.parse import unquote, urlsplit
+from uuid import uuid4
 
 from fastapi import Depends
 from sqlalchemy import func, select, update
@@ -65,9 +66,10 @@ class DirectorsBoardService:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
+        object_key = f"directors_board/{uuid4()}_{file_data.filename}"
         file_data = await self.file_storage.upload_file(
-            object_key=f"directors_board/{file_data.filename}",
-            file_content=file_data.content
+            object_key=object_key,
+            file_content=file_data.content,
         )
         return await self.file_storage.get_file_url(file_data.object_key)
 

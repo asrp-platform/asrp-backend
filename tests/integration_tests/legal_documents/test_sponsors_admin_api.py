@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pytest
 from httpx import AsyncClient
 
@@ -77,6 +79,7 @@ async def test_admin_upload_sponsor_logo_success(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
+    spy_file_storage,
 ) -> None:
     files = {"file": ("logo.png", b"fake image content", "image/png")}
     response = await client.put(
@@ -89,6 +92,14 @@ async def test_admin_upload_sponsor_logo_success(
     data = response.json()
     assert "url" in data
     assert data["url"].startswith("http")
+
+    object_key = spy_file_storage["upload_file"].call_args.kwargs["object_key"]
+    prefix, stored_name = object_key.split("/", 1)
+    file_uuid, original_name = stored_name.split("_", 1)
+
+    assert prefix == "sponsors"
+    UUID(file_uuid)
+    assert original_name == "logo.png"
 
 
 async def test_admin_create_sponsor_no_permissions(

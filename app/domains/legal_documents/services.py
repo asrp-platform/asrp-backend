@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import uuid4
 
 from fastapi import Depends
 
@@ -66,9 +67,10 @@ class SponsorsService:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
+        object_key = f"{self.prefix}{uuid4()}_{file_data.filename}"
         uploaded_file = await self.file_storage.upload_file(
-            object_key=f"{self.prefix}{file_data.filename}",
-            file_content=file_data.content
+            object_key=object_key,
+            file_content=file_data.content,
         )
         return uploaded_file.object_key
 
