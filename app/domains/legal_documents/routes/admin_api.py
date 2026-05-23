@@ -4,6 +4,7 @@ from fastapi import APIRouter, File, Path, UploadFile
 
 from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.common.responses import PermissionsResponses
+from app.core.utils.permissions import check_permissions
 from app.domains.legal_documents.schemas import (
     CreateSponsorSchema,
     SponsorSchema,
@@ -61,8 +62,7 @@ async def upsert_bylaws(
     permissions: AdminPermissionsDep,
     file: Annotated[UploadFile, File(...)],
 ) -> ViewLegalDocumentSchema:
-    if "legal_documents.update" not in permissions:
-        raise BylawsAdminResponses.PERMISSION_ERROR
+    check_permissions("legal_documents.update", permissions)
 
     file_data = FileData(
         content=await file.read(),
@@ -88,9 +88,7 @@ async def delete_bylaws(
     admin: AdminUserDep,  # noqa
     permissions: AdminPermissionsDep,
 ):
-    if "legal_documents.delete" not in permissions:
-        raise BylawsAdminResponses.PERMISSION_ERROR
-
+    check_permissions("legal_documents.delete", permissions)
     await service.delete()
 
 
@@ -117,8 +115,7 @@ async def get_admin_sponsors(
     use_case: GetSponsorsUseCaseDep,
     permissions: AdminPermissionsDep,
 ) -> list[SponsorSchema]:
-    if "legal_documents.view" not in permissions:
-        raise BylawsAdminResponses.PERMISSION_ERROR
+    check_permissions("legal_documents.view", permissions)
     return await use_case.execute()
 
 
@@ -160,9 +157,7 @@ async def upload_sponsor_logo(
     permissions: AdminPermissionsDep,
     file: Annotated[UploadFile, File(...)],
 ) -> ViewLegalDocumentSchema:
-    if "legal_documents.update" not in permissions:
-        raise UploadLogoResponses.PERMISSION_ERROR
-
+    check_permissions("legal_documents.update", permissions)
     file_data = FileData(
         content=await file.read(),
         content_type=file.content_type,
