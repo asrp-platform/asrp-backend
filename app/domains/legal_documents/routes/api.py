@@ -33,7 +33,6 @@ class GetSponsorsResponses(Responses):
 @router.get(
     "/sponsors",
     summary="Get list of sponsors",
-    responses=GetSponsorsResponses.responses,
 )
 async def get_sponsors(
     use_case: GetSponsorsUseCaseDep,
