@@ -45,8 +45,15 @@ def get_involved_message_data(faker: Faker) -> dict:
         "email": faker.email(),
         "type": ContactMessageTypeEnum.GET_INVOLVED.value,
         "message_content": {
-            "role_affiliation": (random.choice(ROLE_AFFILIATIONS) if random.choice([True, False]) else None),
-            "get_involved_message": (faker.paragraph(nb_sentences=3) if random.choice([True, False]) else None),
+            "current_role": random.choice(ROLES_POOL),
+            "institution_location": (
+                f"{faker.city()}, {faker.state_abbr()}, USA" if random.choice([True, False]) else None
+            ),
+            "areas": random.sample(AREAS_POOL, k=random.randint(0, min(3, len(AREAS_POOL)))),
+            "ideas": (faker.paragraph(nb_sentences=2) if random.choice([True, False]) else None),
+            "future_committee_working": faker.boolean(),
+            "future_leadership_positions": faker.boolean(),
+            "receive_updates": faker.boolean(),
         },
     }
 
@@ -61,6 +68,7 @@ AREAS_POOL = [
     "Clinical Pathology",
     "Forensic Pathology",
 ]
+
 
 ROLES_POOL = [
     "Pathology Resident",
@@ -79,15 +87,8 @@ def get_involved_committees_message_data(faker: Faker) -> dict:
         "email": faker.email(),
         "type": ContactMessageTypeEnum.GET_INVOLVED_COMMITTEES.value,
         "message_content": {
-            "current_role": random.choice(ROLES_POOL),
-            "institution_location": (
-                f"{faker.city()}, {faker.state_abbr()}, USA" if random.choice([True, False]) else None
-            ),
-            "areas": random.sample(AREAS_POOL, k=random.randint(0, min(3, len(AREAS_POOL)))),
-            "ideas": (faker.paragraph(nb_sentences=2) if random.choice([True, False]) else None),
-            "future_committee_working": faker.boolean(),
-            "future_leadership_positions": faker.boolean(),
-            "receive_updates": faker.boolean(),
+            "role_affiliation": (random.choice(ROLE_AFFILIATIONS) if random.choice([True, False]) else None),
+            "get_involved_message": (faker.paragraph(nb_sentences=3) if random.choice([True, False]) else None),
         },
     }
 
