@@ -40,3 +40,11 @@ class BaseFileStorage(ABC):
     @abstractmethod
     async def check_file_exists(self, object_key: str, **kwargs) -> bool:
         pass
+
+    @abstractmethod
+    async def extract_object_key(
+            self,
+            url: str | None,
+            allowed_prefixes: list[str],
+    ) -> str | None:
+        pass
