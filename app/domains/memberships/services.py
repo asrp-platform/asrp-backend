@@ -189,6 +189,24 @@ class MembershipTypeChangeService:
             pending=True, user_membership_id=user_membership.id
         )
 
+    async def get_current_user_membership_type_change_request(
+        self,
+        user_membership: UserMembership,
+    ) -> UserMembershipTypeChangeRequests | None:
+        stmt = select(UserMembershipTypeChangeRequests).options(
+            selectinload(UserMembershipTypeChangeRequests.target_membership_type).load_only(
+                MembershipType.id, MembershipType.name, MembershipType.type
+            ),
+            selectinload(UserMembershipTypeChangeRequests.user_membership)
+            .selectinload(UserMembership.membership_type)
+            .load_only(MembershipType.id, MembershipType.name, MembershipType.type),
+        )
+        return await self.__transaction_manager.user_membership_type_change_requests_repository.get_first_by_kwargs(
+            stmt=stmt,
+            user_membership_id=user_membership.id,
+            pending=True,
+        )
+
 
 def get_membership_service(
     transaction_manager: TransactionManagerDep,

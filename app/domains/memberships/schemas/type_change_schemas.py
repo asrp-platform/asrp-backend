@@ -27,11 +27,10 @@ class BoundedUserMembershipSchema(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class UserMembershipTypeChangeRequestViewSchema(UCIMixinSchema):
+class UserMembershipTypeChangeRequestProfileSchema(UCIMixinSchema):
     target_membership_type_id: int
     target_membership_type: BoundedMembershipTypeSchema
     user_membership_id: int
-    user_membership: BoundedUserMembershipSchema
     upgrade: bool
     reason_changing: str
     approved: bool
@@ -39,3 +38,7 @@ class UserMembershipTypeChangeRequestViewSchema(UCIMixinSchema):
     pending: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserMembershipTypeChangeRequestViewSchema(UserMembershipTypeChangeRequestProfileSchema):
+    user_membership: BoundedUserMembershipSchema

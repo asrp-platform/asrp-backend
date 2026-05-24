@@ -23,6 +23,9 @@ from app.domains.memberships.schemas.schemas import (
     UserMembershipSchema,
     UserMembershipTypeChangeRequestCreateSchema,
 )
+from app.domains.memberships.schemas.type_change_schemas import (
+    UserMembershipTypeChangeRequestProfileSchema,
+)
 from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
@@ -57,6 +60,9 @@ from app.domains.users.use_cases.current_user.create_membership_type_change_requ
 from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.get_current_user_membership import (
     GetCurrentUserMembershipRequestUseCaseDep,
+)
+from app.domains.users.use_cases.current_user.get_current_user_membership_type_change_request import (
+    GetCurrentUserMembershipTypeChangeRequestUseCaseDep,
 )
 from app.domains.users.use_cases.current_user.request_name_change import RequestNageChangeUseCaseDep
 from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
@@ -340,3 +346,14 @@ async def create_membership_type_change_request(
         raise MembershipTypeChangeRequestResponses.INVALID_UPGRADE
     except InvalidMembershipTypeDowngradeError:
         raise MembershipTypeChangeRequestResponses.INVALID_DOWNGRADE
+
+
+@router.get(
+    "/membership-type-change-request",
+    summary="Get current user's membership type change request",
+)
+async def get_current_user_membership_type_change_request(
+    current_user_membership: CurrentUserMembershipDep,
+    use_case: GetCurrentUserMembershipTypeChangeRequestUseCaseDep,
+) -> UserMembershipTypeChangeRequestProfileSchema | None:
+    return await use_case.execute(current_user_membership)
