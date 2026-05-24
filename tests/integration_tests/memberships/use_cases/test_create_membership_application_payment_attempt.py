@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
-from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
+from app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCase,
 )
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
@@ -47,7 +47,7 @@ async def test_create_membership_application_payment_attempt_fails_when_successf
 
     with (
         patch(
-            "app.domains.memberships.use_cases.create_membership_application_payment_attempt.create_membership_application_checkout_session",
+            "app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt.create_membership_application_checkout_session",
             new=AsyncMock(),
         ) as create_membership_application_checkout_session_mock,
         pytest.raises(MembershipAlreadyPaidError),
@@ -65,7 +65,7 @@ async def test_create_membership_application_payment_attempt_marks_payment_faile
 ):
     with (
         patch(
-            "app.domains.memberships.use_cases.create_membership_application_payment_attempt.create_membership_application_checkout_session",
+            "app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt.create_membership_application_checkout_session",
             new=AsyncMock(side_effect=RuntimeError("stripe is down")),
         ) as create_membership_application_checkout_session_mock,
         pytest.raises(MembershipApplicationCheckoutError),

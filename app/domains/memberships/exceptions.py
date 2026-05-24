@@ -2,10 +2,6 @@ class NoMembershipError(Exception):
     pass
 
 
-class MembershipNotActiveError(Exception):
-    pass
-
-
 class MembershipAlreadyPaidError(Exception):
     pass
 
@@ -31,4 +27,16 @@ class CantBuyHonoraryMembership(Exception):
 
 
 class CantChangeToHonoraryMembershipError(Exception):
+    pass
+
+
+class SameMembershipTypeChangeRequestError(Exception):
+    pass
+
+
+class InvalidMembershipTypeUpgradeError(Exception):
+    pass
+
+
+class InvalidMembershipTypeDowngradeError(Exception):
     pass

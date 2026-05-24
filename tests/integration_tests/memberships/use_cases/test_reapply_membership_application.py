@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 from faker import Faker
 
-import app.domains.memberships.use_cases.reapply_membership_application as reapply_module
+import app.domains.memberships.use_cases.membership_requests.reapply_membership_application as reapply_module
 from app.core.common.exceptions import NotFoundError
 from app.domains.memberships.exceptions import (
     MembershipAlreadyPaidError,
@@ -13,7 +13,9 @@ from app.domains.memberships.exceptions import (
 )
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipService, MembershipTypeService
-from app.domains.memberships.use_cases.reapply_membership_application import ReapplyMembershipApplicationUseCase
+from app.domains.memberships.use_cases.membership_requests.reapply_membership_application import (
+    ReapplyMembershipApplicationUseCase,
+)
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService
 from app.domains.shared.transaction_managers import TransactionManager

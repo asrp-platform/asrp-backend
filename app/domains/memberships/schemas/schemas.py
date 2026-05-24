@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
@@ -97,18 +97,16 @@ class UserMembershipTypeChangeRequestCreateSchema(BaseModel):
     upgrade: bool
 
 
-class UserMembershipTypeChangeRequestViewSchema(UCIMixinSchema):
-    target_membership_type_id: int
-    target_membership_type: MembershipTypeSchema
-    user_membership_id: int
-    user_membership: UserMembershipSchema
-    upgrade: bool
-    reason_changing: str
-    approved: bool
-    admin_comment: str | None
-    pending: bool
+class UserMembershipBoundedSchema(BaseModel):
+    user_id: int
+    membership_request_id: int
+    membership_type_id: int
+    is_active: bool
 
-    model_config = {"from_attributes": True}
+    membership_type: MembershipTypeSchema
+    user: UserShortSchema
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserMembershipTypeChangeRequestUpdateAdminSchema(BaseModel):

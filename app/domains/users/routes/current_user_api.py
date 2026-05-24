@@ -8,11 +8,15 @@ from app.core.common.responses import PaginatedResponse
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,
+    CantChangeToHonoraryMembershipError,
+    InvalidMembershipTypeDowngradeError,
+    InvalidMembershipTypeUpgradeError,
     MembershipAlreadyPaidError,
     MembershipApplicationCheckoutError,
     MembershipRequestCannotBeReappliedError,
+    SameMembershipTypeChangeRequestError,
 )
-from app.domains.memberships.schemas import (
+from app.domains.memberships.schemas.schemas import (
     MembershipRequestCreateSchema,
     MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
@@ -20,11 +24,15 @@ from app.domains.memberships.schemas import (
     UserMembershipTypeChangeRequestCreateSchema,
 )
 from app.domains.memberships.services import UserMembershipServiceDep
-from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
+from app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
 )
-from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
-from app.domains.memberships.use_cases.reapply_membership_application import ReapplyMembershipApplicationUseCaseDep
+from app.domains.memberships.use_cases.membership_requests.create_membership_request import (
+    CreateMembershipRequestUseCaseDep,
+)
+from app.domains.memberships.use_cases.membership_requests.reapply_membership_application import (
+    ReapplyMembershipApplicationUseCaseDep,
+)
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
@@ -171,13 +179,8 @@ async def create_name_change_request(
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED
 
 
-class CurrentUserMembershipResponses(Responses):
-    MEMBERSHIP_NOT_FOUND = 404, "Membership not found for the current user"
-
-
 @router.get(
     "/membership-requests",
-    responses=CurrentUserMembershipResponses.responses,
 )
 async def get_current_user_membership_request(
     current_user: CurrentUserDep, use_case: GetCurrentUserMembershipRequestUseCaseDep
@@ -308,13 +311,32 @@ async def get_current_user_membership(
     return await user_membership_service.get_user_membership_by_user_id(current_user.id)
 
 
+class MembershipTypeChangeRequestResponses(Responses):
+    NO_ACTIVE_MEMBERSHIP = 403, "No active membership"
+    PENDING_REQUEST_ALREADY_EXISTS = 409, "Pending user membership type change request already exists"
+    SAME_MEMBERSHIP_TYPE = 422, "Can't change membership type for the same type"
+    CANT_CHANGE_TO_HONORARY_MEMBERSHIP = 422, "Can't change membership type to HONORARY"
+    INVALID_UPGRADE = 422, "Target membership type is not more expensive than current membership type"
+    INVALID_DOWNGRADE = 422, "Target membership type is not cheaper than current membership type"
+
+
 @router.post(
     "/membership-type-change-request",
     summary="Create a request to change membership type",
+    responses=MembershipTypeChangeRequestResponses.responses,
 )
 async def create_membership_type_change_request(
     current_user_membership: CurrentUserMembershipDep,
     body: UserMembershipTypeChangeRequestCreateSchema,
     use_case: CreateMembershipTypeChangeRequestUseCaseDep,
 ):
-    return await use_case.execute(current_user_membership, **body.model_dump())
+    try:
+        return await use_case.execute(current_user_membership, **body.model_dump())
+    except SameMembershipTypeChangeRequestError:
+        raise MembershipTypeChangeRequestResponses.SAME_MEMBERSHIP_TYPE
+    except CantChangeToHonoraryMembershipError:
+        raise MembershipTypeChangeRequestResponses.CANT_CHANGE_TO_HONORARY_MEMBERSHIP
+    except InvalidMembershipTypeUpgradeError:
+        raise MembershipTypeChangeRequestResponses.INVALID_UPGRADE
+    except InvalidMembershipTypeDowngradeError:
+        raise MembershipTypeChangeRequestResponses.INVALID_DOWNGRADE

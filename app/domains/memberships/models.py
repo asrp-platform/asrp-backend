@@ -123,7 +123,7 @@ class UserMembershipTypeChangeRequests(Base, UCIMixin):
         "UserMembership", back_populates="membership_type_change_requests"
     )
 
-    upgrade: Mapped[bool] = mapped_column(nullable=False)  # in upgrade is False it means downgrade
+    upgrade: Mapped[bool] = mapped_column(nullable=False)  # if upgrade is False it means downgrade
     reason_changing: Mapped[str] = mapped_column(String(512), nullable=False)
 
     approved: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)

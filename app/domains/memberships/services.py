@@ -13,6 +13,7 @@ from app.domains.memberships.models import (
     UserMembershipTypeChangeRequests,
 )
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
+from app.domains.users.models import User
 
 
 class MembershipService:
@@ -96,12 +97,11 @@ class MembershipTypeService:
         current = aliased(MembershipType)
         target = aliased(MembershipType)
         stmt = (
-            select(target.price_usd - current.price_usd)
-            .label("price_diff")
+            select((target.price_usd - current.price_usd).label("price_diff"))
             .where(current.id == current_type_id)
             .where(target.id == target_type_id)
         )
-        return await self.__transaction_manager._session.execute(stmt).scalar_one()
+        return (await self.__transaction_manager._session.execute(stmt)).scalar_one()
 
     async def get_membership_type_by_id(self, membership_type_id: int) -> MembershipType:
         membership_type = await self.__transaction_manager.membership_type_repository.get_first_by_kwargs(
@@ -147,25 +147,46 @@ class UserMembershipService:
             )
 
 
-class MembershipTypeChangeRequestService:
+class MembershipTypeChangeService:
     def __init__(self, transaction_manager: TransactionManager):
         self.__transaction_manager = transaction_manager
 
     async def create_membership_type_request_service(self, user_membership: UserMembership, **kwargs):
-        if user_membership is None:
-            raise NotFoundError("User membership for the current user not found")
+        return await self.__transaction_manager.user_membership_type_change_requests_repository.create(
+            user_membership_id=user_membership.id, **kwargs
+        )
 
-        return await self.__transaction_manager.user_membership_type_change_requests_repository.create(**kwargs)
+    async def get_type_change_requests_paginated_counted(
+        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+    ) -> [list[UserMembershipTypeChangeRequests], int]:
+        # Получаем
+        # Сами запросы
+        # Тип, на который меняем
+        # Сам Membership
+        stmt = select(UserMembershipTypeChangeRequests).options(
+            selectinload(UserMembershipTypeChangeRequests.target_membership_type).load_only(
+                MembershipType.id, MembershipType.name, MembershipType.type
+            ),
+            selectinload(UserMembershipTypeChangeRequests.user_membership)
+            .selectinload(UserMembership.membership_type)
+            .load_only(MembershipType.id, MembershipType.name, MembershipType.type),
+            selectinload(UserMembershipTypeChangeRequests.user_membership)
+            .selectinload(UserMembership.user)
+            .load_only(
+                User.id,
+                User.email,
+            ),
+        )
+        return await self.__transaction_manager.user_membership_type_change_requests_repository.list(
+            limit, offset, order_by, filters, stmt=stmt
+        )
 
     async def get_pending_membership_type_change_request(
         self,
         user_membership: UserMembership,
     ) -> UserMembershipTypeChangeRequests | None:
-        if user_membership is None:
-            raise NotFoundError("User membership for the current user not found")
-
         return await self.__transaction_manager.user_membership_type_change_requests_repository.get_first_by_kwargs(
-            pending=True
+            pending=True, user_membership_id=user_membership.id
         )
 
 
@@ -189,13 +210,13 @@ def get_membership_type_service(
 
 def get_membership_type_change_request_service(
     transaction_manager: TransactionManagerDep,
-) -> MembershipTypeChangeRequestService:
-    return MembershipTypeChangeRequestService(transaction_manager)
+) -> MembershipTypeChangeService:
+    return MembershipTypeChangeService(transaction_manager)
 
 
 MembershipServiceDep = Annotated[MembershipService, Depends(get_membership_service)]
 UserMembershipServiceDep = Annotated[UserMembershipService, Depends(get_user_membership_service)]
 MembershipTypeServiceDep = Annotated[MembershipTypeService, Depends(get_membership_type_service)]
-MembershipTypeChangeRequestServiceDep = Annotated[
-    MembershipTypeChangeRequestService, Depends(get_membership_type_change_request_service)
+MembershipTypeChangeServiceDep = Annotated[
+    MembershipTypeChangeService, Depends(get_membership_type_change_request_service)
 ]
