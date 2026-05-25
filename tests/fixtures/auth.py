@@ -30,8 +30,6 @@ async def user_factory(
             "password": faker.password(),
             "firstname": faker.first_name(),
             "lastname": faker.last_name(),
-            "institution": faker.pystr(min_chars=2),
-            "role": faker.pystr(min_chars=2),
             "country": faker.country(),
             "city": faker.city(),
             **overrides,
@@ -86,8 +84,6 @@ def user_registration_data(faker: Faker) -> dict[str, Any]:
         "repeat_password": password,
         "firstname": faker.first_name(),
         "lastname": faker.last_name(),
-        "institution": faker.pystr(min_chars=2),
-        "role": faker.pystr(min_chars=2),
         "country": faker.country(),
         "city": faker.city(),
     }
@@ -103,8 +99,8 @@ def user_data(user_registration_data) -> dict[str, Any]:
 @pytest.fixture(scope="function")
 async def test_user_with_data(
     test_transaction_manager: TransactionManager,
-    user_data: dict[str | Any],
-) -> [User, dict]:
+    user_data: dict[str, Any],
+) -> tuple[User, dict]:
     user_creation_data = user_data.copy()
     async with test_transaction_manager:
         user = await test_transaction_manager.user_repository.create(**user_creation_data)
@@ -115,3 +111,16 @@ async def test_user_with_data(
 @pytest.fixture(scope="function")
 def cryptographer() -> Cryptographer:
     return Cryptographer(fernet)
+
+
+@pytest.fixture(scope="function")
+async def confirmed_user_with_data(
+    test_transaction_manager: TransactionManager, user_data: dict[str, Any]
+) -> tuple[User, dict]:
+    user_creation_data = user_data.copy()
+    user_creation_data["pending"] = False
+
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.create(**user_creation_data)
+
+    return user, user_data

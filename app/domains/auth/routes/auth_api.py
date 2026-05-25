@@ -1,25 +1,31 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
-from fastapi_exception_responses import Responses
-from starlette.responses import Response
+from fastapi import APIRouter, Body, Query
+from fastapi_exception_responses import Responses as ApiResponses
+from starlette.responses import RedirectResponse, Response
 
 from app.core.config import settings
+from app.domains.auth.exceptions import (
+    EmailAlreadyConfirmedError,
+    EmailConfirmationExpiredError,
+    RegistrationAlreadyCompletedError,
+)
 from app.domains.auth.schemas import (
     AccessToken,
     ChangePasswordSchema,
+    EmailConfirmationRequestForm,
     JWTTokenResponse,
     LoginForm,
     RegisterFormData,
     ResetPasswordSchema,
 )
-from app.domains.auth.services import AuthServiceDep
+from app.domains.auth.services import AuthServiceDep, RegisterResponses
 from app.domains.shared.deps import (
-    CurrentUserDep,
     RefreshTokenDep,
     create_access_token,
     create_refresh_token,
 )
+from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.schemas import UserSchema
 from app.domains.users.services import UserServiceDep
 
@@ -33,10 +39,6 @@ REFRESH_COOKIE_KWARGS = {
     "secure": True,
     "samesite": "none",
 }
-
-
-class RegisterResponses(Responses):
-    EMAIL_ALREADY_IN_USE = 409, "Provided email is already in use"
 
 
 @router.post(
@@ -53,7 +55,7 @@ async def register(
     return UserSchema.model_validate(user)
 
 
-class LoginResponses(Responses):
+class LoginResponses(ApiResponses):
     WRONG_CREDENTIALS = 401, "Wrong credentials"
 
 
@@ -66,7 +68,7 @@ async def login(
     email, password, remember = login_data.model_dump().values()
     user = await user_service.get_user_by_kwargs(email=email)
 
-    if user is None or not user.verify_password(password):
+    if user is None or not user.verify_password(password) or user.pending is True:
         raise LoginResponses.WRONG_CREDENTIALS
 
     access_token = create_access_token({"email": user.email})
@@ -89,7 +91,7 @@ async def login(
     return JWTTokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
-class RefreshAccessTokenResponses(Responses):
+class RefreshAccessTokenResponses(ApiResponses):
     NOT_AUTHENTICATED = 401, "Not authenticated"
     INVALID_TOKEN = 401, "Invalid token"
 
@@ -107,7 +109,7 @@ async def refresh_access_token(
     return AccessToken(access_token=access_token)
 
 
-class LogoutResponses(Responses):
+class LogoutResponses(ApiResponses):
     INVALID_TOKEN = 401, "Invalid token"
 
 
@@ -128,7 +130,7 @@ async def reset_password(auth_service: AuthServiceDep, data: ResetPasswordSchema
     await auth_service.reset_password(data.email)
 
 
-class VerifyTokenResponses(Responses):
+class VerifyTokenResponses(ApiResponses):
     INVALID_TOKEN = 400, "Invalid token"
 
 
@@ -147,7 +149,7 @@ async def verify_reset_token(
         raise VerifyTokenResponses.INVALID_TOKEN
 
 
-class ConfirmPasswordResetResponses(Responses):
+class ConfirmPasswordResetResponses(ApiResponses):
     INVALID_TOKEN = 400, "Invalid token"
 
 
@@ -164,26 +166,62 @@ async def confirm_password_reset(
         raise ConfirmPasswordResetResponses.INVALID_TOKEN
 
 
-class EmailConfirmResponses(Responses):
-    INVALID_TOKEN = 401, "Invalid token"
-    EMAIL_ALREADY_CONFIRMED = 409, "Provided email is already confirmed"
+class EmailConfirmRequestResponses(ApiResponses):
+    EMAIL_ALREADY_CONFIRMED = (
+        409,
+        "Provided email is already confirmed",
+    )
+    USER_NOT_FOUND = (
+        404,
+        "User with provided email not found",
+    )
+    CREATED = 201, "Confirmation email sent"
 
 
-@router.post("/email-confirmation-requests", status_code=201)
-async def send_email_confirm_link(auth_service: AuthServiceDep, current_user: CurrentUserDep):
-    email = current_user.email
-    email_confirmed = current_user.email_confirmed
+class CompleteRegistrationResponses(ApiResponses):
+    REDIRECT = (
+        302,
+        (
+            "Redirects to frontend with one of the following results: "
+            "status=success, status=error&reason=expired, status=error&reason=already_registered"
+        ),
+    )
 
-    if email_confirmed:
-        raise EmailConfirmResponses.EMAIL_ALREADY_CONFIRMED
 
-    await auth_service.send_email_confirm_link(email)
-
-
-@router.post("/email-confirmations", status_code=204)
-async def confirm_email(token: Annotated[str, Query(...)], auth_service: AuthServiceDep, current_user: CurrentUserDep):
+@router.post(
+    "/email-confirmation-requests",
+    status_code=201,
+    summary="Resend email confirmation link",
+    responses=EmailConfirmRequestResponses.responses,
+)
+async def send_email_confirm_link(
+    request_data: Annotated[EmailConfirmationRequestForm, Body(...)], auth_service: AuthServiceDep
+):
     try:
-        email_from_confirmation_token = auth_service.verify_email_confirmation_token(token.encode())
-        await auth_service.confirm_email(current_user.id, email_from_confirmation_token, current_user.email)
-    except ValueError:
-        raise EmailConfirmResponses.INVALID_TOKEN
+        await auth_service.resend_email_confirmation_link(request_data.email)
+        return {"detail": "Confirmation email sent"}
+
+    except EmailAlreadyConfirmedError:
+        raise EmailConfirmRequestResponses.EMAIL_ALREADY_CONFIRMED
+
+    except UserNotFoundError:
+        raise EmailConfirmRequestResponses.USER_NOT_FOUND
+
+
+@router.get(
+    "/email-confirmations",
+    summary="Complete registration by email confirmation",
+    responses=CompleteRegistrationResponses.responses,
+)
+async def confirm_email(token: Annotated[str, Query(...)], auth_service: AuthServiceDep):
+    try:
+        await auth_service.complete_registration(token.encode())
+        return RedirectResponse(url=f"{settings.FRONTEND_DOMAIN}/register?status=success", status_code=302)
+
+    except RegistrationAlreadyCompletedError:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_DOMAIN}/register?status=error&reason=already_registered", status_code=302
+        )
+
+    except EmailConfirmationExpiredError:
+        return RedirectResponse(url=f"{settings.FRONTEND_DOMAIN}/register?status=error&reason=expired", status_code=302)

@@ -6,7 +6,7 @@ from app.domains.shared.types import Password
 
 class RegisterFormData(BaseModel):
     email: EmailStr = Field(min_length=6)
-    password: str = Password
+    password: Password
     repeat_password: Password
     firstname: str = Field(min_length=2)
     lastname: str = Field(min_length=2)
@@ -16,7 +16,7 @@ class RegisterFormData(BaseModel):
     @model_validator(mode="after")
     def check_passwords_match(self):
         if self.password != self.repeat_password:
-            raise ValueError("Passwords do not match")
+            raise PydanticCustomError("password mismatch", "Passwords do not match")
         return self
 
 
@@ -60,3 +60,7 @@ class ChangePasswordSchema(BaseModel):
         if len(v) < 4:
             raise PydanticCustomError("password_too_short", "Password should have at least 4 characters")
         return v
+
+
+class EmailConfirmationRequestForm(BaseModel):
+    email: EmailStr

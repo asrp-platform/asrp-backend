@@ -14,9 +14,9 @@ pytestmark = pytest.mark.anyio
 
 async def test_login(
     client: AsyncClient,
-    test_user_with_data: [User, dict],
+    confirmed_user_with_data: tuple[User, dict],
 ) -> None:
-    _, user_data = test_user_with_data
+    _, user_data = confirmed_user_with_data
 
     response = await client.post(
         "api/auth/login",
@@ -30,16 +30,16 @@ async def test_login(
 
 async def test_access_token_expiry(
     client,
-    test_user_with_data: [User, dict],
+    confirmed_user_with_data: tuple[User, dict],
 ) -> None:
-    _, user_data = test_user_with_data
+    _, user_data = confirmed_user_with_data
 
     response = await client.post(
         "/api/auth/login",
         json={
             "email": user_data["email"],
             "password": user_data["password"],
-            "remember_me": False,
+            "remember": False,
         },
     )
 
@@ -55,9 +55,9 @@ async def test_access_token_expiry(
 
 async def test_refresh_token_expiry_with_remember_me(
     client,
-    test_user_with_data: [User, dict],
+    confirmed_user_with_data: tuple[User, dict],
 ) -> None:
-    _, user_data = test_user_with_data
+    _, user_data = confirmed_user_with_data
 
     response = await client.post(
         "/api/auth/login",
@@ -79,9 +79,9 @@ async def test_refresh_token_expiry_with_remember_me(
 
 async def test_refresh_token_expiry(
     client,
-    test_user_with_data: [User, dict],
+    confirmed_user_with_data: tuple[User, dict],
 ) -> None:
-    _, user_data = test_user_with_data
+    _, user_data = confirmed_user_with_data
 
     response = await client.post(
         "/api/auth/login",
@@ -114,3 +114,18 @@ async def test_user_does_not_exist(
     )
 
     assert response.status_code == 401
+    assert response.json()["detail"] == "Wrong credentials"
+
+
+async def test_pending_user_cannot_login(
+    client: AsyncClient,
+    test_user_with_data: tuple[User, dict],
+) -> None:
+    _, user_data = test_user_with_data
+
+    response = await client.post(
+        "/api/auth/login", json={"email": user_data["email"], "password": user_data["password"], "remember": True}
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Wrong credentials"

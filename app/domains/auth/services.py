@@ -6,6 +6,11 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet, settings
+from app.domains.auth.exceptions import (
+    EmailAlreadyConfirmedError,
+    EmailConfirmationExpiredError,
+    RegistrationAlreadyCompletedError,
+)
 from app.domains.auth.schemas import RegisterFormData
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
@@ -14,9 +19,7 @@ from app.domains.users.exceptions import UserNotFoundError
 
 
 class RegisterResponses(Responses):
-    PASSWORDS_DONT_MATCH = 400, "Passwords don't match"
     EMAIL_ALREADY_IN_USE = 409, "Provided email is already in use"
-    EMAIL_ALREADY_CONFIRMED = 409, "Provided email is already confirmed"
 
 
 class AuthService:
@@ -29,16 +32,30 @@ class AuthService:
         """Creates or extends subscription"""
 
         user_data = register_form_data.model_dump()
+        user_data.pop("repeat_password")
 
-        if (await self.transaction_manager.user_repository.get_first_by_kwargs(email=user_data["email"])) is not None:
-            raise RegisterResponses.EMAIL_ALREADY_IN_USE
-
-        if user_data["password"] != user_data.pop("repeat_password"):
-            raise RegisterResponses.PASSWORDS_DONT_MATCH
+        email = user_data["email"]
 
         async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.create(**user_data)
+            existing_user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
+            if existing_user is None:
+                user = await self.transaction_manager.user_repository.create(**user_data, pending=True)
+
+            elif existing_user.pending is True:
+                existing_user.firstname = user_data["firstname"]
+                existing_user.lastname = user_data["lastname"]
+                existing_user.country = user_data["country"]
+                existing_user.city = user_data["city"]
+                existing_user.password = user_data["password"]
+                existing_user.pending = True
+
+                user = existing_user
+
+            else:
+                raise RegisterResponses.EMAIL_ALREADY_IN_USE
+
+        await self.send_email_confirm_link(email)
         return user
 
     async def set_new_password(self, email, password):
@@ -78,7 +95,7 @@ class AuthService:
 
     async def send_email_confirm_link(self, email: str):
         token = self.cryptographer.create_token(email)
-        link = f"{settings.FRONTEND_DOMAIN}/auth/email-confirmations/?token={token.decode()}"
+        link = f"{settings.BACKEND_DOMAIN}/api/auth/email-confirmations?token={token.decode()}"
         message = f"""
         Hello,
 
@@ -90,12 +107,37 @@ class AuthService:
         """
         await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
 
-    async def confirm_email(self, current_user_id: int, email_from_confirmation_token: str, current_user_email: str):
+    async def resend_email_confirmation_link(self, email: str):
         async with self.transaction_manager:
-            if current_user_email != email_from_confirmation_token:
-                raise ValueError("email of the confirmation token does not match email of the authorized user")
+            existing_user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
-            await self.transaction_manager.user_repository.update(current_user_id, email_confirmed=True)
+            if existing_user is None:
+                raise UserNotFoundError("User with provided email not found")
+
+            if existing_user.pending is False:
+                raise EmailAlreadyConfirmedError("Provided email is already confirmed")
+
+        await self.send_email_confirm_link(email)
+
+    async def complete_registration(self, token: bytes) -> str:
+        try:
+            email = self.verify_email_confirmation_token(token)
+
+        except ValueError as e:
+            raise EmailConfirmationExpiredError("Invalid or expired token") from e
+
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
+
+            if user is None:
+                raise EmailConfirmationExpiredError("Invalid or expired token")
+
+            if user.pending is False:
+                raise RegistrationAlreadyCompletedError("User is already registered")
+
+            user.pending = False
+
+        return email
 
     def verify_password_reset_token(self, token: bytes) -> str:
         lifetime_seconds = 3600  # 1 hour
