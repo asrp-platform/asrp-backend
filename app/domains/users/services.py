@@ -72,10 +72,7 @@ class UserService:
 
     async def update_user(self, user_id: int, **kwargs) -> User:
         async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-            if user is None:
-                raise UserNotFoundError("User with provided ID not found")
-            await self.transaction_manager.user_repository.update(user_id, **kwargs)
+            user = await self.transaction_manager.user_repository.update(user_id, **kwargs)
         return user
 
     async def get_user_avatar_url(self, user_id: int):
