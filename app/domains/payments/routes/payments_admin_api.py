@@ -3,27 +3,35 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
-from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
+from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
+from app.core.utils.permissions import check_permissions
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.payments.services import PaymentServiceDep
-from app.domains.shared.deps import get_admin_user
+from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 router = APIRouter(tags=["Admin: Payments"], prefix="/payments", dependencies=[Depends(get_admin_user)])
 
 
-class PaymentListResponses(InvalidRequestParamsResponses):
+class PaymentListResponses(InvalidRequestParamsResponses, PermissionsResponses):
     pass
 
 
-@router.get("", responses=PaymentListResponses.responses)
+@router.get(
+    "",
+    summary="Get a list of payments",
+    responses=PaymentListResponses.responses,
+)
 async def get_payments(
+    permissions: AdminPermissionsDep,
     service: PaymentServiceDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = "-created_at",
     filters: Annotated[PaymentsFilter, Depends()] = None,
 ) -> PaginatedResponse[PaymentReadSchema]:
+    check_permissions("payments.view", permissions)
+
     try:
         payments, count = await service.get_payments_paginated_counted(
             order_by=ordering,
