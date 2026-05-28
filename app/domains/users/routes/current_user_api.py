@@ -17,11 +17,11 @@ from app.domains.memberships.exceptions import (
     SameMembershipTypeChangeRequestError,
 )
 from app.domains.memberships.schemas.schemas import (
+    MembershipDowngradeCreateCreateSchema,
     MembershipRequestCreateSchema,
     MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
     UserMembershipSchema,
-    UserMembershipTypeChangeRequestCreateSchema,
 )
 from app.domains.memberships.schemas.type_change_schemas import (
     UserMembershipTypeChangeRequestProfileSchema,
@@ -54,15 +54,15 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
-from app.domains.users.use_cases.current_user.create_membership_type_change_request import (
-    CreateMembershipTypeChangeRequestUseCaseDep,
-)
 from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.get_current_user_membership import (
     GetCurrentUserMembershipRequestUseCaseDep,
 )
-from app.domains.users.use_cases.current_user.get_current_user_membership_type_change_request import (
-    GetCurrentUserMembershipTypeChangeRequestUseCaseDep,
+from app.domains.users.use_cases.current_user.get_current_user_membership_downgrade_request import (
+    GetCurrentUserMembershipDowngradeRequestUseCaseDep,
+)
+from app.domains.users.use_cases.current_user.request_membership_downgrade import (
+    RequestMembershipDowngradeUseCaseDep,
 )
 from app.domains.users.use_cases.current_user.request_name_change import RequestNageChangeUseCaseDep
 from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
@@ -327,14 +327,15 @@ class MembershipTypeChangeRequestResponses(Responses):
 
 
 @router.post(
-    "/membership-type-change-request",
-    summary="Create a request to change membership type",
+    "/membership/downgrade-request",
+    summary="Create a request to downgrade membership type",
     responses=MembershipTypeChangeRequestResponses.responses,
+    status_code=201,
 )
-async def create_membership_type_change_request(
+async def request_membership_type_change(
     current_user_membership: CurrentUserMembershipDep,
-    body: UserMembershipTypeChangeRequestCreateSchema,
-    use_case: CreateMembershipTypeChangeRequestUseCaseDep,
+    body: MembershipDowngradeCreateCreateSchema,
+    use_case: RequestMembershipDowngradeUseCaseDep,
 ):
     try:
         return await use_case.execute(current_user_membership, **body.model_dump())
@@ -349,11 +350,29 @@ async def create_membership_type_change_request(
 
 
 @router.get(
-    "/membership-type-change-request",
-    summary="Get current user's membership type change request",
+    "/membership/downgrade-request",
+    summary="Get current user's membership downgrade request",
 )
 async def get_current_user_membership_type_change_request(
     current_user_membership: CurrentUserMembershipDep,
-    use_case: GetCurrentUserMembershipTypeChangeRequestUseCaseDep,
+    use_case: GetCurrentUserMembershipDowngradeRequestUseCaseDep,
 ) -> UserMembershipTypeChangeRequestProfileSchema | None:
     return await use_case.execute(current_user_membership)
+
+
+@router.delete("/membership/downgrade-request", summary="Cancel (delete) current user's membership downgrade request")
+async def cancel_membership_downgrade_request(
+    current_user_membership: CurrentUserMembershipDep,
+):
+    pass
+
+
+@router.post(
+    "/membership/upgrade-checkouts",
+    summary="Create a checkout for membership type upgrade",
+    status_code=201,
+)
+async def create_membership_upgrade_checkout(
+    current_user_membership: CurrentUserMembershipDep,
+):
+    pass

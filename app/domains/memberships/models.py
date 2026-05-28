@@ -103,8 +103,8 @@ class UserMembership(Base, UCIMixin):
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_membership")
-    membership_type_change_requests: Mapped[list["UserMembershipTypeChangeRequests"]] = relationship(
-        "UserMembershipTypeChangeRequests", back_populates="user_membership"
+    membership_type_change_requests: Mapped[list["MembershipDowngradeRequest"]] = relationship(
+        "MembershipDowngradeRequest", back_populates="user_membership"
     )
 
     @property
@@ -112,8 +112,8 @@ class UserMembership(Base, UCIMixin):
         return datetime.now(timezone.utc) < self.expires_at
 
 
-class UserMembershipTypeChangeRequests(Base, UCIMixin):
-    __tablename__ = "user_membership_type_change_requests"
+class MembershipDowngradeRequest(Base, UCIMixin):
+    __tablename__ = "membership_downgrade_requests"
 
     target_membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     target_membership_type: Mapped["MembershipType"] = relationship("MembershipType")
@@ -123,7 +123,6 @@ class UserMembershipTypeChangeRequests(Base, UCIMixin):
         "UserMembership", back_populates="membership_type_change_requests"
     )
 
-    upgrade: Mapped[bool] = mapped_column(nullable=False)  # if upgrade is False it means downgrade
     reason_changing: Mapped[str] = mapped_column(String(512), nullable=False)
 
     approved: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)

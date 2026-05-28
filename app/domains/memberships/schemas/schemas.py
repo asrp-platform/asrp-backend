@@ -91,10 +91,9 @@ class UserMembershipSchema(UCIMixinSchema):
     model_config = {"from_attributes": True}
 
 
-class UserMembershipTypeChangeRequestCreateSchema(BaseModel):
+class MembershipDowngradeCreateCreateSchema(BaseModel):
     target_membership_type_id: int
     reason_changing: str
-    upgrade: bool
 
 
 class UserMembershipBoundedSchema(BaseModel):

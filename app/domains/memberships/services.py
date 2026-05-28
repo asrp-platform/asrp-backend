@@ -6,11 +6,11 @@ from sqlalchemy.orm import aliased, selectinload
 
 from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
 from app.domains.memberships.models import (
+    MembershipDowngradeRequest,
     MembershipRequest,
     MembershipType,
     MembershipTypeEnum,
     UserMembership,
-    UserMembershipTypeChangeRequests,
 )
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.models import User
@@ -147,64 +147,78 @@ class UserMembershipService:
             )
 
 
-class MembershipTypeChangeService:
+class MembershipDowngradeService:
     def __init__(self, transaction_manager: TransactionManager):
         self.__transaction_manager = transaction_manager
 
-    async def create_membership_type_request_service(self, user_membership: UserMembership, **kwargs):
-        return await self.__transaction_manager.user_membership_type_change_requests_repository.create(
+    async def create_downgrade_request(self, user_membership: UserMembership, **kwargs):
+        return await self.__transaction_manager.membership_downgrade_requests_repository.create(
             user_membership_id=user_membership.id, **kwargs
         )
 
-    async def get_type_change_requests_paginated_counted(
+    async def get_all_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
-    ) -> [list[UserMembershipTypeChangeRequests], int]:
-        # Получаем
-        # Сами запросы
-        # Тип, на который меняем
-        # Сам Membership
-        stmt = select(UserMembershipTypeChangeRequests).options(
-            selectinload(UserMembershipTypeChangeRequests.target_membership_type).load_only(
+    ) -> [list[MembershipDowngradeRequest], int]:
+        stmt = select(MembershipDowngradeRequest).options(
+            selectinload(MembershipDowngradeRequest.target_membership_type).load_only(
                 MembershipType.id, MembershipType.name, MembershipType.type
             ),
-            selectinload(UserMembershipTypeChangeRequests.user_membership)
+            selectinload(MembershipDowngradeRequest.user_membership)
             .selectinload(UserMembership.membership_type)
             .load_only(MembershipType.id, MembershipType.name, MembershipType.type),
-            selectinload(UserMembershipTypeChangeRequests.user_membership)
+            selectinload(MembershipDowngradeRequest.user_membership)
             .selectinload(UserMembership.user)
             .load_only(
                 User.id,
                 User.email,
             ),
         )
-        return await self.__transaction_manager.user_membership_type_change_requests_repository.list(
+        return await self.__transaction_manager.membership_downgrade_requests_repository.list(
             limit, offset, order_by, filters, stmt=stmt
         )
 
-    async def get_pending_membership_type_change_request(
+    async def get_pending_downgrade_request_by_membership(
         self,
         user_membership: UserMembership,
-    ) -> UserMembershipTypeChangeRequests | None:
-        return await self.__transaction_manager.user_membership_type_change_requests_repository.get_first_by_kwargs(
+    ) -> MembershipDowngradeRequest | None:
+        return await self.__transaction_manager.membership_downgrade_requests_repository.get_first_by_kwargs(
             pending=True, user_membership_id=user_membership.id
         )
 
     async def get_current_user_membership_type_change_request(
         self,
         user_membership: UserMembership,
-    ) -> UserMembershipTypeChangeRequests | None:
-        stmt = select(UserMembershipTypeChangeRequests).options(
-            selectinload(UserMembershipTypeChangeRequests.target_membership_type).load_only(
+    ) -> MembershipDowngradeRequest | None:
+        stmt = select(MembershipDowngradeRequest).options(
+            selectinload(MembershipDowngradeRequest.target_membership_type).load_only(
                 MembershipType.id, MembershipType.name, MembershipType.type
             ),
-            selectinload(UserMembershipTypeChangeRequests.user_membership)
+            selectinload(MembershipDowngradeRequest.user_membership)
             .selectinload(UserMembership.membership_type)
             .load_only(MembershipType.id, MembershipType.name, MembershipType.type),
         )
-        return await self.__transaction_manager.user_membership_type_change_requests_repository.get_first_by_kwargs(
+        return await self.__transaction_manager.membership_downgrade_requests_repository.get_first_by_kwargs(
             stmt=stmt,
             user_membership_id=user_membership.id,
             pending=True,
+        )
+
+    async def approve_membership_type_change(self, type_change_request_id: int) -> MembershipDowngradeRequest:
+        return await self.__transaction_manager.membership_downgrade_requests_repository.update(
+            type_change_request_id, approved=True, pending=False
+        )
+
+    async def reject_membership_type_change(self, type_change_request_id: int, admin_comment: str):
+        type_change_request = (
+            await self.__transaction_manager.membership_downgrade_requests_repository.get_first_by_kwargs(
+                id=type_change_request_id
+            )
+        )
+        if type_change_request is None:
+            raise NotFoundError("Membership type change request with provided ID not found")
+
+        await self.__transaction_manager.membership_downgrade_requests_repository.update(
+            type_change_request, approved=False, admin_comment=admin_comment, pending=False
         )
 
 
@@ -228,13 +242,13 @@ def get_membership_type_service(
 
 def get_membership_type_change_request_service(
     transaction_manager: TransactionManagerDep,
-) -> MembershipTypeChangeService:
-    return MembershipTypeChangeService(transaction_manager)
+) -> MembershipDowngradeService:
+    return MembershipDowngradeService(transaction_manager)
 
 
 MembershipServiceDep = Annotated[MembershipService, Depends(get_membership_service)]
 UserMembershipServiceDep = Annotated[UserMembershipService, Depends(get_user_membership_service)]
 MembershipTypeServiceDep = Annotated[MembershipTypeService, Depends(get_membership_type_service)]
 MembershipTypeChangeServiceDep = Annotated[
-    MembershipTypeChangeService, Depends(get_membership_type_change_request_service)
+    MembershipDowngradeService, Depends(get_membership_type_change_request_service)
 ]

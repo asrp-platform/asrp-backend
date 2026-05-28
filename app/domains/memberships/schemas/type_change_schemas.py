@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 from app.core.database.mixins import UCIMixinSchema
@@ -31,7 +33,6 @@ class UserMembershipTypeChangeRequestProfileSchema(UCIMixinSchema):
     target_membership_type_id: int
     target_membership_type: BoundedMembershipTypeSchema
     user_membership_id: int
-    upgrade: bool
     reason_changing: str
     approved: bool
     admin_comment: str | None
@@ -42,3 +43,7 @@ class UserMembershipTypeChangeRequestProfileSchema(UCIMixinSchema):
 
 class UserMembershipTypeChangeRequestViewSchema(UserMembershipTypeChangeRequestProfileSchema):
     user_membership: BoundedUserMembershipSchema
+
+
+class ReviewMembershipTypeChangeRequest(BaseModel):
+    action: Literal["approve", "reject"]

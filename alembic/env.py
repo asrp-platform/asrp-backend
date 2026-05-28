@@ -11,10 +11,10 @@ from app.core.database.setup_db import Base
 from app.domains.directors_board.models import DirectorBoardMember  # noqa
 from app.domains.feedback.models import ContactMessage  # noqa
 from app.domains.memberships.models import (  # noqa
+    MembershipDowngradeRequest,
     MembershipRequest,
     MembershipType,
     UserMembership,
-    UserMembershipTypeChangeRequests,
 )
 from app.domains.legal_documents.models import Sponsor  # noqa
 from app.domains.news.models import News  # noqa

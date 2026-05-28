@@ -5,14 +5,17 @@ from fastapi import APIRouter, Depends
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
 from app.domains.memberships.filters import UserMembershipTypeChangeRequestsFilters
-from app.domains.memberships.schemas.type_change_schemas import UserMembershipTypeChangeRequestViewSchema
+from app.domains.memberships.schemas.type_change_schemas import (
+    ReviewMembershipTypeChangeRequest,
+    UserMembershipTypeChangeRequestViewSchema,
+)
 from app.domains.memberships.use_cases.memberships.get_type_change_requests import GetTypeChangeRequestsUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 router = APIRouter(prefix="/memberships", tags=["Admin: Memberships"], dependencies=[Depends(get_admin_user)])
 
 
-@router.get("/types/change-requests", summary="Get all")
+@router.get("/types/change-requests", summary="Get all membership type change requests")
 async def get_membership_type_change_requests(
     permissions: AdminPermissionsDep,
     use_case: GetTypeChangeRequestsUseCaseDep,
@@ -33,3 +36,11 @@ async def get_membership_type_change_requests(
         page=params["page"],
         page_size=params["page_size"],
     )
+
+
+@router.patch("/types/change-requests/{request_id}", summary="Get membership type change request by ID")
+async def get_membership_type_changer_request(
+    request_id: int,
+    body: ReviewMembershipTypeChangeRequest,
+):
+    pass
