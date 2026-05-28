@@ -1,6 +1,5 @@
 from typing import Annotated
 from urllib.parse import unquote, urlsplit
-from uuid import uuid4
 
 from fastapi import Depends
 from loguru import logger
@@ -10,6 +9,7 @@ from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.save_file import generate_filename
 from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
@@ -79,8 +79,9 @@ class DirectorsBoardService:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
+        filename = generate_filename(file_data.filename, prefix="directors_board")
         file_data = await self.file_storage.upload_file(
-            object_key=f"directors_board/{uuid4()}.{file_data.filename.split('.')[-1]}",
+            object_key=filename,
             file_content=file_data.content
         )
         return await self.file_storage.get_file_url(file_data.object_key)

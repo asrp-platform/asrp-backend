@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from typing import Annotated, Any, Generic, Literal, TypeVar
-from uuid import uuid4
 
 from fastapi import Depends
 from loguru import logger
@@ -9,6 +8,7 @@ from app.core.common.exceptions import NotResourceOwnerError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
@@ -92,7 +92,7 @@ class UserService:
             raise UserNotFoundError("user with provided email not found")
 
         old_filename = user.avatar_path
-        new_filename = f"avatars/{uuid4()}.{file.filename.split('.')[-1]}"
+        new_filename = generate_filename(file.filename, prefix="avatars")
 
         file_content = await file.read()
         upload_result = await self.file_storage.upload_file(
