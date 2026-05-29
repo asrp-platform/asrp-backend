@@ -55,8 +55,8 @@ async def test_confirm_email_success(
 
     response = await client.get("api/auth/email-confirmations", params={"token": token}, follow_redirects=False)
 
-    assert response.status_code == 302
-    assert response.headers["location"].endswith("/register?status=success")
+    assert response.status_code == 200
+    assert response.json()['detail'] == 'Email successfully confirmed'
 
 
 async def test_confirm_email_invalid_token(
@@ -67,8 +67,8 @@ async def test_confirm_email_invalid_token(
 
     response = await client.get("api/auth/email-confirmations", params={"token": fake_token}, follow_redirects=False)
 
-    assert response.status_code == 302
-    assert response.headers["location"].endswith("/register?status=error&reason=expired")
+    assert response.status_code == 401
+    assert response.json()['detail'] == 'Invalid or expired token'
 
 
 async def test_confirm_email_already_registered(
@@ -81,5 +81,5 @@ async def test_confirm_email_already_registered(
 
     response = await client.get("api/auth/email-confirmations", params={"token": token}, follow_redirects=False)
 
-    assert response.status_code == 302
-    assert response.headers["location"].endswith("/register?status=error&reason=already_registered")
+    assert response.status_code == 409
+    assert response.json()['detail'] == 'Registration already completed'

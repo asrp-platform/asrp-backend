@@ -95,15 +95,15 @@ class AuthService:
 
     async def send_email_confirm_link(self, email: str):
         token = self.cryptographer.create_token(email)
-        link = f"{settings.BACKEND_DOMAIN}/api/auth/email-confirmations?token={token.decode()}"
+        link = f"{settings.FRONTEND_DOMAIN}/registration/complete?token={token.decode()}"
         message = f"""
         Hello,
 
-        Thank you for registering! To complete your account setup and verify your email address, please click the link below:
+        Thank you for registering! To complete your registration and confirm your email address, please follow the link below:
 
         {link}
 
-        This link is valid for 1 day. If you did not request a password reset, please ignore this message.
+        This link is valid for 1 day. If you did not create an account, please ignore this message.
         """
         await self.email_provider.send_email(to=email, subject="Email Confirmation", body=message)
 

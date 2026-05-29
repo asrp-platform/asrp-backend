@@ -64,3 +64,7 @@ class ChangePasswordSchema(BaseModel):
 
 class EmailConfirmationRequestForm(BaseModel):
     email: EmailStr
+
+
+class MessageResponse(BaseModel):
+    detail: str

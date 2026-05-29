@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Query
 from fastapi_exception_responses import Responses as ApiResponses
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import Response
 
 from app.core.config import settings
 from app.domains.auth.exceptions import (
@@ -16,6 +16,7 @@ from app.domains.auth.schemas import (
     EmailConfirmationRequestForm,
     JWTTokenResponse,
     LoginForm,
+    MessageResponse,
     RegisterFormData,
     ResetPasswordSchema,
 )
@@ -166,22 +167,8 @@ async def confirm_password_reset(
 
 
 class EmailConfirmRequestResponses(ApiResponses):
-    EMAIL_ALREADY_CONFIRMED = (
-        409,
-        "Provided email is already confirmed",
-    )
-
+    EMAIL_ALREADY_CONFIRMED = 409, "Provided email is already confirmed"
     CONFIRMATION_LINK_SENT = 201, "Confirmation email sent"
-
-
-class CompleteRegistrationResponses(ApiResponses):
-    REDIRECT = (
-        302,
-        (
-            "Redirects to frontend with one of the following results: "
-            "status=success, status=error&reason=expired, status=error&reason=already_registered"
-        ),
-    )
 
 
 @router.post(
@@ -191,14 +178,20 @@ class CompleteRegistrationResponses(ApiResponses):
     responses=EmailConfirmRequestResponses.responses,
 )
 async def send_email_confirm_link(
-    request_data: Annotated[EmailConfirmationRequestForm, Body(...)], auth_service: AuthServiceDep
-):
+    request_data: EmailConfirmationRequestForm, auth_service: AuthServiceDep
+) -> MessageResponse:
     try:
         await auth_service.resend_email_confirmation_link(request_data.email)
-        return {"detail": "Confirmation email sent"}
+        return MessageResponse(detail='Confirmation email sent')
 
     except EmailAlreadyConfirmedError:
         raise EmailConfirmRequestResponses.EMAIL_ALREADY_CONFIRMED
+
+
+class CompleteRegistrationResponses(ApiResponses):
+    SUCCESS = 200, 'Email successfully confirmed'
+    ALREADY_REGISTERED = 409, 'Registration already completed'
+    EXPIRED = 401, 'Invalid or expired token'
 
 
 @router.get(
@@ -209,12 +202,10 @@ async def send_email_confirm_link(
 async def confirm_email(token: Annotated[str, Query(...)], auth_service: AuthServiceDep):
     try:
         await auth_service.complete_registration(token.encode())
-        return RedirectResponse(url=f"{settings.FRONTEND_DOMAIN}/register?status=success", status_code=302)
+        return {'detail': 'Email successfully confirmed'}
 
     except RegistrationAlreadyCompletedError:
-        return RedirectResponse(
-            url=f"{settings.FRONTEND_DOMAIN}/register?status=error&reason=already_registered", status_code=302
-        )
+        raise CompleteRegistrationResponses.ALREADY_REGISTERED
 
     except EmailConfirmationExpiredError:
-        return RedirectResponse(url=f"{settings.FRONTEND_DOMAIN}/register?status=error&reason=expired", status_code=302)
+        raise CompleteRegistrationResponses.EXPIRED
