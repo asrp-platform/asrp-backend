@@ -9,16 +9,21 @@ from app.domains.memberships.schemas.type_change_schemas import (
     ReviewMembershipTypeChangeRequest,
     UserMembershipTypeChangeRequestViewSchema,
 )
-from app.domains.memberships.use_cases.memberships.get_type_change_requests import GetTypeChangeRequestsUseCaseDep
+from app.domains.memberships.use_cases.memberships.get_downgrade_requests import (
+    GetMembershipDowngradeRequestsUseCaseDep,
+)
+from app.domains.memberships.use_cases.memberships.review_downgrade_request import (
+    ReviewMembershipDowngradeRequestUseCaseDep,
+)
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 router = APIRouter(prefix="/memberships", tags=["Admin: Memberships"], dependencies=[Depends(get_admin_user)])
 
 
-@router.get("/types/change-requests", summary="Get all membership type change requests")
+@router.get("/types/downgrade-requests", summary="Get all membership type change requests")
 async def get_membership_type_change_requests(
     permissions: AdminPermissionsDep,
-    use_case: GetTypeChangeRequestsUseCaseDep,
+    use_case: GetMembershipDowngradeRequestsUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[UserMembershipTypeChangeRequestsFilters, Depends()] = None,
@@ -38,9 +43,10 @@ async def get_membership_type_change_requests(
     )
 
 
-@router.patch("/types/change-requests/{request_id}", summary="Get membership type change request by ID")
-async def get_membership_type_changer_request(
+@router.patch("/types/downgrade-requests/{request_id}", summary="Get membership type change request by ID")
+async def review_membership_type_change_request(
     request_id: int,
     body: ReviewMembershipTypeChangeRequest,
+    use_case: ReviewMembershipDowngradeRequestUseCaseDep,
 ):
-    pass
+    return await use_case.execute(request_id, action=body.action, admin_comment=body.admin_comment)

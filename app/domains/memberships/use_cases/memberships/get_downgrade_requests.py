@@ -8,7 +8,7 @@ from app.domains.memberships.services import MembershipDowngradeService, Members
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
 
-class GetTypeChangeRequestsUseCase:
+class GetMembershipDowngradeRequestsUseCase:
     def __init__(
         self,
         transaction_manager: TransactionManager,
@@ -35,8 +35,8 @@ class GetTypeChangeRequestsUseCase:
 def get_use_case(
     transaction_manager: TransactionManagerDep,
     membership_type_change_service: MembershipTypeChangeServiceDep,
-) -> GetTypeChangeRequestsUseCase:
-    return GetTypeChangeRequestsUseCase(transaction_manager, membership_type_change_service)
+) -> GetMembershipDowngradeRequestsUseCase:
+    return GetMembershipDowngradeRequestsUseCase(transaction_manager, membership_type_change_service)
 
 
-GetTypeChangeRequestsUseCaseDep = Annotated[GetTypeChangeRequestsUseCase, Depends(get_use_case)]
+GetMembershipDowngradeRequestsUseCaseDep = Annotated[GetMembershipDowngradeRequestsUseCase, Depends(get_use_case)]

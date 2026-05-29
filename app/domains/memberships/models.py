@@ -103,7 +103,7 @@ class UserMembership(Base, UCIMixin):
 
     membership_type_id: Mapped[int] = mapped_column(ForeignKey("membership_types.id"), nullable=False)
     membership_type: Mapped["MembershipType"] = relationship("MembershipType", back_populates="user_membership")
-    membership_type_change_requests: Mapped[list["MembershipDowngradeRequest"]] = relationship(
+    membership_downgrade_requests: Mapped[list["MembershipDowngradeRequest"]] = relationship(
         "MembershipDowngradeRequest", back_populates="user_membership"
     )
 
@@ -120,7 +120,7 @@ class MembershipDowngradeRequest(Base, UCIMixin):
 
     user_membership_id: Mapped[int] = mapped_column(ForeignKey("users_memberships.id"), nullable=False)
     user_membership: Mapped["UserMembership"] = relationship(
-        "UserMembership", back_populates="membership_type_change_requests"
+        "UserMembership", back_populates="membership_downgrade_requests"
     )
 
     reason_changing: Mapped[str] = mapped_column(String(512), nullable=False)

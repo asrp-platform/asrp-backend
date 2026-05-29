@@ -204,9 +204,15 @@ class MembershipDowngradeService:
         )
 
     async def approve_membership_type_change(self, type_change_request_id: int) -> MembershipDowngradeRequest:
-        return await self.__transaction_manager.membership_downgrade_requests_repository.update(
-            type_change_request_id, approved=True, pending=False
+        downgrade_request: MembershipDowngradeRequest = (
+            await self.__transaction_manager.membership_downgrade_requests_repository.update(
+                type_change_request_id, approved=True, pending=False
+            )
         )
+        await self.__transaction_manager.user_membership_repository.update(
+            downgrade_request.user_membership_id, membership_type_id=downgrade_request.target_membership_type_id
+        )
+        return downgrade_request
 
     async def reject_membership_type_change(self, type_change_request_id: int, admin_comment: str):
         type_change_request = (
@@ -218,7 +224,7 @@ class MembershipDowngradeService:
             raise NotFoundError("Membership type change request with provided ID not found")
 
         await self.__transaction_manager.membership_downgrade_requests_repository.update(
-            type_change_request, approved=False, admin_comment=admin_comment, pending=False
+            type_change_request_id, approved=False, admin_comment=admin_comment, pending=False
         )
 
 
