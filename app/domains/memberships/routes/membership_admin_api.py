@@ -6,6 +6,7 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import PaginatedResponse
 from app.domains.memberships.filters import UserMembershipTypeChangeRequestsFilters
 from app.domains.memberships.schemas.type_change_schemas import (
+    ReviewedMembershipTypeChangeRequestSchema,
     ReviewMembershipTypeChangeRequest,
     UserMembershipTypeChangeRequestViewSchema,
 )
@@ -43,10 +44,11 @@ async def get_membership_type_change_requests(
     )
 
 
-@router.patch("/types/downgrade-requests/{request_id}", summary="Get membership type change request by ID")
+@router.patch("/types/downgrade-requests/{request_id}", summary="Review membership type change request by ID")
 async def review_membership_type_change_request(
     request_id: int,
     body: ReviewMembershipTypeChangeRequest,
+    permissions: AdminPermissionsDep,
     use_case: ReviewMembershipDowngradeRequestUseCaseDep,
-):
-    return await use_case.execute(request_id, action=body.action, admin_comment=body.admin_comment)
+) -> ReviewedMembershipTypeChangeRequestSchema:
+    return await use_case.execute(request_id, permissions, action=body.action, admin_comment=body.admin_comment)

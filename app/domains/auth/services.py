@@ -112,7 +112,7 @@ class AuthService:
             existing_user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
             if existing_user is None:
-                raise UserNotFoundError("User with provided email not found")
+                raise NotFoundError("User with provided email not found")
 
             if existing_user.pending is False:
                 raise EmailAlreadyConfirmedError("Provided email is already confirmed")

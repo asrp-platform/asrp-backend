@@ -223,7 +223,7 @@ class MembershipDowngradeService:
         if type_change_request is None:
             raise NotFoundError("Membership type change request with provided ID not found")
 
-        await self.__transaction_manager.membership_downgrade_requests_repository.update(
+        return await self.__transaction_manager.membership_downgrade_requests_repository.update(
             type_change_request_id, approved=False, admin_comment=admin_comment, pending=False
         )
 

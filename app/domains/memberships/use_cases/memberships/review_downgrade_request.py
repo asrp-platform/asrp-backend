@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import Depends
 
+from app.core.utils.permissions import check_permissions
 from app.domains.memberships.services import MembershipDowngradeService, MembershipTypeChangeServiceDep
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
@@ -15,8 +16,16 @@ class ReviewMembershipDowngradeRequestUseCase:
         self.__transaction_manager = transaction_manager
         self.__membership_type_change_service = membership_type_change_service
 
-    async def execute(self, downgrade_request_id: int, action: Literal["approve", "reject"], admin_comment: str | None):
+    async def execute(
+        self,
+        downgrade_request_id: int,
+        permissions: list[str],
+        action: Literal["approve", "reject"],
+        admin_comment: str | None,
+    ):
         async with self.__transaction_manager:
+            check_permissions("memberships.update", permissions)
+
             if action == "approve":
                 return await self.__membership_type_change_service.approve_membership_type_change(downgrade_request_id)
             if action == "reject":

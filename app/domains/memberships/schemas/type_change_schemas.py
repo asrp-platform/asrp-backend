@@ -46,6 +46,17 @@ class UserMembershipTypeChangeRequestViewSchema(UserMembershipTypeChangeRequestP
     user_membership: BoundedUserMembershipSchema
 
 
+class ReviewedMembershipTypeChangeRequestSchema(UCIMixinSchema):
+    target_membership_type_id: int
+    user_membership_id: int
+    reason_changing: str
+    approved: bool
+    admin_comment: str | None
+    pending: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReviewMembershipTypeChangeRequest(BaseModel):
     action: Literal["approve", "reject"]
     admin_comment: str | None = None
