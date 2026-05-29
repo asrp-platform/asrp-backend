@@ -3,69 +3,83 @@ from faker import Faker
 from httpx import AsyncClient
 
 from app.core.common.cryptographer import Cryptographer
-from app.domains.users.models import User
+from tests.fixtures.auth import UserFactory
 
 pytestmark = pytest.mark.anyio
 
 
-async def test_send_email_confirmation_link(
+async def test_send_email_confirmation_link_for_pending_user(
     client: AsyncClient,
-    auth_headers,
+    user_factory: UserFactory,
 ) -> None:
-    response = await client.post("api/auth/email-confirmation-requests", headers=auth_headers)
+    test_user = await user_factory(pending=True)
+
+    response = await client.post("api/auth/email-confirmation-requests", json={"email": test_user.email})
 
     assert response.status_code == 201
+    assert response.json() == {"detail": "Confirmation email sent"}
 
 
-async def test_confirm_email(client: AsyncClient, cryptographer: Cryptographer, auth_headers, test_user: User) -> None:
+async def test_send_email_confirmation_link_user_not_found(client: AsyncClient, faker: Faker) -> None:
+    response = await client.post("api/auth/email-confirmation-requests", json={"email": faker.email()})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "User with provided email not found"
+
+
+async def test_send_email_confirmation_link_for_confirmed_user(
+    client: AsyncClient,
+    user_factory: UserFactory,
+) -> None:
+    test_user = await user_factory(pending=False)
+
+    response = await client.post("api/auth/email-confirmation-requests", json={"email": test_user.email})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Provided email is already confirmed"
+
+
+async def test_send_email_confirmation_link_without_body(client: AsyncClient) -> None:
+    response = await client.post("api/auth/email-confirmation-requests")
+
+    assert response.status_code == 422
+
+
+async def test_confirm_email_success(
+    client: AsyncClient,
+    cryptographer: Cryptographer,
+    user_factory: UserFactory,
+) -> None:
+    test_user = await user_factory(pending=True)
     token = cryptographer.create_token(test_user.email).decode()
 
-    response = await client.post("api/auth/email-confirmations", headers=auth_headers, params={"token": token})
+    response = await client.get("api/auth/email-confirmations", params={"token": token}, follow_redirects=False)
 
-    assert response.status_code == 204
+    assert response.status_code == 200
+    assert response.json()['detail'] == 'Email successfully confirmed'
 
 
 async def test_confirm_email_invalid_token(
     client: AsyncClient,
     faker: Faker,
-    auth_headers,
 ) -> None:
     fake_token = faker.pystr()
 
-    response = await client.post("api/auth/email-confirmations", headers=auth_headers, params={"token": fake_token})
+    response = await client.get("api/auth/email-confirmations", params={"token": fake_token}, follow_redirects=False)
 
     assert response.status_code == 401
+    assert response.json()['detail'] == 'Invalid or expired token'
 
 
-async def test_send_link_for_confirm_email_not_authenticated(
-    client: AsyncClient,
-) -> None:
-    response = await client.post(
-        "api/auth/email-confirmation-requests",
-    )
-
-    assert response.status_code == 401
-
-
-async def test_confirm_email_not_authenticated(
-    client: AsyncClient, cryptographer: Cryptographer, test_user: User
-) -> None:
-    token = cryptographer.create_token(test_user.email).decode()
-
-    response = await client.post("api/auth/email-confirmations", params={"token": token})
-
-    assert response.status_code == 401
-
-
-async def test_confirm_email_with_different_emails_in_tokens(
+async def test_confirm_email_already_registered(
     client: AsyncClient,
     cryptographer: Cryptographer,
-    faker: Faker,
-    auth_headers,
+    user_factory: UserFactory,
 ) -> None:
-    email = faker.email()
-    token = cryptographer.create_token(email).decode()
+    test_user = await user_factory(pending=False)
+    token = cryptographer.create_token(test_user.email).decode()
 
-    response = await client.post("api/auth/email-confirmations", headers=auth_headers, params={"token": token})
+    response = await client.get("api/auth/email-confirmations", params={"token": token}, follow_redirects=False)
 
-    assert response.status_code == 401
+    assert response.status_code == 409
+    assert response.json()['detail'] == 'Registration already completed'

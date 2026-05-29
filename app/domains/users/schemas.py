@@ -53,13 +53,10 @@ class UserSchema(BaseModel):
     professional_interests: str | None
     telegram_username: str | None
     created_at: datetime
-    institution: str | None
-    role: str | None
     avatar_path: str | None
     phone_number: str | None
     pending: bool
     last_password_change: datetime | None
-    email_confirmed: bool
 
     model_config = {
         "from_attributes": True,
@@ -81,11 +78,9 @@ class UpdateUserSchema(BaseModel):
     languages_spoken: str | None = None
     professional_interests: str | None = None
     telegram_username: str | None = None
-    institution: Annotated[str | None, Field(min_length=2)] = None
-    role: str | None = None
     phone_number: Annotated[str | None, Field()] = None
 
-    @field_validator("country", "city", "institution", "role")
+    @field_validator("country", "city")
     def forbid_null_for_required_fields(cls, value, info):
         if value is None:
             raise PydanticCustomError("field_null", "{field_name} cannot be null", {"field_name": info.field_name})

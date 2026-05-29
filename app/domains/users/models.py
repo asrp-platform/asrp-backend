@@ -42,13 +42,8 @@ class User(Base):
         DateTime(timezone=True), default=func.now(), server_default=func.now(), nullable=False
     )
     pending: Mapped[bool] = mapped_column(default=True, nullable=True, server_default=text("true"))
-    institution: Mapped[str] = mapped_column(nullable=True)
-    role: Mapped[str] = mapped_column(nullable=True)
-
     last_password_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     last_name_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    email_confirmed: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
-
     news: Mapped[list["News"]] = relationship("News", back_populates="author")
     membership_request: Mapped["MembershipRequest"] = relationship(
         "MembershipRequest",
