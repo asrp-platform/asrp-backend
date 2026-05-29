@@ -25,7 +25,6 @@ from app.domains.shared.deps import (
     create_access_token,
     create_refresh_token,
 )
-from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.schemas import UserSchema
 from app.domains.users.services import UserServiceDep
 
@@ -171,11 +170,8 @@ class EmailConfirmRequestResponses(ApiResponses):
         409,
         "Provided email is already confirmed",
     )
-    USER_NOT_FOUND = (
-        404,
-        "User with provided email not found",
-    )
-    CREATED = 201, "Confirmation email sent"
+
+    CONFIRMATION_LINK_SENT = 201, "Confirmation email sent"
 
 
 class CompleteRegistrationResponses(ApiResponses):
@@ -203,9 +199,6 @@ async def send_email_confirm_link(
 
     except EmailAlreadyConfirmedError:
         raise EmailConfirmRequestResponses.EMAIL_ALREADY_CONFIRMED
-
-    except UserNotFoundError:
-        raise EmailConfirmRequestResponses.USER_NOT_FOUND
 
 
 @router.get(
