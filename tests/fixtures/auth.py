@@ -1,4 +1,5 @@
 from typing import Any, Awaitable, Callable
+from uuid import uuid4
 
 import pytest
 from faker import Faker
@@ -79,7 +80,7 @@ def admin_auth_headers(admin_user: User):
 def user_registration_data(faker: Faker) -> dict[str, Any]:
     password = faker.password()
     return {
-        "email": faker.email(),
+        "email": f'{uuid4()}@example.com',
         "password": password,
         "repeat_password": password,
         "firstname": faker.first_name(),
