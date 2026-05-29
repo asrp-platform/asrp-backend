@@ -38,11 +38,11 @@ async def test_upload_director_member_photo(
 
     object_key = spy_file_storage["upload_file"].call_args.kwargs["object_key"]
     prefix, stored_name = object_key.split("/", 1)
-    file_uuid, original_name = stored_name.split("_", 1)
+    file_uuid, original_ext = stored_name.split(".", 1)
 
     assert prefix == "directors_board"
     UUID(file_uuid)
-    assert original_name == "photo.png"
+    assert original_ext == "png"
 
     spy_file_storage["upload_file"].assert_awaited_once()
 
