@@ -6,7 +6,6 @@ from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
     ProfessionalExperienceCurrentPositionExistsError,
-    ResidencyNotFoundError,
 )
 from app.domains.users.schemas import ResidencyCreateSchema, ResidencyUpdateSchema, ResidencyViewSchema
 from app.domains.users.services import ResidencyServiceDep
@@ -42,11 +41,7 @@ async def get_single_user_residency(
     residency_id: int,
     service: ResidencyServiceDep,
 ) -> ResidencyViewSchema:
-    try:
-        return await service.get_for_user(user_id=user_id, resource_id=residency_id)
-
-    except ResidencyNotFoundError:
-        raise GetSingleUserResidencyResponses.RESIDENCY_NOT_FOUND
+    return await service.get_for_user(user_id=user_id, resource_id=residency_id)
 
 
 class CreateUserResidencyResponses(GetUserResidenciesResponses):

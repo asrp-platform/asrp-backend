@@ -26,15 +26,16 @@ def year_range(faker: Faker) -> str:
 async def professional_information(
     test_transaction_manager: TransactionManager, test_user: User, faker: Faker, year_range: str
 ) -> ProfessionalInformation:
-    prof_info = await test_transaction_manager.professional_information_repository.create(
-        user_id=test_user.id,
-        medical_school=faker.pystr(min_chars=2),
-        medical_school_country=faker.country(),
-        years_from_to=year_range,
-        is_board_certified_pathologist=True,
-        is_us_pathology_trainee=False,
-        is_us_lab_professional=False,
-    )
+    async with test_transaction_manager:
+        prof_info = await test_transaction_manager.professional_information_repository.create(
+            user_id=test_user.id,
+            medical_school=faker.pystr(min_chars=2),
+            medical_school_country=faker.country(),
+            years_from_to=year_range,
+            is_board_certified_pathologist=True,
+            is_us_pathology_trainee=False,
+            is_us_lab_professional=False,
+        )
     return prof_info
 
 

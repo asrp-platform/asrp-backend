@@ -8,6 +8,7 @@ pytestmark = pytest.mark.anyio
 
 async def test_retrieve_public_directors_board_by_user(
     client: AsyncClient,
+    directors_board_member_db
 ) -> None:
     response = await client.get("/api/directors-board")
 
@@ -18,13 +19,18 @@ async def test_retrieve_directors_board_by_admin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
+    directors_board_member_db
 ) -> None:
     response = await client.get("/api/admin/directors-board", headers=admin_auth_headers)
 
     assert response.status_code == 200
 
 
-async def test_retrieve_directors_board_by_user(client: AsyncClient, auth_headers: AuthHeaders) -> None:
+async def test_retrieve_directors_board_by_user(
+        client: AsyncClient,
+        auth_headers: AuthHeaders,
+        directors_board_member_db,
+) -> None:
     response = await client.get("/api/admin/directors-board", headers=auth_headers)
 
     assert response.status_code == 403

@@ -2,12 +2,15 @@ from typing import Annotated
 from urllib.parse import unquote, urlsplit
 
 from fastapi import Depends
+from loguru import logger
 from sqlalchemy import func, select, update
 
 from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.save_file import generate_filename
+from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
@@ -20,13 +23,7 @@ class DirectorsBoardService:
         self.bucket_name = settings.S3_DEFAULT_BUCKET
 
     async def get_directors_board_members(self):
-        members, count = await self.transaction_manager.directors_board_member_repository.list()
-
-        for member in members:
-            if member.photo_url:
-                member.photo_url = await self.get_photo_url_by_object_key(member.photo_url)
-
-        return members, count
+        return await self.transaction_manager.directors_board_member_repository.list()
 
     async def create_director_member(self, **kwargs):
         max_order = (
@@ -42,9 +39,26 @@ class DirectorsBoardService:
         return await self.transaction_manager.directors_board_member_repository.create(**insert_data)
 
     async def update_director_member(self, director_member_id: int, **kwargs):
+        old_photo_url = None
         if "photo_url" in kwargs:
             kwargs["photo_url"] = self._extract_object_key(kwargs.get("photo_url"))
-        return await self.transaction_manager.directors_board_member_repository.update(director_member_id, **kwargs)
+
+            director_member = await self.transaction_manager.directors_board_member_repository.get_first_by_kwargs(
+                id=director_member_id
+            )
+            if director_member is None:
+                raise DirectionBoardMemberNotFoundError("DirectionBoardMember with provided id not found")
+            old_photo_url = director_member.photo_url
+
+        director_member = await self.transaction_manager.directors_board_member_repository.update(director_member_id, **kwargs)
+
+        try:
+            if old_photo_url:
+                await self.file_storage.delete_file(old_photo_url)
+        except Exception:
+            logger.exception(f"Failed to delete file {old_photo_url}")
+
+        return director_member
 
     async def delete_director_member(self, director_member_id: int) -> int:
         return await self.transaction_manager.directors_board_member_repository.mark_as_deleted(director_member_id)
@@ -65,8 +79,9 @@ class DirectorsBoardService:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
+        filename = generate_filename(file_data.filename, prefix="directors_board")
         file_data = await self.file_storage.upload_file(
-            object_key=f"directors_board/{file_data.filename}",
+            object_key=filename,
             file_content=file_data.content
         )
         return await self.file_storage.get_file_url(file_data.object_key)

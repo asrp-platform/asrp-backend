@@ -17,3 +17,9 @@ async def save_file(file: UploadFile, path: Path, filename: str | None = None) -
         f.write(content)
 
     return Path(path / filename)
+
+
+def generate_filename(filename: str, prefix: str | None) -> str:
+    if prefix is None:
+        return f"{uuid4()}.{filename.split('.')[-1]}"
+    return f"{prefix}/{uuid4()}.{filename.split('.')[-1]}"

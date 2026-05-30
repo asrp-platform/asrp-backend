@@ -44,4 +44,5 @@ async def directors_board_member_db(
         "is_visible": faker.boolean(),
     }
 
-    return await test_transaction_manager.directors_board_member_repository.create(**creation_data)
+    async with test_transaction_manager:
+        return await test_transaction_manager.directors_board_member_repository.create(**creation_data)

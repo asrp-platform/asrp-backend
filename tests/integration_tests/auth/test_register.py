@@ -15,28 +15,37 @@ async def test_register(
     user_registration_data,
 ) -> None:
     response = await client.post("api/auth/register", json=user_registration_data)
-    user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
 
     assert response.status_code == 201
     assert user is not None
 
 
-async def test_email_already_in_use(
-    client: AsyncClient,
-    test_transaction_manager: TransactionManager,
-    user_data: dict[str | Any],
+async def test_register_updates_existing_pending_user(
+    client: AsyncClient, test_transaction_manager: TransactionManager, user_data: dict[str, Any]
 ) -> None:
     user_creation_data = user_data.copy()
+    user_creation_data["pending"] = True
 
-    await test_transaction_manager.user_repository.create(**user_creation_data)
+    async with test_transaction_manager:
+        await test_transaction_manager.user_repository.create(**user_creation_data)
 
-    response = await client.post(
-        "api/auth/register",
-        json={
-            **user_data,
-            "repeat_password": user_data["password"],
-        },
-    )
+    response = await client.post("api/auth/register", json={**user_data, "repeat_password": user_data["password"]})
+
+    assert response.status_code == 201
+
+
+async def test_register_rejects_existing_confirmed_user(
+    client: AsyncClient, test_transaction_manager: TransactionManager, user_data: dict[str, Any]
+) -> None:
+    user_creation_data = user_data.copy()
+    user_creation_data["pending"] = False
+
+    async with test_transaction_manager:
+        await test_transaction_manager.user_repository.create(**user_creation_data)
+
+    response = await client.post("api/auth/register", json={**user_data, "repeat_password": user_data["password"]})
 
     assert response.status_code == 409
 
@@ -49,7 +58,8 @@ async def test_password_dont_match(
 ) -> None:
     response = await client.post("api/auth/register", json={**user_registration_data, "repeat_password": faker.pystr()})
 
-    user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
 
     assert response.status_code == 422
     assert user is None

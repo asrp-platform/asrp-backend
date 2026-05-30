@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
@@ -44,6 +44,10 @@ class MembershipRequestCreateSchema(BaseModel):
     }
 
 
+class MembershipRequestReapplySchema(MembershipRequestDataSchema):
+    membership_type_id: int
+
+
 class MembershipRequestViewSchema(MembershipRequestDataSchema):
     id: int
     created_at: datetime
@@ -54,6 +58,7 @@ class MembershipRequestViewSchema(MembershipRequestDataSchema):
     user: UserShortSchema
     membership_type_id: int
     membership_type: MembershipTypeSchema
+    admin_comment: str | None
 
     model_config = {
         "from_attributes": True,
@@ -81,6 +86,37 @@ class UserMembershipSchema(UCIMixinSchema):
     membership_type_id: int
     is_active: bool
 
-    membership_type: MembershipTypeShortSchema
+    membership_type: MembershipTypeSchema
 
     model_config = {"from_attributes": True}
+
+
+class MembershipDowngradeCreateCreateSchema(BaseModel):
+    target_membership_type_id: int
+    reason_changing: str
+
+
+class UserMembershipBoundedSchema(BaseModel):
+    user_id: int
+    membership_request_id: int
+    membership_type_id: int
+    is_active: bool
+
+    membership_type: MembershipTypeSchema
+    user: UserShortSchema
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserMembershipTypeChangeRequestUpdateAdminSchema(BaseModel):
+    approved: bool
+    admin_comment: str | None = None
+
+    @model_validator(mode="after")
+    def check_rejection_comment(self):
+        if self.approved is False and self.admin_comment is None:
+            raise PydanticCustomError(
+                "admin_comment necessary when rejected",
+                "Admin comment is required when rejecting user membership type change request",
+            )
+        return self

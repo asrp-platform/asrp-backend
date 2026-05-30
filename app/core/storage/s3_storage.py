@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from urllib.parse import unquote, urlsplit
 
 from aiobotocore.session import get_session
 from botocore.exceptions import ClientError as BotocoreClientError
@@ -138,3 +139,29 @@ class S3Storage(BaseFileStorage):
                     error_code = e.response.get("Error", {}).get("Code")
                     if error_code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
                         raise
+
+    def extract_object_key(
+            self,
+            url: str | None,
+            allowed_prefixes: list[str] | None = None
+    ) -> str | None:
+        if url is None:
+            return None
+
+        if "://" not in url:
+            return url.lstrip("/")
+
+        parsed = urlsplit(url)
+        path = unquote(parsed.path.lstrip("/"))
+
+        bucket_prefix = f"{self.default_bucket_name}/"
+        if path.startswith(bucket_prefix):
+            path = path[len(bucket_prefix) :]
+
+        if allowed_prefixes:
+            for prefix in allowed_prefixes:
+                if path.startswith(prefix):
+                    return path
+            return None
+
+        return path

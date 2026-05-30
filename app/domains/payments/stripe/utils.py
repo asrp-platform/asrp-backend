@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
+from typing import TYPE_CHECKING
 
 import stripe
 from loguru import logger
@@ -6,11 +8,20 @@ from stripe.checkout import Session
 
 from app.core.config import settings
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.payments.models import Payment
+from app.domains.payments.models import Payment, PaymentPurposeEnum
+
+if TYPE_CHECKING:
+    from app.domains.memberships.models import MembershipRequest, MembershipType
 
 stripe.api_key = settings.STRIPE_API_KEY
 
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
+
+
+@dataclass(frozen=True)
+class CheckoutSessionData:
+    session: Session
+    provider_data: dict
 
 
 async def create_checkout_session(
@@ -29,6 +40,75 @@ async def create_checkout_session(
         payment_intent_data={"metadata": metadata},
     )
     return session
+
+
+def build_membership_application_line_items(
+    membership_type: "MembershipType",
+    amount_cents: int,
+) -> list[dict]:
+    return [
+        {
+            "price_data": {
+                "currency": "usd",
+                "unit_amount": amount_cents,
+                "product_data": {
+                    "name": membership_type.name,
+                    "description": membership_type.description,
+                },
+            },
+            "quantity": 1,
+        }
+    ]
+
+
+def build_membership_application_payment_metadata(
+    membership_request: "MembershipRequest",
+    payment: Payment,
+) -> dict[str, str]:
+    return {
+        "membership_request_id": str(membership_request.id),
+        "payment_id": str(payment.id),
+        "payment_purpose": PaymentPurposeEnum.MEMBERSHIP_APPLICATION.value,
+    }
+
+
+def build_membership_application_provider_data(
+    membership_request: "MembershipRequest",
+    payment: Payment,
+    checkout_session: Session,
+) -> dict:
+    return {
+        "membership_request_id": membership_request.id,
+        "payment_id": str(payment.id),
+        "checkout_session_id": checkout_session.id,
+        "checkout_session_status": checkout_session.status,
+        "payment_intent_status": checkout_session.payment_status,
+        "url": checkout_session.url,
+    }
+
+
+async def create_membership_application_checkout_session(
+    *,
+    membership_request: "MembershipRequest",
+    membership_type: "MembershipType",
+    payment: Payment,
+    success_url: str | None = None,
+) -> CheckoutSessionData:
+    amount_cents = to_stripe_amount(membership_type.price_usd)
+    metadata = build_membership_application_payment_metadata(membership_request, payment)
+    checkout_session = await create_checkout_session(
+        build_membership_application_line_items(membership_type, amount_cents),
+        metadata=metadata,
+        success_url=success_url or f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+    )
+    return CheckoutSessionData(
+        session=checkout_session,
+        provider_data=build_membership_application_provider_data(
+            membership_request,
+            payment,
+            checkout_session,
+        ),
+    )
 
 
 def create_stripe_refund(

@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD dev
 
 on:
   push:
@@ -358,4 +358,4 @@ jobs:
             git checkout develop
             git pull --ff-only origin develop
 
-            docker compose -f docker-compose.dev.yml up -d --build
+            docker compose -f docker-compose.dev.yml --profile stripe up -d --build

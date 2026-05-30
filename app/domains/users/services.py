@@ -1,25 +1,21 @@
 from datetime import datetime, timezone
 from typing import Annotated, Any, Generic, Literal, TypeVar
-from uuid import uuid4
 
 from fastapi import Depends
+from loguru import logger
 
-from app.core.common.exceptions import NotResourceOwnerError
+from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
-    FellowshipNotFoundError,
     InvalidPasswordError,
-    JobNotFoundError,
     NameChangeRequestCooldownNotExpiredError,
-    NameChangeRequestNotFoundError,
     PendingNameChangeRequestAlreadyExistsError,
     ProfessionalExperienceCurrentPositionExistsError,
-    ResidencyNotFoundError,
-    UserNotFoundError,
 )
 from app.domains.users.models import (
     CommunicationPreferences,
@@ -47,7 +43,7 @@ class UserService:
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
             if current_user is None or user_id != current_user.id or not current_user.admin:
                 raise NotResourceOwnerError("Not resource owner")
 
@@ -70,42 +66,59 @@ class UserService:
             return await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
 
     async def update_user(self, user_id: int, **kwargs) -> User:
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise UserNotFoundError("User with provided ID not found")
-        await self.transaction_manager.user_repository.update(user_id, **kwargs)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.update(user_id, **kwargs)
         return user
 
     async def get_user_avatar_url(self, user_id: int):
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
             avatar_object_key = user.avatar_path
             if avatar_object_key is None:
                 return None
         return await self.file_storage.get_file_url(avatar_object_key)
 
     async def upload_avatar(self, user_id: int, file):
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+        if user is None:
+            raise NotFoundError("user with provided email not found")
+
+        old_filename = user.avatar_path
+        new_filename = generate_filename(file.filename, prefix="avatars")
+
+        file_content = await file.read()
+        upload_result = await self.file_storage.upload_file(
+            new_filename,
+            file_content
+        )
+
         try:
-            filename = f"avatars/{uuid4()}.{file.filename.split('.')[-1]}"
-            file_content = await file.read()
-            upload_result = await self.file_storage.upload_file(
-                filename,
-                file_content
-            )
             async with self.transaction_manager:
-                await self.transaction_manager.user_repository.update(user_id, avatar_path=filename)
-            return upload_result
-        except Exception as e:
-            raise e
+                await self.transaction_manager.user_repository.update(user_id, avatar_path=new_filename)
+        except Exception:
+            await self.file_storage.delete_file(new_filename)
+
+        try:
+            if old_filename is not None:
+                await self.file_storage.delete_file(old_filename)
+        except Exception:
+            logger.exception(f"Failed to delete file {old_filename}")
+
+        return upload_result
 
     async def delete_user_avatar(self, user_id: int) -> None:
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
+
+            avatar_path = user.avatar_path
             await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
+
+        await self.file_storage.delete_file(avatar_path)
 
     async def change_password(
         self,
@@ -116,7 +129,7 @@ class UserService:
         user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
-            raise UserNotFoundError("user with provided email not found")
+            raise NotFoundError("user with provided email not found")
 
         if not user.verify_password(old_password):
             raise InvalidPasswordError("Invalid password")
@@ -136,7 +149,7 @@ class ProfessionalInformationService:
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
             return await self.transaction_manager.professional_information_repository.get_first_by_kwargs(
                 user_id=user_id
             )
@@ -149,7 +162,7 @@ class ProfessionalInformationService:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
 
             professional_information = (
                 await self.transaction_manager.professional_information_repository.get_first_by_kwargs(user_id=user_id)
@@ -193,7 +206,7 @@ class BaseUserOwnedService(Generic[ProfessionalExperienceT]):
         user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
-            raise UserNotFoundError("User with provided ID not found")
+            raise NotFoundError("User with provided ID not found")
 
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
@@ -285,7 +298,7 @@ class ResidencyService(ProfessionalExperienceBaseService[Residency]):
 
     @property
     def _not_found_error(self):
-        return ResidencyNotFoundError
+        return NotFoundError
 
     @property
     def _entity_name(self) -> str:
@@ -311,7 +324,7 @@ class FellowshipService(ProfessionalExperienceBaseService[Fellowship]):
 
     @property
     def _not_found_error(self):
-        return FellowshipNotFoundError
+        return NotFoundError
 
     @property
     def _entity_name(self) -> str:
@@ -325,7 +338,7 @@ class JobService(ProfessionalExperienceBaseService[Job]):
 
     @property
     def _not_found_error(self):
-        return JobNotFoundError
+        return NotFoundError
 
     @property
     def _entity_name(self) -> str:
@@ -347,7 +360,7 @@ class NameChangeRequestService:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
 
             if current_user_id is not None and user_id != current_user_id:
                 raise NotResourceOwnerError("Not resource owner")
@@ -357,7 +370,7 @@ class NameChangeRequestService:
                     id=name_change_request_id, user_id=user_id
                 )
                 if name_change_request is None:
-                    raise NameChangeRequestNotFoundError("Name change request with provided ID not found")
+                    raise NotFoundError("Name change request with provided ID not found")
 
     async def get_pending_name_change_request(self, user_id: int, name_change_request_id: int) -> NameChangeRequest:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
@@ -388,7 +401,7 @@ class NameChangeRequestService:
     async def create_name_change_request(self, user_id: int, **kwargs) -> NameChangeRequest:
         user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
         if user is None:
-            raise UserNotFoundError("User with provided ID not found")
+            raise NotFoundError("User with provided ID not found")
 
         name_change_request = await self.get_last_name_change_request_by_user_id(user_id=user_id)
 
@@ -461,7 +474,7 @@ class CommunicationPreferencesService:
         user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
-            raise UserNotFoundError("User with provided ID not found")
+            raise NotFoundError("User with provided ID not found")
 
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
@@ -474,7 +487,7 @@ class CommunicationPreferencesService:
         user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
-            raise UserNotFoundError("User with provided ID not found")
+            raise NotFoundError("User with provided ID not found")
 
         communication_preferences = (
             await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
