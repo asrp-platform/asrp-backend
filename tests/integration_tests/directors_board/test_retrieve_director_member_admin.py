@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.directors_board.models import DirectorBoardMember
 from tests.fixtures.auth import AuthHeaders
 
-
 pytestmark = pytest.mark.anyio
 
 
@@ -24,10 +23,15 @@ async def test_retrieve_public_directors_board_by_user(
     )
     await test_session.flush()
 
+    expected_photo_url = "https://example-r2.test/directors_board/photo.png"
+    spy_file_storage["get_file_url"].return_value = expected_photo_url
+
     response = await client.get("/api/directors-board")
+    data = response.json()
 
     assert response.status_code == 200
-    spy_file_storage["get_file_url"].assert_any_await(photo_object_key)
+    assert data[0]["photo_url"] == expected_photo_url
+    spy_file_storage["get_file_url"].assert_awaited_once_with(photo_object_key)
 
 
 async def test_retrieve_directors_board_by_admin(
