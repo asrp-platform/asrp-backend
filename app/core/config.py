@@ -62,12 +62,6 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     REFRESH_TOKEN_LIFETIME_DAYS: int = 1
     REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS: int = 30
 
-    MEDIA_DIR_NAME: str = "media"
-    MEDIA_API_PATH: str = "/api/media"
-    MEDIA_STORAGE_PATH: Path = Path("media")
-    NEWS_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "news_uploads"
-    DIRECTORS_BOARD_UPLOADS_PATH: Path = MEDIA_STORAGE_PATH / "directors_board_uploads"
-
     FILE_STORAGE_TYPE: FileStorageTypeEnum = FileStorageTypeEnum.S3_STORAGE
     FILE_STORAGE_URL_EXPIRES_IN: int = 3600  # sec
 
