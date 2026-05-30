@@ -2,7 +2,11 @@
 # No silent fail
 set -euo pipefail
 
-BACKUP_DATE=$(date -u +"%Y-%m-%d_%H-%M-%S_UTC"
+set -a
+source /asrp-production/asrp-backend/.env
+set +a
+
+BACKUP_DATE=$(date -u +"%Y-%m-%d_%H-%M-%S_UTC")
 
 BACKUP_BUCKET="backups"
 BACKUP_DIR="database_backups"
@@ -12,6 +16,7 @@ BACKUP_FILENAME="${DB_NAME}_${BACKUP_DATE}.dump"
 export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY"
 export AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY"
 export AWS_DEFAULT_REGION="${S3_REGION:-auto}"
+export PGPASSWORD="$DB_PASSWORD"
 
 pg_dump \
   -U "$DB_USER" \
@@ -19,7 +24,7 @@ pg_dump \
   -Fc \
   -Z 6 \
   --no-owner \
-  -- no-acl \
+  --no-acl \
 | aws s3 cp - "s3://${BACKUP_BUCKET}/${BACKUP_DIR}/${BACKUP_FILENAME}" --endpoint-url "$S3_ENDPOINT"
 
-exho "Backup uploaded: s3://${BACKUP_BUCKET}/${BACKUP_DIR}/${BACKUP_FILENAME}"
+echo "Backup uploaded: s3://${BACKUP_BUCKET}/${BACKUP_DIR}/${BACKUP_FILENAME}"
