@@ -10,7 +10,12 @@ from app.domains.feedback.services import (
 )
 from app.domains.memberships.exceptions import CantBuyHonoraryMembership, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import (
+    MembershipService,
+    MembershipServiceDep,
+    MembershipTypeService,
+    MembershipTypeServiceDep,
+)
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
@@ -28,12 +33,14 @@ class CreateUserMembershipRequestUseCase:
         self,
         transaction_manager: TransactionManager,
         membership_service: MembershipService,
+        membership_type_service: MembershipTypeService,
         feedback_additional_info_service: FeedbackAdditionalInfoService,
         communication_preference_service: CommunicationPreferencesService,
         payment_service: PaymentService,
     ) -> None:
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
+        self.__membership_type_service = membership_type_service
         self.__feedback_additional_info_service = feedback_additional_info_service
         self.__communication_preference_service = communication_preference_service
         self.__payment_service = payment_service
@@ -73,7 +80,7 @@ class CreateUserMembershipRequestUseCase:
                 is_agrees_communications=is_agrees_communications,
             )
 
-            membership_type = await self.__membership_service.get_membership_type(membership_type)
+            membership_type = await self.__membership_type_service.get_membership_type_by_value(membership_type)
             membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
 
             payment = await self.__payment_service.create_payment(
@@ -126,6 +133,7 @@ class CreateUserMembershipRequestUseCase:
 def get_use_case(
     transaction_manager: TransactionManagerDep,
     membership_service: MembershipServiceDep,
+    membership_type_service: MembershipTypeServiceDep,
     feedback_additional_info_service: FeedbackAdditionalInfoServiceDep,
     communication_preference_service: CommunicationPreferencesServiceDep,
     payment_service: PaymentServiceDep,
@@ -133,6 +141,7 @@ def get_use_case(
     return CreateUserMembershipRequestUseCase(
         transaction_manager,
         membership_service,
+        membership_type_service,
         feedback_additional_info_service,
         communication_preference_service,
         payment_service,

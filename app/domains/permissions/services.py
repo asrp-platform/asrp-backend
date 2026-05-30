@@ -6,10 +6,10 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.core.common.exceptions import NotFoundError
 from app.core.logging import PRIVILEGES_CHANNEL
 from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
-from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.models import User
 
 privileges_logger = logger.bind(channel=PRIVILEGES_CHANNEL)
@@ -39,7 +39,7 @@ class PermissionsService:
             user: User | None = (await self.transaction_manager._session.execute(select_user_stmt)).scalar_one_or_none()
 
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
             return user.permissions
 
     async def set_users_permissions(self, user_id: int, permissions_ids: list[int], actor: User):
@@ -61,7 +61,7 @@ class PermissionsService:
             list[Permission]: The updated list of `Permission` objects assigned to the user.
 
         Raises:
-            UserNotFoundError: If the target user is not found.
+            NotFoundError: If the target user is not found.
         """
 
         async with self.transaction_manager:
@@ -71,7 +71,7 @@ class PermissionsService:
             user: User | None = (await self.transaction_manager._session.execute(user_stmt)).scalar_one_or_none()
 
             if user is None:
-                raise UserNotFoundError("User with provided ID not found")
+                raise NotFoundError("User with provided ID not found")
 
             permissions_stmt = select(Permission).where(Permission.id.in_(permissions_ids))
             permissions = (await self.transaction_manager._session.execute(permissions_stmt)).scalars().all()

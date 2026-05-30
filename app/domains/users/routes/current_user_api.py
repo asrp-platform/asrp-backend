@@ -8,22 +8,34 @@ from app.core.common.responses import PaginatedResponse
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,
+    CantChangeToHonoraryMembershipError,
+    InvalidMembershipTypeDowngradeError,
+    InvalidMembershipTypeUpgradeError,
     MembershipAlreadyPaidError,
     MembershipApplicationCheckoutError,
-    MembershipRequestAlreadyExistsError,
     MembershipRequestCannotBeReappliedError,
+    SameMembershipTypeChangeRequestError,
 )
-from app.domains.memberships.schemas import (
+from app.domains.memberships.schemas.schemas import (
+    MembershipDowngradeCreateCreateSchema,
     MembershipRequestCreateSchema,
     MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
     UserMembershipSchema,
 )
-from app.domains.memberships.use_cases.create_membership_application_payment_attempt import (
+from app.domains.memberships.schemas.type_change_schemas import (
+    UserMembershipTypeChangeRequestProfileSchema,
+)
+from app.domains.memberships.services import UserMembershipServiceDep
+from app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
 )
-from app.domains.memberships.use_cases.create_membership_request import CreateMembershipRequestUseCaseDep
-from app.domains.memberships.use_cases.reapply_membership_application import ReapplyMembershipApplicationUseCaseDep
+from app.domains.memberships.use_cases.membership_requests.create_membership_request import (
+    CreateMembershipRequestUseCaseDep,
+)
+from app.domains.memberships.use_cases.membership_requests.reapply_membership_application import (
+    ReapplyMembershipApplicationUseCaseDep,
+)
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
@@ -45,6 +57,12 @@ from app.domains.users.use_cases.current_user.change_current_user_password impor
 from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.get_current_user_membership import (
     GetCurrentUserMembershipRequestUseCaseDep,
+)
+from app.domains.users.use_cases.current_user.get_current_user_membership_downgrade_request import (
+    GetCurrentUserMembershipDowngradeRequestUseCaseDep,
+)
+from app.domains.users.use_cases.current_user.request_membership_downgrade import (
+    RequestMembershipDowngradeUseCaseDep,
 )
 from app.domains.users.use_cases.current_user.request_name_change import RequestNageChangeUseCaseDep
 from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
@@ -167,13 +185,8 @@ async def create_name_change_request(
         raise NameChangeRequestResponses.NAME_CHANGE_REQUEST_COOLDOWN_NOT_EXPIRED
 
 
-class CurrentUserMembershipResponses(Responses):
-    MEMBERSHIP_NOT_FOUND = 404, "Membership not found for the current user"
-
-
 @router.get(
     "/membership-requests",
-    responses=CurrentUserMembershipResponses.responses,
 )
 async def get_current_user_membership_request(
     current_user: CurrentUserDep, use_case: GetCurrentUserMembershipRequestUseCaseDep
@@ -210,8 +223,6 @@ async def create_membership_request(
         return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except CantBuyHonoraryMembership:
         raise MembershipCreateResponses.CANT_BUY_HONORARY_MEMBERSHIP
-    except MembershipRequestAlreadyExistsError:
-        raise MembershipCreateResponses.MEMBERSHIP_ALREADY_EXISTS
     except FeedbackAdditionalInfoAlreadyExistsError:
         raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
     except MembershipApplicationCheckoutError:
@@ -300,6 +311,68 @@ async def get_current_user_payments(
 
 @router.get("/membership")
 async def get_current_user_membership(
-    current_user_membership: CurrentUserMembershipDep,
+    current_user: CurrentUserDep,
+    user_membership_service: UserMembershipServiceDep,
 ) -> UserMembershipSchema | None:
-    return current_user_membership
+    return await user_membership_service.get_user_membership_by_user_id(current_user.id)
+
+
+class MembershipTypeChangeRequestResponses(Responses):
+    NO_ACTIVE_MEMBERSHIP = 403, "No active membership"
+    PENDING_REQUEST_ALREADY_EXISTS = 409, "Pending user membership type change request already exists"
+    SAME_MEMBERSHIP_TYPE = 422, "Can't change membership type for the same type"
+    CANT_CHANGE_TO_HONORARY_MEMBERSHIP = 422, "Can't change membership type to HONORARY"
+    INVALID_UPGRADE = 422, "Target membership type is not more expensive than current membership type"
+    INVALID_DOWNGRADE = 422, "Target membership type is not cheaper than current membership type"
+
+
+@router.post(
+    "/membership/downgrade-request",
+    summary="Create a request to downgrade membership type",
+    responses=MembershipTypeChangeRequestResponses.responses,
+    status_code=201,
+)
+async def request_membership_type_change(
+    current_user_membership: CurrentUserMembershipDep,
+    body: MembershipDowngradeCreateCreateSchema,
+    use_case: RequestMembershipDowngradeUseCaseDep,
+):
+    try:
+        return await use_case.execute(current_user_membership, **body.model_dump())
+    except SameMembershipTypeChangeRequestError:
+        raise MembershipTypeChangeRequestResponses.SAME_MEMBERSHIP_TYPE
+    except CantChangeToHonoraryMembershipError:
+        raise MembershipTypeChangeRequestResponses.CANT_CHANGE_TO_HONORARY_MEMBERSHIP
+    except InvalidMembershipTypeUpgradeError:
+        raise MembershipTypeChangeRequestResponses.INVALID_UPGRADE
+    except InvalidMembershipTypeDowngradeError:
+        raise MembershipTypeChangeRequestResponses.INVALID_DOWNGRADE
+
+
+@router.get(
+    "/membership/downgrade-request",
+    summary="Get current user's membership downgrade request",
+)
+async def get_current_user_membership_type_change_request(
+    current_user_membership: CurrentUserMembershipDep,
+    use_case: GetCurrentUserMembershipDowngradeRequestUseCaseDep,
+) -> UserMembershipTypeChangeRequestProfileSchema | None:
+    return await use_case.execute(current_user_membership)
+
+
+@router.delete("/membership/downgrade-request", summary="Cancel (delete) current user's membership downgrade request")
+async def cancel_membership_downgrade_request(
+    current_user_membership: CurrentUserMembershipDep,
+):
+    pass
+
+
+@router.post(
+    "/membership/upgrade-checkouts",
+    summary="Create a checkout for membership type upgrade",
+    status_code=201,
+)
+async def create_membership_upgrade_checkout(
+    current_user_membership: CurrentUserMembershipDep,
+):
+    pass

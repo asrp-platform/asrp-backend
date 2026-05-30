@@ -108,12 +108,15 @@ async def get_users_permissions(
 async def get_current_user_membership(
     current_user: Annotated[User, Depends(get_current_user)],
     user_membership_service: UserMembershipServiceDep,
-) -> UserMembership | None:
-    return await user_membership_service.get_user_membership_by_user_id(current_user.id)
+) -> UserMembership:
+    user_membership = await user_membership_service.get_user_membership_by_user_id(current_user.id)
+    if user_membership is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No active membership")
+    return user_membership
 
 
 RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
-CurrentUserMembershipDep = Annotated[UserMembership | None, Depends(get_current_user_membership)]
+CurrentUserMembershipDep = Annotated[UserMembership, Depends(get_current_user_membership)]
 AdminUserDep = Annotated[User, Depends(get_admin_user)]
 AdminPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]

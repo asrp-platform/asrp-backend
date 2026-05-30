@@ -6,7 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.use_cases.create_membership_request import CreateUserMembershipRequestUseCase
+from app.domains.memberships.use_cases.membership_requests.create_membership_request import (
+    CreateUserMembershipRequestUseCase,
+)
 from app.domains.payments.models import PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
@@ -18,6 +20,7 @@ pytestmark = pytest.mark.anyio
 def test_create_user_membership_use_case(
     test_transaction_manager: TransactionManager,
     membership_service,
+    membership_type_service,
     feedback_additional_info_service,
     communication_preference_service,
     payment_service,
@@ -25,6 +28,7 @@ def test_create_user_membership_use_case(
     return CreateUserMembershipRequestUseCase(
         test_transaction_manager,
         membership_service,
+        membership_type_service,
         feedback_additional_info_service,
         communication_preference_service,
         payment_service,

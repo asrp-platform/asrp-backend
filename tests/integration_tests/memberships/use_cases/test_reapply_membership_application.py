@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 from faker import Faker
 
-import app.domains.memberships.use_cases.reapply_membership_application as reapply_module
+import app.domains.memberships.use_cases.membership_requests.reapply_membership_application as reapply_module
 from app.core.common.exceptions import NotFoundError
 from app.domains.memberships.exceptions import (
     MembershipAlreadyPaidError,
@@ -12,8 +12,10 @@ from app.domains.memberships.exceptions import (
     MembershipRequestCannotBeReappliedError,
 )
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService
-from app.domains.memberships.use_cases.reapply_membership_application import ReapplyMembershipApplicationUseCase
+from app.domains.memberships.services import MembershipService, MembershipTypeService
+from app.domains.memberships.use_cases.membership_requests.reapply_membership_application import (
+    ReapplyMembershipApplicationUseCase,
+)
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService
 from app.domains.shared.transaction_managers import TransactionManager
@@ -38,11 +40,13 @@ class LoggerSpy:
 def reapply_use_case(
     test_transaction_manager: TransactionManager,
     membership_service: MembershipService,
+    membership_type_service: MembershipTypeService,
     payment_service: PaymentService,
 ) -> ReapplyMembershipApplicationUseCase:
     return ReapplyMembershipApplicationUseCase(
         test_transaction_manager,
         membership_service,
+        membership_type_service,
         payment_service,
     )
 

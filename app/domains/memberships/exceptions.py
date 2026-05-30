@@ -1,19 +1,4 @@
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
-
-
-class MembershipNotActiveError(Exception):
-    pass
-
-
-class MembershipAccessDeniedError(Exception):
-    pass
-
-
-class MembershipTypeNotFoundError(NotFoundError):
-    pass
-
-
-class MembershipRequestAlreadyExistsError(ResourceAlreadyExistsError):
+class NoMembershipError(Exception):
     pass
 
 
@@ -38,4 +23,20 @@ class MissingMembershipRequestPayment(Exception):
 
 
 class CantBuyHonoraryMembership(Exception):
+    pass
+
+
+class CantChangeToHonoraryMembershipError(Exception):
+    pass
+
+
+class SameMembershipTypeChangeRequestError(Exception):
+    pass
+
+
+class InvalidMembershipTypeUpgradeError(Exception):
+    pass
+
+
+class InvalidMembershipTypeDowngradeError(Exception):
     pass

@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 
+from app.core.common.exceptions import NotFoundError
 from app.domains.permissions.services import get_permissions_service
 from app.domains.shared.deps import get_users_permissions
-from app.domains.users.exceptions import UserNotFoundError
 from app.main import app
 
 pytestmark = pytest.mark.anyio
@@ -115,7 +115,7 @@ async def test_put_permissions_user_not_found(
     admin_auth_headers,
     admin_all_permissions,
 ) -> None:
-    mock_service.set_users_permissions.side_effect = UserNotFoundError("User with provided ID not found")
+    mock_service.set_users_permissions.side_effect = NotFoundError("User with provided ID not found")
 
     response = await client.put(
         "/api/admin/users/999999/permissions",
