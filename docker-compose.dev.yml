@@ -45,7 +45,6 @@ services:
       - ./app:/app/app
       - ./alembic:/app/alembic
       - ./logs:/app/logs
-      - ./media:/app/media
     networks:
       - internal
 
