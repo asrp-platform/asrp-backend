@@ -81,6 +81,8 @@ services:
     entrypoint: certbot
     profiles:
       - certbot
+    networks:
+      - internal
 
 volumes:
   postgres_data:
