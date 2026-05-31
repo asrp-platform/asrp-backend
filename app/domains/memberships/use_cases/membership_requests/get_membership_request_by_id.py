@@ -7,7 +7,6 @@ from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.utils.permissions import check_permissions
 from app.domains.memberships.models import MembershipRequest
 from app.domains.memberships.services import MembershipService, MembershipServiceDep
-from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
@@ -21,7 +20,7 @@ class GetMembershipRequestByIdUseCase:
         self,
         membership_request_id: int,
         actor: User,
-        permissions: list[Permission],
+        permissions: list[str],
     ) -> MembershipRequest:
         async with self.__transaction_manager:
             membership_request = await self.__membership_service.get_membership_request_by_id(membership_request_id)
@@ -35,7 +34,7 @@ class GetMembershipRequestByIdUseCase:
             raise PermissionDeniedError
 
     @staticmethod
-    async def __can_view_as_admin(permissions: list[Permission]):
+    async def __can_view_as_admin(permissions: list[str]):
         try:
             check_permissions("memberships.view", permissions)
         except PermissionDeniedError:

@@ -1,9 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, model_validator
 from pydantic_core import PydanticCustomError
 
-from app.core.database.mixins import UCIMixinSchema
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
 from app.domains.users.schemas import UserShortSchema
@@ -79,33 +78,9 @@ class MembershipRequestUpdateAdminSchema(BaseModel):
         return self
 
 
-class UserMembershipSchema(UCIMixinSchema):
-    expires_at: datetime
-    user_id: int
-    membership_request_id: int
-    membership_type_id: int
-    is_active: bool
-
-    membership_type: MembershipTypeSchema
-
-    model_config = {"from_attributes": True}
-
-
 class MembershipDowngradeCreateCreateSchema(BaseModel):
     target_membership_type_id: int
     reason_changing: str
-
-
-class UserMembershipBoundedSchema(BaseModel):
-    user_id: int
-    membership_request_id: int
-    membership_type_id: int
-    is_active: bool
-
-    membership_type: MembershipTypeSchema
-    user: UserShortSchema
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class UserMembershipTypeChangeRequestUpdateAdminSchema(BaseModel):

@@ -40,3 +40,11 @@ class InvalidMembershipTypeUpgradeError(Exception):
 
 class InvalidMembershipTypeDowngradeError(Exception):
     pass
+
+
+class MembershipAlreadySuspendedError(Exception):
+    pass
+
+
+class MembershipAlreadyTerminatedError(Exception):
+    pass
