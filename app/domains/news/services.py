@@ -1,10 +1,14 @@
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Depends
 
+from app.core.common.exceptions import InvalidMimeTypeError
+from app.core.utils.save_file import save_file
 from app.domains.news.exceptions import NewsNotFoundError
 from app.domains.news.models import News
 from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.shared.types import FileData
 
 
 class NewsService:
@@ -41,6 +45,12 @@ class NewsService:
             if news is None:
                 raise NewsNotFoundError("News with provided ID not found")
             await self.transaction_manager.news_repository.update(news_id, is_deleted=True)
+
+    async def upload_image(self, file_data: FileData) -> Path:
+        if not file_data.content_type.startswith("image/"):
+            raise InvalidMimeTypeError("Invalid image content type")
+
+        return await save_file(file_data, Path("path"))
 
 
 def get_news_service(
