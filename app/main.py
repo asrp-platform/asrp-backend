@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.core.common.exceptions import (
+    InvalidMimeTypeError,
     NotFoundError,
     NotResourceOwnerError,
     PermissionDeniedError,
@@ -83,6 +84,11 @@ async def invalid_order_attribute_error_handler(request: Request, exc: InvalidOr
 @app.exception_handler(InvalidFilterError)
 async def invalid_filter_error_handler(request: Request, exc: InvalidFilterError):
     return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(InvalidMimeTypeError)
+async def invalid_mime_type_error_handler(request: Request, exc: InvalidMimeTypeError) -> JSONResponse:
+    return JSONResponse(status_code=415, content={"detail": str(exc) or "Unsupported Media Type"})
 
 
 # --- Обработчик ошибок 422 ---
