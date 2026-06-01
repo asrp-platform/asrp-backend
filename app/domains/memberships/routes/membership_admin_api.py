@@ -29,6 +29,7 @@ router = APIRouter(prefix="/memberships", tags=["Admin: Memberships"], dependenc
 
 
 class MemberRestrictionsResponses(Responses):
+    MEMBERSHIP_NOT_FOUND = 404, "User membership with provided ID not found"
     MEMBERSHIP_ALREADY_TERMINATED = 409, "User membership with provided ID already terminated"
     MEMBERSHIP_ALREADY_SUSPEND = 409, "User membership with provided ID already suspended"
 

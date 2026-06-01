@@ -19,6 +19,16 @@ class UserMembershipBoundedSchema(UCIMixinSchema):
     user_id: int
     user: UserShortSchema
 
+    terminated: bool
+    termination_reason: str | None
+    terminated_at: datetime | None
+
+    suspended_until: datetime | None
+    suspension_reason: str | None
+    suspended_at: datetime | None
+
+    is_suspended: bool
+
     model_config = ConfigDict(from_attributes=True)
 
 
