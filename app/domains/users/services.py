@@ -6,8 +6,8 @@ from loguru import logger
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, NotResourceOwnerError
 from app.core.config import settings
+from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
-from app.core.utils.permissions import check_permissions
 from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.shared.types import FileData
@@ -31,38 +31,62 @@ from app.domains.users.models import (
 
 
 class UserService:
-    def __init__(self, transaction_manager: TransactionManagerDep, file_storage: FileStorageDep):
+    def __init__(self, transaction_manager: TransactionManager, file_storage: BaseFileStorage):
         self.transaction_manager = transaction_manager
         self.file_storage = file_storage
+
+    async def check_resource_owner(self, user_id: int, *, current_user: User):
+        """
+        Ensures:
+        - user exists
+        - current user is a resource owner (optional) or admin
+        """
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
+            if current_user is None or user_id != current_user.id or not current_user.admin:
+                raise NotResourceOwnerError("Not resource owner")
 
     async def get_all_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> [list[User], int]:
-        return await self.transaction_manager.user_repository.list(limit, offset, order_by, filters)
-
-    async def get_user_by_kwargs(self, **kwargs) -> User:
-        return await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.list(limit, offset, order_by, filters)
 
     async def get_all_users_count(self) -> int:
-        return await self.transaction_manager.user_repository.get_count()
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.get_count()
+
+    async def create(self, **kwargs):
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.create(**kwargs)
+
+    async def get_user_by_kwargs(self, **kwargs) -> User:
+        async with self.transaction_manager:
+            return await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
 
     async def update_user(self, user_id: int, **kwargs) -> User:
-        return await self.transaction_manager.user_repository.update(user_id, **kwargs)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.update(user_id, **kwargs)
+        return user
 
     async def get_user_avatar_url(self, user_id: int):
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise NotFoundError("User with provided ID not found")
-        avatar_object_key = user.avatar_path
-        if avatar_object_key is None:
-            return None
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
+            avatar_object_key = user.avatar_path
+            if avatar_object_key is None:
+                return None
         return await self.file_storage.get_file_url(avatar_object_key)
 
     async def upload_avatar(self, user_id: int, file_data: FileData):
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid avatar content type")
 
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
         if user is None:
             raise NotFoundError("user with provided email not found")
 
@@ -72,7 +96,8 @@ class UserService:
         upload_result = await self.file_storage.upload_file(new_filename, file_data.content)
 
         try:
-            await self.transaction_manager.user_repository.update(user_id, avatar_path=new_filename)
+            async with self.transaction_manager:
+                await self.transaction_manager.user_repository.update(user_id, avatar_path=new_filename)
         except Exception:
             await self.file_storage.delete_file(new_filename)
 
@@ -85,12 +110,14 @@ class UserService:
         return upload_result
 
     async def delete_user_avatar(self, user_id: int) -> None:
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise NotFoundError("User with provided ID not found")
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
 
-        avatar_path = user.avatar_path
-        await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
+            avatar_path = user.avatar_path
+            await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
+
         await self.file_storage.delete_file(avatar_path)
 
     async def change_password(
@@ -113,37 +140,12 @@ class UserService:
             user.id, last_password_change=datetime.now(tz=timezone.utc)
         )
 
-    async def _get_user_by_kwargs(self, raise_not_found: bool = False, **kwargs) -> User | None:
-        """Method closes transaction. Can't be used in transaction manager"""
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
-            if user is None and raise_not_found:
-                raise NotFoundError("User with the provided ID not found")
-            return user
 
-    async def ban_user(self, user_id: int, ban_reason: str) -> User:
-        return await self.transaction_manager.user_repository.update(user_id, banned=True, ban_reason=ban_reason)
-
-    async def unban_user(self, user_id: int) -> User:
-        return await self.transaction_manager.user_repository.update(user_id, banned=False, ban_reason=None)
-
-    async def _get_user_avatar_url(self, user_id: int):
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-            if user is None:
-                raise NotFoundError("User with provided ID not found")
-            avatar_object_key = user.avatar_path
-        if avatar_object_key is None:
-            return None
-        return await self.file_storage.get_file_url(avatar_object_key)
-
-
-class ProfessionalInformationService:  # noqa B903
+class ProfessionalInformationService:
     def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
 
-    async def _get_by_user_id(self, user_id: int) -> ProfessionalInformation | None:
-        """Method closes transaction. Can't be used in transaction manager"""
+    async def get_by_user_id(self, user_id: int) -> ProfessionalInformation | None:
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
@@ -152,8 +154,7 @@ class ProfessionalInformationService:  # noqa B903
                 user_id=user_id
             )
 
-    async def _create_or_update(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalInformation:
-        """Method closes transaction. Can't be used in transaction manager"""
+    async def create_or_update(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalInformation:
         if user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
@@ -420,21 +421,17 @@ class NameChangeRequestService:
 
         return await self.transaction_manager.name_change_request_repository.create(user_id=user_id, **kwargs)
 
-    async def _update_name_change_request(
+    async def update_name_change_request(
         self,
-        permissions,
         user_id: int,
         name_change_request_id: int,
         action: Literal["approve", "reject"],
         reason_rejecting: str | None,
     ) -> None:
-        """Method used directly from service"""
-        check_permissions("name_change_requests.update", permissions)
-        async with self.transaction_manager:
-            if action == "approve":
-                await self._approve_name_change_request(user_id, name_change_request_id)
-            if action == "reject":
-                await self._reject_name_change_request(user_id, name_change_request_id, reason_rejecting)
+        if action == "approve":
+            await self._approve_name_change_request(user_id, name_change_request_id)
+        if action == "reject":
+            await self._reject_name_change_request(user_id, name_change_request_id, reason_rejecting)
 
     async def _approve_name_change_request(self, user_id: int, name_change_request_id: int) -> None:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
@@ -471,10 +468,10 @@ class NameChangeRequestService:
 
 class CommunicationPreferencesService:
     def __init__(self, transaction_manager):
-        self.__tm = transaction_manager
+        self.transaction_manager = transaction_manager
 
     async def check_resource_owner(self, user_id: int, *, current_user_id: int = None):
-        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
             raise NotFoundError("User with provided ID not found")
@@ -482,14 +479,39 @@ class CommunicationPreferencesService:
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
-    async def get_communication_preferences(self, user_id: int) -> CommunicationPreferences:
-        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
+    async def get_or_create(self, user_id: int, is_agrees_communications: bool = False) -> CommunicationPreferences:
+        """
+        Retrieves communication settings for the user or creates them with default values.
+        This ensures that the user always has the settings after calling the method.
+        """
+        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+
         if user is None:
             raise NotFoundError("User with provided ID not found")
 
-        return await self.__tm.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
+        communication_preferences = (
+            await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
+        )
 
-    async def update_communication_preferences(
+        if not communication_preferences:
+            create_data = {"user_id": user_id}
+            if is_agrees_communications:
+                create_data.update(
+                    {
+                        "newsletters": True,
+                        "events_meetings": True,
+                        "committees_leadership": True,
+                        "volunteer_opportunities": True,
+                    }
+                )
+
+            communication_preferences = await self.transaction_manager.communication_preferences_repository.create(
+                **create_data
+            )
+
+        return communication_preferences
+
+    async def update_or_create_preferences(
         self,
         user_id: int,
         update_data: dict | None = None,
@@ -498,26 +520,34 @@ class CommunicationPreferencesService:
         if update_data is None:
             update_data = {}
 
-        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise NotFoundError("User with provided ID not found")
-
-        communication_preferences = await self.__tm.communication_preferences_repository.get_first_by_kwargs(
-            user_id=user_id
+        communication_preferences = (
+            await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
         )
 
-        if is_agrees_communications:
-            update_data.update({
-                "newsletters": True,
-                "events_meetings": True,
-                "committees_leadership": True,
-                "volunteer_opportunities": True,
-            })
+        if not communication_preferences:
+            create_data = {"user_id": user_id}
+            if is_agrees_communications:
+                create_data.update(
+                    {
+                        "newsletters": True,
+                        "events_meetings": True,
+                        "committees_leadership": True,
+                        "volunteer_opportunities": True,
+                    }
+                )
 
-        if communication_preferences is None:
-            return await self.__tm.communication_preferences_repository.create(user_id=user_id, **update_data)
+            return await self.transaction_manager.communication_preferences_repository.create(**create_data)
 
-        return await self.__tm.communication_preferences_repository.update(communication_preferences.id, **update_data)
+        return await self.transaction_manager.communication_preferences_repository.update(
+            communication_preferences.id, **update_data
+        )
+
+
+def get_user_service(
+    transaction_manager: TransactionManagerDep,
+    file_storage: FileStorageDep,
+) -> UserService:
+    return UserService(transaction_manager, file_storage)
 
 
 def get_professional_information_service(
@@ -554,7 +584,7 @@ def get_communication_preferences_service(
     return CommunicationPreferencesService(transaction_manager)
 
 
-UserServiceDep = Annotated[UserService, Depends(UserService)]
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 ProfessionalInformationServiceDep = Annotated[
     ProfessionalInformationService, Depends(get_professional_information_service)
 ]
