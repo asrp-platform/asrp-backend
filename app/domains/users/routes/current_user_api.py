@@ -40,6 +40,7 @@ from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
 from app.domains.shared.schemas import PaymentCheckoutSchema
+from app.domains.shared.types import FileData
 from app.domains.users.exceptions import (
     InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
@@ -102,7 +103,7 @@ async def get_user_avatar(
 
 
 class UploadAvatarResponses(UpdateUserDataResponses):
-    INVALID_CONTENT_TYPE = 422, "Invalid avatar content type"
+    INVALID_CONTENT_TYPE = 415, "Invalid avatar content type"
 
 
 @router.put(
@@ -115,9 +116,12 @@ async def upload_user_avatar(
     use_case: UploadCurrentUserAvatarUseCaseDep,
     file: Annotated[UploadFile, File(...)],
 ) -> str:
-    if not file.content_type.startswith("image/"):
-        raise UploadAvatarResponses.INVALID_CONTENT_TYPE
-    return await use_case.execute(current_user, file)
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
+    return await use_case.execute(current_user, file_data)
 
 
 class DeleteUserAvatarResponses(Responses):

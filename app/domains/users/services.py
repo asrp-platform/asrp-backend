@@ -4,12 +4,13 @@ from typing import Annotated, Any, Generic, Literal, TypeVar
 from fastapi import Depends
 from loguru import logger
 
-from app.core.common.exceptions import NotFoundError, NotResourceOwnerError
+from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, NotResourceOwnerError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
+from app.domains.shared.types import FileData
 from app.domains.users.exceptions import (
     CannotDeleteLastResidencyError,
     InvalidPasswordError,
@@ -80,20 +81,19 @@ class UserService:
                 return None
         return await self.file_storage.get_file_url(avatar_object_key)
 
-    async def upload_avatar(self, user_id: int, file):
+    async def upload_avatar(self, user_id: int, file_data: FileData):
+        if not file_data.content_type.startswith("image/"):
+            raise InvalidMimeTypeError("Invalid avatar content type")
+
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
         if user is None:
             raise NotFoundError("user with provided email not found")
 
         old_filename = user.avatar_path
-        new_filename = generate_filename(file.filename, prefix="avatars")
+        new_filename = generate_filename(file_data.filename, prefix="avatars")
 
-        file_content = await file.read()
-        upload_result = await self.file_storage.upload_file(
-            new_filename,
-            file_content
-        )
+        upload_result = await self.file_storage.upload_file(new_filename, file_data.content)
 
         try:
             async with self.transaction_manager:

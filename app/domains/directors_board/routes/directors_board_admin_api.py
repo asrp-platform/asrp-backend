@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 
-from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.common.responses import PermissionsResponses
 from app.domains.directors_board.exceptions import InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
@@ -107,11 +106,8 @@ async def upload_directors_board_member_photo(
         filename=file.filename,
     )
 
-    try:
-        file_path = await use_case.execute(permissions, file_data)
-        return UploadedImageSchema(path=file_path)
-    except InvalidMimeTypeError:
-        raise UploadImageResponses.INVALID_CONTENT_TYPE
+    file_path = await use_case.execute(permissions, file_data)
+    return UploadedImageSchema(path=file_path)
 
 
 class ReorderCardResponses(PermissionsResponses):
