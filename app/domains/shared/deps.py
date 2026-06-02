@@ -111,7 +111,26 @@ async def get_current_user_membership(
 ) -> UserMembership:
     user_membership = await user_membership_service.get_user_membership_by_user_id(current_user.id)
     if user_membership is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No active membership")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No active membership",
+        )
+
+    if user_membership.terminated:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Membership is permanently blocked")
+
+    if user_membership.is_suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Membership is temporarily blocked until {user_membership.suspended_until.isoformat()}",
+        )
+
+    if not user_membership.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No active membership",
+        )
+
     return user_membership
 
 

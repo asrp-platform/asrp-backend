@@ -32,7 +32,7 @@ class SuspendUserMembershipUseCase:
             if membership.terminated:
                 # Обработать в эндпоинте
                 raise MembershipAlreadyTerminatedError("User membership with provided ID already terminated")
-            if membership.is_suspended:
+            if membership.is_suspended and suspended_until is not None:
                 # Обработать в эндпоинте
                 raise MembershipAlreadySuspendedError("User membership with provided ID already suspended")
 

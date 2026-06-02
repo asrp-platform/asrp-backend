@@ -16,7 +16,6 @@ class UserMembershipBoundedSchema(UCIMixinSchema):
     expires_at: datetime
     membership_type_id: int
     membership_type: MembershipTypeSchema
-    user_id: int
     user: UserShortSchema
 
     terminated: bool
@@ -36,9 +35,20 @@ class UserMembershipSchema(UCIMixinSchema):
     expires_at: datetime
     user_id: int
     membership_request_id: int
-    membership_type_id: int
+
     is_active: bool
 
+    terminated: bool
+    termination_reason: str | None
+    terminated_at: datetime | None
+
+    suspended_until: datetime | None
+    suspension_reason: str | None
+    suspended_at: datetime | None
+
+    is_suspended: bool
+
+    membership_type_id: int
     membership_type: MembershipTypeSchema
 
     model_config = ConfigDict(from_attributes=True)
