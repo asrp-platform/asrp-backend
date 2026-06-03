@@ -24,16 +24,19 @@ router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends
 
 
 class UserListResponses(InvalidRequestParamsResponses):
-    pass
+    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.get("", responses=UserListResponses.responses)
 async def get_users(
     user_service: UserServiceDep,
     params: PaginationParamsDep,
+    permissions: AdminPermissionsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[UsersFilter, Depends()] = None,
 ) -> PaginatedResponse[UserSchema]:
+    if "users.view" not in permissions:
+        raise UserListResponses.PERMISSION_ERROR
     try:
         users, users_count = await user_service.get_all_paginated_counted(
             order_by=ordering,
@@ -98,6 +101,7 @@ class UpdateUserByAdminResponses(Responses):
     CANT_GRANT_ADMIN_ROLE = 403, "Don't have enough permissions to grand admin role"
     CANT_REVOKE_ADMIN_ROLE = 403, "Don't have enough permissions to revoke admin role"
     USER_NOT_FOUND = 404, "User with provided ID not found"
+    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.patch(
@@ -112,6 +116,17 @@ async def update_user_by_admin(
     permissions: AdminPermissionsDep,
     update_data: UpdateUserByAdminSchema,
 ):
+    target_user = await user_service.get_user_by_kwargs(id=user_id)
+    if target_user is None:
+        raise UpdateUserByAdminResponses.USER_NOT_FOUND
+
+    if target_user.admin:
+        if "admin.update" not in permissions:
+            raise UpdateUserByAdminResponses.PERMISSION_ERROR
+    else:
+        if "users.update" not in permissions:
+            raise UpdateUserByAdminResponses.PERMISSION_ERROR
+
     if update_data.admin is True and "admin.create" not in permissions:
         raise UpdateUserByAdminResponses.CANT_GRANT_ADMIN_ROLE
     if update_data.admin is not True and "admin.delete" not in permissions:
@@ -203,6 +218,8 @@ class BanUserResponses(Responses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
     CANT_BAN_SELF = 400, "You cannot ban yourself"
     CANT_UNBAN_SELF = 400, "You cannot unban yourself"
+    CANT_BAN_SUPERADMIN = 403, "You cannot ban the system administrator"
+    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.put(
@@ -215,9 +232,24 @@ async def ban_user(
     ban_data: BanUserSchema,
     user_service: UserServiceDep,
     admin: AdminUserDep,
+    permissions: AdminPermissionsDep,
 ) -> UserSchema:
     if admin.id == user_id:
         raise BanUserResponses.CANT_BAN_SELF
+
+    target_user = await user_service.get_user_by_kwargs(id=user_id)
+    if target_user is None:
+        raise BanUserResponses.USER_NOT_FOUND
+
+    if target_user.superuser:
+        raise BanUserResponses.CANT_BAN_SUPERADMIN
+
+    if target_user.admin:
+        if "admin.update" not in permissions:
+            raise BanUserResponses.PERMISSION_ERROR
+    else:
+        if "users.update" not in permissions:
+            raise BanUserResponses.PERMISSION_ERROR
 
     user = await user_service.ban_user(user_id, ban_data.ban_reason)
     return UserSchema.model_validate(user)
@@ -232,9 +264,24 @@ async def unban_user(
     user_id: Annotated[int, Path()],
     user_service: UserServiceDep,
     admin: AdminUserDep,
+    permissions: AdminPermissionsDep,
 ) -> UserSchema:
     if admin.id == user_id:
         raise BanUserResponses.CANT_UNBAN_SELF
+
+    target_user = await user_service.get_user_by_kwargs(id=user_id)
+    if target_user is None:
+        raise BanUserResponses.USER_NOT_FOUND
+
+    if target_user.superuser:
+        raise BanUserResponses.PERMISSION_ERROR
+
+    if target_user.admin:
+        if "admin.update" not in permissions:
+            raise BanUserResponses.PERMISSION_ERROR
+    else:
+        if "users.update" not in permissions:
+            raise BanUserResponses.PERMISSION_ERROR
 
     user = await user_service.unban_user(user_id)
     return UserSchema.model_validate(user)
