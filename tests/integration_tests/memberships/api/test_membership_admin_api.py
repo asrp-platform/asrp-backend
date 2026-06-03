@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from httpx import AsyncClient
 
-from app.domains.memberships.models import MembershipRequest, UserMembership
+from app.domains.memberships.models import MembershipDowngradeRequest, MembershipRequest, UserMembership
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
@@ -207,7 +207,7 @@ async def test_get_membership_downgrade_requests(
 
 async def test_approve_membership_downgrade_request(
     client: AsyncClient,
-    membership_downgrade_request,
+    membership_downgrade_request: MembershipDowngradeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
@@ -222,7 +222,7 @@ async def test_approve_membership_downgrade_request(
 
 async def test_reject_membership_downgrade_request(
     client: AsyncClient,
-    membership_downgrade_request,
+    membership_downgrade_request: MembershipDowngradeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
@@ -237,7 +237,7 @@ async def test_reject_membership_downgrade_request(
 
 async def test_reject_membership_downgrade_request_without_admin_comment(
     client: AsyncClient,
-    membership_downgrade_request,
+    membership_downgrade_request: MembershipDowngradeRequest,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
