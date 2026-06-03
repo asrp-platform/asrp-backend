@@ -135,7 +135,7 @@ async def update_user_by_admin(
     if update_data.admin and admin.id == user_id:
         raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
 
-    return await user_service.update_user(user_id, admin, update_data.model_dump())
+    return await user_service.update_user(user_id, **update_data.model_dump(exclude_unset=True))
 
 
 class GetPermissionsResponses(PermissionsResponses):

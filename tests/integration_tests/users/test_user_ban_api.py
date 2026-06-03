@@ -299,3 +299,22 @@ async def test_cannot_ban_superadmin(
     )
     assert response.status_code == 403
     assert response.json()["detail"] == "You cannot ban the system administrator"
+
+
+async def test_admin_can_update_user_role(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_user: User,
+    test_user: User,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
+    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "admin.create")
+
+    response = await client.patch(
+        f"/api/admin/users/{test_user.id}",
+        headers=admin_auth_headers,
+        json={"admin": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["admin"] is True
