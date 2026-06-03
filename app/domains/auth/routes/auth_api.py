@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi_exception_responses import Responses as ApiResponses
 from starlette.responses import Response
 
@@ -57,6 +57,7 @@ async def register(
 
 class LoginResponses(ApiResponses):
     WRONG_CREDENTIALS = 401, "Wrong credentials"
+    USER_BANNED = 403, "User is banned"
 
 
 @router.post("/login", summary="User login", responses=LoginResponses.responses)
@@ -70,6 +71,12 @@ async def login(
 
     if user is None or not user.verify_password(password) or user.pending is True:
         raise LoginResponses.WRONG_CREDENTIALS
+
+    if user.banned:
+        raise HTTPException(
+            status_code=403,
+            detail=f"User is banned: {user.ban_reason}",
+        )
 
     access_token = create_access_token({"email": user.email})
     refresh_token = create_refresh_token({"email": user.email}, remember_me=remember)
