@@ -12,6 +12,7 @@ from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
+    BanUserSchema,
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
     UpdateUserByAdminSchema,
@@ -197,3 +198,44 @@ async def update_name_change_request(
     await service.update_name_change_request(
         user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
     )
+
+
+class BanUserResponses(Responses):
+    USER_NOT_FOUND = 404, "User with provided ID not found"
+    CANT_BAN_SELF = 400, "You cannot ban yourself"
+    CANT_UNBAN_SELF = 400, "You cannot unban yourself"
+
+
+@router.put(
+    "/{user_id}/ban",
+    responses=BanUserResponses.responses,
+    summary="Ban a user",
+)
+async def ban_user(
+    user_id: Annotated[int, Path()],
+    ban_data: BanUserSchema,
+    user_service: UserServiceDep,
+    admin: AdminUserDep,
+) -> UserSchema:
+    if admin.id == user_id:
+        raise BanUserResponses.CANT_BAN_SELF
+
+    user = await user_service.ban_user(user_id, ban_data.ban_reason)
+    return UserSchema.model_validate(user)
+
+
+@router.delete(
+    "/{user_id}/ban",
+    responses=BanUserResponses.responses,
+    summary="Unban a user",
+)
+async def unban_user(
+    user_id: Annotated[int, Path()],
+    user_service: UserServiceDep,
+    admin: AdminUserDep,
+) -> UserSchema:
+    if admin.id == user_id:
+        raise BanUserResponses.CANT_UNBAN_SELF
+
+    user = await user_service.unban_user(user_id)
+    return UserSchema.model_validate(user)
