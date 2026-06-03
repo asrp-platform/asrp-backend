@@ -45,6 +45,8 @@ class UserSchema(BaseModel):
     credentials: str | None
     email: str
     admin: bool
+    banned: bool
+    ban_reason: str | None
     description: str | None
     country: str
     state: str | None
@@ -65,6 +67,10 @@ class UserSchema(BaseModel):
 
 class UpdateUserByAdminSchema(BaseModel):
     admin: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
+
+
+class BanUserSchema(BaseModel):
+    ban_reason: str = Field(..., max_length=512, description="Reason for banning the user")
 
 
 class UpdateUserSchema(BaseModel):
