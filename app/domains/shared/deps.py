@@ -66,7 +66,7 @@ async def verify_refresh_token(
     try:
         payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user = await user_service.get_user_by_kwargs(email=payload["email"])
-        if user is None:
+        if user is None or user.banned is True:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid")
         return payload
     except JWTError:
@@ -80,7 +80,7 @@ async def get_current_user(
     email = get_email_by_access_token(access_token)
     user = await user_service.get_user_by_kwargs(email=email)
 
-    if user is None:
+    if user is None or user.banned is True:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     return user
