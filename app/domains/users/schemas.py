@@ -45,6 +45,7 @@ class UserSchema(BaseModel):
     credentials: str | None
     email: str
     admin: bool
+    superuser: bool
     banned: bool
     ban_reason: str | None
     description: str | None
