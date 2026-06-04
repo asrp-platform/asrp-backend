@@ -25,4 +25,4 @@ class UserMembershipTypeChangeRequestsFilters(BaseModel):
 
 
 class MembersFilters(BaseModel):
-    user_id: Annotated[int | None, Query(description="Member ID filter")] = None
+    pass

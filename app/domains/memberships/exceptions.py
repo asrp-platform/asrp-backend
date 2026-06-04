@@ -14,10 +14,6 @@ class MembershipApplicationCheckoutError(Exception):
     pass
 
 
-class MembershipRenewalCheckoutError(Exception):
-    pass
-
-
 class MissingRejectingCommentError(Exception):
     pass
 
@@ -51,12 +47,4 @@ class MembershipAlreadySuspendedError(Exception):
 
 
 class MembershipAlreadyTerminatedError(Exception):
-    pass
-
-
-class MembershipTerminatedError(Exception):
-    pass
-
-
-class MembershipSuspendedError(Exception):
     pass

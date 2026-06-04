@@ -5,7 +5,6 @@ from app.domains.memberships.models import MembershipDowngradeRequest, UserMembe
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
-
 pytestmark = pytest.mark.anyio
 
 
@@ -63,9 +62,6 @@ def assert_updated_downgrade_request(
     assert downgrade_request.approved is approved
     assert downgrade_request.pending is False
     assert downgrade_request.admin_comment == admin_comment
-
-
-# TODO: tests for membership downgrade request creation
 
 
 async def test_approve_membership_downgrade_request(

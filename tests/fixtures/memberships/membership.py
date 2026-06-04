@@ -75,13 +75,12 @@ async def user_membership(
     test_transaction_manager: TransactionManager,
     paid_membership_request: MembershipRequest,
 ) -> UserMembership:
-    async with test_transaction_manager:
-        return await test_transaction_manager.user_membership_repository.create(
-            user_id=paid_membership_request.user_id,
-            membership_request_id=paid_membership_request.id,
-            membership_type_id=paid_membership_request.membership_type_id,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
-        )
+    return await test_transaction_manager.user_membership_repository.create(
+        user_id=paid_membership_request.user_id,
+        membership_request_id=paid_membership_request.id,
+        membership_type_id=paid_membership_request.membership_type_id,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
 
 
 @pytest.fixture()
