@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import Depends
@@ -123,28 +124,64 @@ class MembershipTypeService:
 
 class UserMembershipService:
     def __init__(self, transaction_manager: TransactionManager):
-        self.__transaction_manager = transaction_manager
+        self.__tm = transaction_manager
 
     async def create_user_membership(self, user_id: int, **kwargs) -> UserMembership:
-        user_membership = await self.__transaction_manager.user_membership_repository.get_first_by_kwargs(
-            user_id=user_id
-        )
+        user_membership = await self.__tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
         if user_membership is not None:
             raise ResourceAlreadyExistsError(f"User membership already exists for the user with ID={user_id}")
-        return await self.__transaction_manager.user_membership_repository.create(user_id=user_id, **kwargs)
+        return await self.__tm.user_membership_repository.create(user_id=user_id, **kwargs)
 
     async def get_user_membership_by_user_id(self, user_id: int) -> UserMembership | None:
-        async with self.__transaction_manager:
+        async with self.__tm:
             stmt = select(UserMembership).options(selectinload(UserMembership.membership_type))
-            user = await self.__transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
 
             if user is None:
                 raise NotFoundError("User with provided ID not found")
 
-            return await self.__transaction_manager.user_membership_repository.get_first_by_kwargs(
+            return await self.__tm.user_membership_repository.get_first_by_kwargs(
                 stmt=stmt,
                 user_id=user_id,
             )
+
+    async def get_user_membership_by_id(self, membership_id: int):
+        return await self.__tm.user_membership_repository.get_first_by_kwargs(id=membership_id)
+
+    async def get_users_with_memberships(
+        self,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+    ) -> tuple[list[UserMembership], int]:
+        stmt = select(UserMembership).options(
+            selectinload(UserMembership.user),
+            selectinload(UserMembership.membership_type),
+        )
+        async with self.__tm:
+            return await self.__tm.user_membership_repository.list(limit, offset, order_by, filters, stmt=stmt)
+
+    async def suspend_membership(
+        self,
+        membership_id: int,
+        suspended_until: datetime,
+        suspension_reason: str,
+    ):
+        return await self.__tm.user_membership_repository.update(
+            membership_id,
+            suspended_until=suspended_until,
+            suspension_reason=suspension_reason,
+            suspended_at=datetime.now(timezone.utc),
+        )
+
+    async def terminate_membership(self, membership_id: int, termination_reason: str):
+        return await self.__tm.user_membership_repository.update(
+            membership_id,
+            terminated=True,
+            termination_reason=termination_reason,
+            terminated_at=datetime.now(timezone.utc),
+        )
 
 
 class MembershipDowngradeService:

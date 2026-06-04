@@ -12,15 +12,13 @@ from app.domains.memberships.exceptions import (
     MembershipRequestCannotBeReappliedError,
     SameMembershipTypeChangeRequestError,
 )
+from app.domains.memberships.schemas.membership_downgrade_schemas import UserMembershipTypeChangeRequestProfileSchema
+from app.domains.memberships.schemas.membership_schemas import UserMembershipSchema
 from app.domains.memberships.schemas.schemas import (
     MembershipDowngradeCreateCreateSchema,
     MembershipRequestCreateSchema,
     MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
-    UserMembershipSchema,
-)
-from app.domains.memberships.schemas.type_change_schemas import (
-    UserMembershipTypeChangeRequestProfileSchema,
 )
 from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt import (

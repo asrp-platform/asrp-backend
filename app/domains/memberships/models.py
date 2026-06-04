@@ -107,9 +107,34 @@ class UserMembership(Base, UCIMixin):
         "MembershipDowngradeRequest", back_populates="user_membership"
     )
 
+    # persistent ban
+    terminated: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)
+    termination_reason: Mapped[str] = mapped_column(nullable=True)
+    terminated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # temporary ban
+    suspended_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    suspension_reason: Mapped[str] = mapped_column(nullable=True)
+    suspended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "terminated = FALSE OR termination_reason IS NOT NULL",
+            name="necessary_termination_reason",
+        ),
+        CheckConstraint(
+            "suspended_until IS NULL OR suspension_reason IS NOT NULL",
+            name="necessary_suspension_reason",
+        ),
+    )
+
     @property
     def is_active(self) -> bool:
         return datetime.now(timezone.utc) < self.expires_at
+
+    @property
+    def is_suspended(self) -> bool:
+        return self.suspended_until is not None and datetime.now(timezone.utc) < self.suspended_until
 
 
 class MembershipDowngradeRequest(Base, UCIMixin):
