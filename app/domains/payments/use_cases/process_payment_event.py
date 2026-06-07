@@ -7,15 +7,20 @@ from stripe import Event
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipServiceDep
-from app.domains.payments.models import PaymentStatusEnum
-from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.payments.models import PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.services import PaymentServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
 class ProcessPaymentUseCase:
-    def __init__(self, transaction_manager, payment_service: PaymentService, membership_service):
+    def __init__(
+        self,
+        transaction_manager: TransactionManagerDep,
+        payment_service: PaymentServiceDep,
+        membership_service: MembershipServiceDep,
+    ):
         self.__transaction_manager = transaction_manager
         self.__payment_service = payment_service
         self.__membership_service = membership_service
@@ -62,6 +67,7 @@ class ProcessPaymentUseCase:
                 return
 
             payment = await self.__payment_service.get_payment_by_id(payment_id)
+            payment_user_id = payment.user_id
 
             if payment.status == target_payment_status:
                 payments_logger.info(
@@ -111,13 +117,30 @@ class ProcessPaymentUseCase:
                     membership_request_id,
                 )
 
+            elif (
+                target_payment_status == PaymentStatusEnum.SUCCEEDED
+                and payment.purpose == PaymentPurposeEnum.MEMBERSHIP_APPLICATION
+            ):
+                pending_application_payments = (
+                    await self.__payment_service.get_pending_membership_application_user_payment(
+                        user_id=payment_user_id
+                    )
+                )
+                expired_payment_ids = [payment.id for payment in pending_application_payments]
+                await self.__payment_service.update_payments_by_ids(
+                    expired_payment_ids,
+                    status=PaymentStatusEnum.EXPIRED,
+                )
 
-def get_process_payment_use_case(
-    transaction_manager: TransactionManagerDep,
-    payment_service: PaymentServiceDep,
-    membership_service: MembershipServiceDep,
-) -> ProcessPaymentUseCase:
-    return ProcessPaymentUseCase(transaction_manager, payment_service, membership_service)
 
+# def get_process_payment_use_case(
+#     transaction_manager: TransactionManagerDep,
+#     payment_service: PaymentServiceDep,
+#     membership_service: MembershipServiceDep,
+# ) -> ProcessPaymentUseCase:
+#     return ProcessPaymentUseCase(transaction_manager, payment_service, membership_service)
+#
+#
+# ProcessPaymentUseCaseDep = Annotated[ProcessPaymentUseCase, Depends(get_process_payment_use_case)]
 
-ProcessPaymentUseCaseDep = Annotated[ProcessPaymentUseCase, Depends(get_process_payment_use_case)]
+ProcessPaymentUseCaseDep = Annotated[ProcessPaymentUseCase, Depends(ProcessPaymentUseCase)]

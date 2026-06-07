@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated, Any
 
 from fastapi import Depends
@@ -15,6 +16,9 @@ class PaymentService:
 
     async def update_payment(self, payment_id: int, **kwargs) -> Payment:
         return await self.__transaction_manager.payment_repository.update(payment_id, **kwargs)
+
+    async def update_payments_by_ids(self, payment_ids: list[uuid.UUID | str], **kwargs) -> list[Payment]:
+        return await self.__transaction_manager.payment_repository.update_by_ids(payment_ids, **kwargs)
 
     async def get_payment_by_id(self, payment_uuid: str):
         return await self.__transaction_manager.payment_repository.get_first_by_kwargs(id=payment_uuid)
@@ -44,6 +48,13 @@ class PaymentService:
         return await self.__transaction_manager.payment_repository.get_first_by_kwargs(
             membership_request_id=membership_request_id,
             status=PaymentStatusEnum.SUCCEEDED,
+            purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+        )
+
+    async def get_pending_membership_application_user_payment(self, user_id: int):
+        return await self.__transaction_manager.payment_repository.get_all_by_kwargs(
+            user_id=user_id,
+            status=PaymentStatusEnum.PENDING,
             purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
         )
 
