@@ -28,28 +28,26 @@ class ProcessPaymentUseCase:
         self.__payment_purpose_handler_registry = payment_purpose_handler_registry
 
     async def execute(self, event: Event, target_payment_status: PaymentStatusEnum):
-        event_id = event.id
-        event_type = event.type
         payments_logger.info(
             "Processing payment event: event_id={} event_type={} target_status={}",
-            event_id,
-            event_type,
+            event.id,
+            event.type,
             target_payment_status.value,
         )
 
-        payment_intent = event.data.object
-        metadata = payment_intent.metadata
-        payment_id = metadata.payment_id
+        metadata = event.data.object.metadata or {}
+        payment_id = getattr(metadata, "payment_id", None)
+
         membership_request_id = getattr(metadata, "membership_request_id", None)
 
         async with self.__transaction_manager:
             processed_webhook_event = await self.__payment_service.get_processed_webhook_event_by_kwargs(
-                event_id=event_id,
+                event_id=event.id,
             )
 
             if processed_webhook_event is not None:
                 payments_logger.info(
-                    "Payment event skipped: already processed, event_id={} event_type={}", event_id, event_type
+                    "Payment event skipped: already processed, event_id={} event_type={}", event.id, event.type
                 )
                 return
 
@@ -57,13 +55,13 @@ class ProcessPaymentUseCase:
                 payments_logger.warning(
                     "Payment event skipped: missing payment_id in metadata, event_id={} event_type={} "
                     "membership_request_id={} ",
-                    event_id,
-                    event_type,
+                    event.id,
+                    event.type,
                     membership_request_id,
                 )
                 await self.__payment_service.create_processed_webhook_event(
-                    event_type=event_type,
-                    event_id=event_id,
+                    event_type=event.type,
+                    event_id=event.id,
                     provider="STRIPE",
                 )
                 return
@@ -71,9 +69,15 @@ class ProcessPaymentUseCase:
             payment = await self.__payment_service.get_payment_by_id(payment_id)
 
             if payment is None:
+                payments_logger.info(
+                    "Payment not found: payment is None, event_id={} payment_id={} status={}",
+                    event.id,
+                    payment_id,
+                    target_payment_status.value,
+                )
                 await self.__payment_service.create_processed_webhook_event(
-                    event_type=event_type,
-                    event_id=event_id,
+                    event_type=event.type,
+                    event_id=event.id,
                     provider="STRIPE",
                 )
                 return
@@ -81,13 +85,13 @@ class ProcessPaymentUseCase:
             if payment.status == target_payment_status:
                 payments_logger.info(
                     "Payment event skipped: payment already has the target status, event_id={} payment_id={} status={}",
-                    event_id,
+                    event.id,
                     payment_id,
                     target_payment_status.value,
                 )
                 await self.__payment_service.create_processed_webhook_event(
-                    event_type=event_type,
-                    event_id=event_id,
+                    event_type=event.type,
+                    event_id=event.id,
                     provider="STRIPE",
                 )
                 return
@@ -95,13 +99,13 @@ class ProcessPaymentUseCase:
             if target_payment_status == PaymentStatusEnum.EXPIRED and payment.status != PaymentStatusEnum.PENDING:
                 payments_logger.info(
                     "Payment expiration skipped: payment is not pending, event_id={} payment_id={} current_status={}",
-                    event_id,
+                    event.id,
                     payment_id,
                     payment.status.value,
                 )
                 await self.__payment_service.create_processed_webhook_event(
-                    event_type=event_type,
-                    event_id=event_id,
+                    event_type=event.type,
+                    event_id=event.id,
                     provider="STRIPE",
                 )
                 return
@@ -115,12 +119,12 @@ class ProcessPaymentUseCase:
             )
 
             await self.__payment_service.create_processed_webhook_event(
-                event_type=event_type, event_id=event_id, provider="STRIPE"
+                event_type=event.type, event_id=event.id, provider="STRIPE"
             )
 
             payments_logger.info(
                 "Payment updated: event_id={} payment_id={} status={}",
-                event_id,
+                event.id,
                 payment_id,
                 target_payment_status.value,
             )

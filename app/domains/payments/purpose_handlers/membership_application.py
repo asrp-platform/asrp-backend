@@ -43,11 +43,20 @@ class MembershipApplicationHandler:
         )
 
     async def on_expired(self, payment: Payment, event: Event) -> None:
-        # Можно залогировать
         payments_logger.info(
             "Membership application payment expired: event_id={} payment_id={}",
             event.id,
             payment.id,
+        )
+
+    async def on_checkout_session_completed(self, payment, event: Event) -> None:
+        session = event.data.object
+
+        if session.payment_status != "paid":
+            return
+
+        await self.__membership_service.update_membership_request(
+            payment.membership_request_id, status=MembershipRequestStatusEnum.PAID
         )
 
 

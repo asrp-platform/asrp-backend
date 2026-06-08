@@ -1,7 +1,9 @@
 from typing import Annotated
 
 from fastapi import Depends
+from loguru import logger
 
+from app.core.common.exceptions import HandlerNotFoundError
 from app.domains.payments.models import PaymentPurposeEnum
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandlerDep
 
@@ -16,7 +18,11 @@ class PaymentPurposeHandlerRegistry:
         }
 
     def get(self, purpose: PaymentPurposeEnum):
-        return self.__handlers[purpose]
+        handler = self.__handlers.get(purpose)
+        if handler is None:
+            logger.error("Payment purpose handler not found: purpose={}", purpose)
+            raise HandlerNotFoundError(f"Payment purpose handler not found for purpose={purpose}")
+        return handler
 
 
 PaymentPurposeHandlerRegistryDep = Annotated[PaymentPurposeHandlerRegistry, Depends(PaymentPurposeHandlerRegistry)]

@@ -1,47 +1,82 @@
 from typing import Annotated
 
 from fastapi import Depends
+from loguru import logger
 from stripe import Event
 
-from app.core.database.base_transaction_manager import BaseTransactionManager
-from app.domains.memberships.models import MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.core.logging import PAYMENTS_CHANNEL
+from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistryDep
+from app.domains.payments.services import PaymentServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
+
+payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
 class ProcessCheckoutSessionCompletedUseCase:
     def __init__(
         self,
-        transaction_manager: BaseTransactionManager,
-        membership_service: MembershipService,
+        transaction_manager: TransactionManagerDep,
+        payment_service: PaymentServiceDep,
+        payment_purpose_handler_registry: PaymentPurposeHandlerRegistryDep,
     ) -> None:
         self.__transaction_manager = transaction_manager
-        self.__membership_service = membership_service
+        self.__payment_service = payment_service
+        self.__payment_purpose_handler_registry = payment_purpose_handler_registry
 
     async def execute(self, event: Event):
-        session = event.data.object
-        metadata = session.metadata
-        membership_request_id = metadata.membership_request_id
-        payment_status = session.payment_status  # paid or unpaid
+        metadata = event.data.object.metadata or {}
+        payment_id = getattr(metadata, "payment_id", None)
 
         async with self.__transaction_manager:
-            if payment_status == "paid":
-                await self.__membership_service.update_membership_request(
-                    int(membership_request_id), status=MembershipRequestStatusEnum.PAID
+            processed_webhook_event = await self.__payment_service.get_processed_webhook_event_by_kwargs(
+                event_id=event.id,
+            )
+
+            if processed_webhook_event is not None:
+                payments_logger.info(
+                    "Payment event skipped: already processed, event_id={} event_type={}", event.id, event.type
                 )
-            elif payment_status == "unpaid":
-                await self.__membership_service.update_membership_request(
-                    int(membership_request_id), status=MembershipRequestStatusEnum.PAYMENT_PENDING
+                return
+
+            if not payment_id:
+                payments_logger.warning(
+                    "Payment event skipped: missing payment_id in metadata, event_id={} event_type={}",
+                    event.id,
+                    event.type,
                 )
-            elif payment_status == "no_payment_required":
-                pass
+                await self.__payment_service.create_processed_webhook_event(
+                    event_type=event.type,
+                    event_id=event.id,
+                    provider="STRIPE",
+                )
+                return
+
+            payment = await self.__payment_service.get_payment_by_id(payment_id)
+
+            if payment is None:
+                payments_logger.info(
+                    "Payment not found: payment is None, event_id={} payment_id={}",
+                    event.id,
+                    payment_id,
+                )
+                await self.__payment_service.create_processed_webhook_event(
+                    event_type=event.type,
+                    event_id=event.id,
+                    provider="STRIPE",
+                )
+                return
+
+            handler = self.__payment_purpose_handler_registry.get(payment.purpose)
+
+            await handler.on_checkout_session_completed(payment, event)
+
+            await self.__payment_service.create_processed_webhook_event(
+                event_type=event.type,
+                event_id=event.id,
+                provider="STRIPE",
+            )
 
 
-def get_use_case(
-    transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
-) -> ProcessCheckoutSessionCompletedUseCase:
-    return ProcessCheckoutSessionCompletedUseCase(transaction_manager, membership_service)
-
-
-ProcessCheckoutSessionCompletedUseCaseDep = Annotated[ProcessCheckoutSessionCompletedUseCase, Depends(get_use_case)]
+ProcessCheckoutSessionCompletedUseCaseDep = Annotated[
+    ProcessCheckoutSessionCompletedUseCase, Depends(ProcessCheckoutSessionCompletedUseCase)
+]
