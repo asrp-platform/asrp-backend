@@ -5,9 +5,9 @@ from loguru import logger
 from stripe import Event
 
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipServiceDep
-from app.domains.payments.models import PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.models import Payment, PaymentStatusEnum
+from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistryDep
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
@@ -20,10 +20,12 @@ class ProcessPaymentUseCase:
         transaction_manager: TransactionManagerDep,
         payment_service: PaymentServiceDep,
         membership_service: MembershipServiceDep,
+        payment_purpose_handler_registry: PaymentPurposeHandlerRegistryDep,
     ):
         self.__transaction_manager = transaction_manager
         self.__payment_service = payment_service
         self.__membership_service = membership_service
+        self.__payment_purpose_handler_registry = payment_purpose_handler_registry
 
     async def execute(self, event: Event, target_payment_status: PaymentStatusEnum):
         event_id = event.id
@@ -38,7 +40,7 @@ class ProcessPaymentUseCase:
         payment_intent = event.data.object
         metadata = payment_intent.metadata
         payment_id = metadata.payment_id
-        membership_request_id = metadata.membership_request_id
+        membership_request_id = getattr(metadata, "membership_request_id", None)
 
         async with self.__transaction_manager:
             processed_webhook_event = await self.__payment_service.get_processed_webhook_event_by_kwargs(
@@ -67,11 +69,18 @@ class ProcessPaymentUseCase:
                 return
 
             payment = await self.__payment_service.get_payment_by_id(payment_id)
-            payment_user_id = payment.user_id
+
+            if payment is None:
+                await self.__payment_service.create_processed_webhook_event(
+                    event_type=event_type,
+                    event_id=event_id,
+                    provider="STRIPE",
+                )
+                return
 
             if payment.status == target_payment_status:
                 payments_logger.info(
-                    "Payment event skipped: payment already has status, event_id={} payment_id={} status={}",
+                    "Payment event skipped: payment already has the target status, event_id={} payment_id={} status={}",
                     event_id,
                     payment_id,
                     target_payment_status.value,
@@ -83,16 +92,26 @@ class ProcessPaymentUseCase:
                 )
                 return
 
-            updated_provider_data = {
-                **(payment.provider_data or {}),  # defence from None
-                "payment_intent_id": payment_intent.id,
-                "payment_intent_status": payment_intent.status,
-            }
+            if target_payment_status == PaymentStatusEnum.EXPIRED and payment.status != PaymentStatusEnum.PENDING:
+                payments_logger.info(
+                    "Payment expiration skipped: payment is not pending, event_id={} payment_id={} current_status={}",
+                    event_id,
+                    payment_id,
+                    payment.status.value,
+                )
+                await self.__payment_service.create_processed_webhook_event(
+                    event_type=event_type,
+                    event_id=event_id,
+                    provider="STRIPE",
+                )
+                return
+
+            provider_data = self._construct_provider_data(payment, event)
 
             await self.__payment_service.update_payment(
                 payment_id,
                 status=target_payment_status,
-                provider_data=updated_provider_data,
+                provider_data=provider_data,
             )
 
             await self.__payment_service.create_processed_webhook_event(
@@ -106,41 +125,41 @@ class ProcessPaymentUseCase:
                 target_payment_status.value,
             )
 
-            if target_payment_status == PaymentStatusEnum.FAILED:
-                # Обновляю статус request'а, если платеж не прошел
-                await self.__membership_service.update_membership_request(
-                    int(membership_request_id), status=MembershipRequestStatusEnum.PAYMENT_FAILED
-                )
-                payments_logger.info(
-                    "Membership request updated after failed payment: event_id={} membership_request_id={}",
-                    event_id,
-                    membership_request_id,
-                )
+            handler = self.__payment_purpose_handler_registry.get(payment.purpose)
 
-            elif (
-                target_payment_status == PaymentStatusEnum.SUCCEEDED
-                and payment.purpose == PaymentPurposeEnum.MEMBERSHIP_APPLICATION
-            ):
-                pending_application_payments = (
-                    await self.__payment_service.get_pending_membership_application_user_payment(
-                        user_id=payment_user_id
-                    )
-                )
-                expired_payment_ids = [payment.id for payment in pending_application_payments]
-                await self.__payment_service.update_payments_by_ids(
-                    expired_payment_ids,
-                    status=PaymentStatusEnum.EXPIRED,
-                )
+            # Тут начинается логика в зависимости от payment_purpose
+            if target_payment_status == PaymentStatusEnum.SUCCEEDED:
+                await handler.on_succeeded(payment, event)
 
+            elif target_payment_status == PaymentStatusEnum.FAILED:
+                await handler.on_failed(payment, event)
 
-# def get_process_payment_use_case(
-#     transaction_manager: TransactionManagerDep,
-#     payment_service: PaymentServiceDep,
-#     membership_service: MembershipServiceDep,
-# ) -> ProcessPaymentUseCase:
-#     return ProcessPaymentUseCase(transaction_manager, payment_service, membership_service)
-#
-#
-# ProcessPaymentUseCaseDep = Annotated[ProcessPaymentUseCase, Depends(get_process_payment_use_case)]
+            elif target_payment_status == PaymentStatusEnum.EXPIRED:
+                await handler.on_expired(payment, event)
+
+    @staticmethod
+    def _construct_provider_data(payment: Payment, event: Event) -> dict:
+        updated_provider_data = {**(payment.provider_data or {})}
+        event_object = event.data.object
+
+        if event.type.startswith("payment_intent."):
+            updated_provider_data.update(
+                {
+                    "payment_intent_id": event_object.id,
+                    "payment_intent_status": event_object.status,
+                }
+            )
+
+        elif event.type.startswith("checkout.session."):
+            updated_provider_data.update(
+                {
+                    "checkout_session_id": event_object.id,
+                    "checkout_session_status": getattr(event_object, "status", None),
+                    "checkout_session_payment_status": getattr(event_object, "payment_status", None),
+                }
+            )
+
+        return updated_provider_data
+
 
 ProcessPaymentUseCaseDep = Annotated[ProcessPaymentUseCase, Depends(ProcessPaymentUseCase)]

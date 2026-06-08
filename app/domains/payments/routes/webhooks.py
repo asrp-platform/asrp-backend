@@ -8,7 +8,6 @@ from app.core.logging import STRIPE_CHANNEL
 from app.domains.payments.models import PaymentStatusEnum
 from app.domains.payments.use_cases.process_async_payment_event import ProcessCheckoutSessionAsyncPaymentUseCaseDep
 from app.domains.payments.use_cases.process_checkout_session_completed import ProcessCheckoutSessionCompletedUseCaseDep
-from app.domains.payments.use_cases.process_checkout_session_expired import ProcessCheckoutSessionExpiredUseCaseDep
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCaseDep
 
 stripe.api_key = settings.STRIPE_API_KEY
@@ -24,7 +23,6 @@ async def stripe_webhook(
     process_payment_use_case: ProcessPaymentUseCaseDep,
     process_checkout_session_completed_use_case: ProcessCheckoutSessionCompletedUseCaseDep,
     process_checkout_session_async_payment_use_case: ProcessCheckoutSessionAsyncPaymentUseCaseDep,
-    process_checkout_session_expired_use_case: ProcessCheckoutSessionExpiredUseCaseDep,
     stripe_signature: str | None = Header(default=None, alias="Stripe-Signature"),
 ):
     payload = await request.body()
@@ -61,7 +59,7 @@ async def stripe_webhook(
         await process_checkout_session_completed_use_case.execute(event)
 
     elif event_type == "checkout.session.expired":
-        await process_checkout_session_expired_use_case.execute(event)
+        await process_payment_use_case.execute(event, target_payment_status=PaymentStatusEnum.EXPIRED)
 
     elif event_type in {"checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed"}:
         await process_checkout_session_async_payment_use_case.execute(event)
