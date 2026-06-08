@@ -1,7 +1,7 @@
 import pytest
 
 from app.domains.feedback.services import FeedbackAdditionalInfoService
-from app.domains.memberships.services import MembershipService, MembershipTypeService, UserMembershipService
+from app.domains.memberships.services import MembershipRequestService, MembershipTypeService, UserMembershipService
 from app.domains.payments.services import PaymentService
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.services import CommunicationPreferencesService
@@ -9,7 +9,7 @@ from app.domains.users.services import CommunicationPreferencesService
 
 @pytest.fixture()
 def membership_service(test_transaction_manager: TransactionManager):
-    return MembershipService(test_transaction_manager)
+    return MembershipRequestService(test_transaction_manager)
 
 
 @pytest.fixture()

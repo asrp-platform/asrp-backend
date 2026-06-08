@@ -9,8 +9,8 @@ from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import (
-    MembershipService,
-    MembershipServiceDep,
+    MembershipRequestService,
+    MembershipRequestServiceDep,
     MembershipTypeService,
     MembershipTypeServiceDep,
 )
@@ -27,7 +27,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
     def __init__(
         self,
         transaction_manager: BaseTransactionManager,
-        membership_service: MembershipService,
+        membership_service: MembershipRequestService,
         membership_type_service: MembershipTypeService,
         payment_service: PaymentService,
     ):
@@ -119,7 +119,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
 
 def get_use_case(
     transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
+    membership_service: MembershipRequestServiceDep,
     membership_type_service: MembershipTypeServiceDep,
     payment_service: PaymentServiceDep,
 ) -> CreateMembershipApplicationPaymentAttemptUseCase:

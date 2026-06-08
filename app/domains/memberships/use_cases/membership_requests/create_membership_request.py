@@ -7,7 +7,7 @@ from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.feedback.services import FeedbackAdditionalInfoServiceDep
 from app.domains.memberships.exceptions import CantBuyHonoraryMembership, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
-from app.domains.memberships.services import MembershipServiceDep, MembershipTypeServiceDep
+from app.domains.memberships.services import MembershipRequestServiceDep, MembershipTypeServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
@@ -21,7 +21,7 @@ class CreateUserMembershipRequestUseCase:
     def __init__(
         self,
         transaction_manager: TransactionManagerDep,
-        membership_service: MembershipServiceDep,
+        membership_service: MembershipRequestServiceDep,
         membership_type_service: MembershipTypeServiceDep,
         feedback_additional_info_service: FeedbackAdditionalInfoServiceDep,
         communication_preference_service: CommunicationPreferencesServiceDep,

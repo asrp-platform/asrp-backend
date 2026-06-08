@@ -12,7 +12,7 @@ from app.domains.memberships.exceptions import (
     MembershipRequestCannotBeReappliedError,
 )
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService, MembershipTypeService
+from app.domains.memberships.services import MembershipRequestService, MembershipTypeService
 from app.domains.memberships.use_cases.membership_requests.reapply_membership_application import (
     ReapplyMembershipApplicationUseCase,
 )
@@ -39,7 +39,7 @@ class LoggerSpy:
 @pytest.fixture()
 def reapply_use_case(
     test_transaction_manager: TransactionManager,
-    membership_service: MembershipService,
+    membership_service: MembershipRequestService,
     membership_type_service: MembershipTypeService,
     payment_service: PaymentService,
 ) -> ReapplyMembershipApplicationUseCase:

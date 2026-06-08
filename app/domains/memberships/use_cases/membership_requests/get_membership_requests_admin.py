@@ -5,13 +5,13 @@ from fastapi import Depends
 from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.utils.permissions import check_permissions
 from app.domains.memberships.models import MembershipRequest
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestService, MembershipRequestServiceDep
 from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
 
 class GetMembershipRequestsAdminUseCase:
-    def __init__(self, transaction_manager: BaseTransactionManager, membership_service: MembershipService):
+    def __init__(self, transaction_manager: BaseTransactionManager, membership_service: MembershipRequestService):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
 
@@ -31,7 +31,7 @@ class GetMembershipRequestsAdminUseCase:
 
 
 def get_use_case(
-    transaction_manager: TransactionManagerDep, membership_service: MembershipServiceDep
+    transaction_manager: TransactionManagerDep, membership_service: MembershipRequestServiceDep
 ) -> GetMembershipRequestsAdminUseCase:
     return GetMembershipRequestsAdminUseCase(transaction_manager, membership_service)
 

@@ -9,7 +9,7 @@ from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestService, MembershipRequestServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
 from app.domains.payments.stripe.utils import create_checkout_session, to_stripe_amount
@@ -23,7 +23,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
     def __init__(
         self,
         transaction_manager: BaseTransactionManager,
-        membership_service: MembershipService,
+        membership_service: MembershipRequestService,
         payment_service: PaymentService,
     ):
         self.__transaction_manager = transaction_manager
@@ -123,7 +123,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
 
 def get_use_case(
     transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
+    membership_service: MembershipRequestServiceDep,
     payment_service: PaymentServiceDep,
 ) -> CreateMembershipApplicationPaymentAttemptUseCase:
     return CreateMembershipApplicationPaymentAttemptUseCase(transaction_manager, membership_service, payment_service)

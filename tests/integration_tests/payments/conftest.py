@@ -4,7 +4,7 @@ import pytest
 from faker import Faker
 
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService
+from app.domains.memberships.services import MembershipRequestService
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandler
 from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistry
@@ -38,7 +38,7 @@ def process_payment_use_case(
 @pytest.fixture()
 async def membership_request_payment_pending(
     test_user: User,
-    membership_service: MembershipService,
+    membership_service: MembershipRequestService,
     membership_request_create_data,
 ):
     membership_request = await membership_service.create_membership_request(

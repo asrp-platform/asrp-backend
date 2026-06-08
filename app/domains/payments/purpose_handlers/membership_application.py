@@ -6,7 +6,7 @@ from stripe import Event
 
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.models import MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestServiceDep
 from app.domains.payments.models import Payment, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 
@@ -16,7 +16,7 @@ payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 class MembershipApplicationHandler:
     def __init__(
         self,
-        membership_service: MembershipServiceDep,
+        membership_service: MembershipRequestServiceDep,
         payment_service: PaymentServiceDep,
     ):
         self.__membership_service = membership_service

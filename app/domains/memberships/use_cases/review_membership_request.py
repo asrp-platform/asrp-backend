@@ -12,8 +12,8 @@ from app.core.utils.permissions import check_permissions
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import (
-    MembershipService,
-    MembershipServiceDep,
+    MembershipRequestService,
+    MembershipRequestServiceDep,
     UserMembershipService,
     UserMembershipServiceDep,
 )
@@ -30,7 +30,7 @@ class ReviewMembershipRequestUseCase:
     def __init__(
         self,
         transaction_manager: BaseTransactionManager,
-        membership_service: MembershipService,
+        membership_service: MembershipRequestService,
         user_membership_service: UserMembershipService,
         payment_service: PaymentService,
     ):
@@ -256,7 +256,7 @@ class ReviewMembershipRequestUseCase:
 
 def get_use_case(
     transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
+    membership_service: MembershipRequestServiceDep,
     user_membership_service: UserMembershipServiceDep,
     payment_service: PaymentServiceDep,
 ) -> ReviewMembershipRequestUseCase:

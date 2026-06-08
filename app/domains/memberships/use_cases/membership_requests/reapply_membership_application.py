@@ -20,8 +20,8 @@ from app.domains.memberships.models import (
     MembershipTypeEnum,
 )
 from app.domains.memberships.services import (
-    MembershipService,
-    MembershipServiceDep,
+    MembershipRequestService,
+    MembershipRequestServiceDep,
     MembershipTypeService,
     MembershipTypeServiceDep,
 )
@@ -38,7 +38,7 @@ class ReapplyMembershipApplicationUseCase:
     def __init__(
         self,
         transaction_manager: TransactionManager,
-        membership_service: MembershipService,
+        membership_service: MembershipRequestService,
         membership_type_service: MembershipTypeService,
         payment_service: PaymentService,
     ):
@@ -157,7 +157,7 @@ class ReapplyMembershipApplicationUseCase:
 
 def get_use_case(
     transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
+    membership_service: MembershipRequestServiceDep,
     membership_type_service: MembershipTypeServiceDep,
     payment_service: PaymentServiceDep,
 ) -> ReapplyMembershipApplicationUseCase:

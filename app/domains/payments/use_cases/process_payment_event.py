@@ -5,7 +5,7 @@ from loguru import logger
 from stripe import Event
 
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.memberships.services import MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestServiceDep
 from app.domains.payments.models import Payment, PaymentStatusEnum
 from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistryDep
 from app.domains.payments.services import PaymentServiceDep
@@ -19,7 +19,7 @@ class ProcessPaymentUseCase:
         self,
         transaction_manager: TransactionManagerDep,
         payment_service: PaymentServiceDep,
-        membership_service: MembershipServiceDep,
+        membership_service: MembershipRequestServiceDep,
         payment_purpose_handler_registry: PaymentPurposeHandlerRegistryDep,
     ):
         self.__transaction_manager = transaction_manager
