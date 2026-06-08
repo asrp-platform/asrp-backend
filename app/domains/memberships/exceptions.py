@@ -14,6 +14,10 @@ class MembershipApplicationCheckoutError(Exception):
     pass
 
 
+class MembershipRenewalCheckoutError(Exception):
+    pass
+
+
 class MissingRejectingCommentError(Exception):
     pass
 

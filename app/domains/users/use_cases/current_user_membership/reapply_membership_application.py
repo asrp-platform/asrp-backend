@@ -20,15 +20,13 @@ from app.domains.memberships.models import (
     MembershipTypeEnum,
 )
 from app.domains.memberships.services import (
-    MembershipRequestService,
     MembershipRequestServiceDep,
-    MembershipTypeService,
     MembershipTypeServiceDep,
 )
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
-from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
-from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
@@ -37,10 +35,10 @@ payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 class ReapplyMembershipApplicationUseCase:
     def __init__(
         self,
-        transaction_manager: TransactionManager,
-        membership_service: MembershipRequestService,
-        membership_type_service: MembershipTypeService,
-        payment_service: PaymentService,
+        transaction_manager: TransactionManagerDep,
+        membership_service: MembershipRequestServiceDep,
+        membership_type_service: MembershipTypeServiceDep,
+        payment_service: PaymentServiceDep,
     ):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
@@ -155,18 +153,7 @@ class ReapplyMembershipApplicationUseCase:
         return checkout.session.url
 
 
-def get_use_case(
-    transaction_manager: TransactionManagerDep,
-    membership_service: MembershipRequestServiceDep,
-    membership_type_service: MembershipTypeServiceDep,
-    payment_service: PaymentServiceDep,
-) -> ReapplyMembershipApplicationUseCase:
-    return ReapplyMembershipApplicationUseCase(
-        transaction_manager,
-        membership_service,
-        membership_type_service,
-        payment_service,
-    )
-
-
-ReapplyMembershipApplicationUseCaseDep = Annotated[ReapplyMembershipApplicationUseCase, Depends(get_use_case)]
+ReapplyMembershipApplicationUseCaseDep = Annotated[
+    ReapplyMembershipApplicationUseCase,
+    Depends(ReapplyMembershipApplicationUseCase),
+]

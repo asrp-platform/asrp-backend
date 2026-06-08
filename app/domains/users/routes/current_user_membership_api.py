@@ -9,6 +9,7 @@ from app.domains.memberships.exceptions import (
     InvalidMembershipTypeUpgradeError,
     MembershipAlreadyPaidError,
     MembershipApplicationCheckoutError,
+    MembershipRenewalCheckoutError,
     MembershipRequestCannotBeReappliedError,
     SameMembershipTypeChangeRequestError,
 )
@@ -21,24 +22,25 @@ from app.domains.memberships.schemas.schemas import (
     MembershipRequestViewSchema,
 )
 from app.domains.memberships.services import UserMembershipServiceDep
-from app.domains.memberships.use_cases.membership_requests.create_membership_application_payment_attempt import (
-    CreateMembershipApplicationPaymentAttemptUseCaseDep,
-)
-from app.domains.memberships.use_cases.membership_requests.create_membership_request import (
-    CreateMembershipRequestUseCaseDep,
-)
-from app.domains.memberships.use_cases.membership_requests.reapply_membership_application import (
-    ReapplyMembershipApplicationUseCaseDep,
-)
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
 from app.domains.shared.schemas import PaymentCheckoutSchema
-from app.domains.users.use_cases.current_user.get_current_user_membership import (
+from app.domains.users.use_cases.current_user_membership.create_membership_application_payment_attempt import (
+    CreateMembershipApplicationPaymentAttemptUseCaseDep,
+)
+from app.domains.users.use_cases.current_user_membership.create_membership_request import (
+    CreateMembershipRequestUseCaseDep,
+)
+from app.domains.users.use_cases.current_user_membership.get_current_user_membership import (
     GetCurrentUserMembershipRequestUseCaseDep,
 )
-from app.domains.users.use_cases.current_user.get_current_user_membership_downgrade_request import (
+from app.domains.users.use_cases.current_user_membership.get_current_user_membership_downgrade_request import (
     GetCurrentUserMembershipDowngradeRequestUseCaseDep,
 )
-from app.domains.users.use_cases.current_user.request_membership_downgrade import (
+from app.domains.users.use_cases.current_user_membership.reapply_membership_application import (
+    ReapplyMembershipApplicationUseCaseDep,
+)
+from app.domains.users.use_cases.current_user_membership.renew_membership import RenewMembershipUseCaseDep
+from app.domains.users.use_cases.current_user_membership.request_membership_downgrade import (
     RequestMembershipDowngradeUseCaseDep,
 )
 
@@ -213,3 +215,28 @@ async def create_membership_upgrade_checkout(
     current_user_membership: CurrentUserMembershipDep,
 ):
     pass
+
+
+class RenewMembershipResponses(Responses):
+    NO_ACTIVE_MEMBERSHIP = 403, "No active membership"
+    MEMBERSHIP_PERMANENTLY_BLOCKED = 403, "Membership is permanently blocked"
+    MEMBERSHIP_TEMPORARILY_BLOCKED = 403, "Membership is temporarily blocked until 2026-06-08T12:00:00+00:00"
+    CHECKOUT_SESSION_CREATION_FAILED = 502, "Failed to create checkout session"
+
+
+@router.post(
+    "/membership/renewal",
+    status_code=201,
+    responses=RenewMembershipResponses.responses,
+    summary="Create membership renewal checkout session",
+)
+async def renew_membership(
+    current_user_membership: CurrentUserMembershipDep,
+    use_case: RenewMembershipUseCaseDep,
+) -> PaymentCheckoutSchema:
+    try:
+        checkout_session_url = await use_case.execute(current_user_membership)
+    except MembershipRenewalCheckoutError:
+        raise RenewMembershipResponses.CHECKOUT_SESSION_CREATION_FAILED
+
+    return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)

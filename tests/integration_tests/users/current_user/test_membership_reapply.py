@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 
-import app.domains.memberships.use_cases.membership_requests.reapply_membership_application as reapply_module
+import app.domains.users.use_cases.current_user_membership.reapply_membership_application as reapply_module
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.shared.transaction_managers import TransactionManager

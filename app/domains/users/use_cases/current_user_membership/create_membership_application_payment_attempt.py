@@ -4,18 +4,12 @@ from fastapi import Depends
 from loguru import logger
 
 from app.core.common.exceptions import NotFoundError
-from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import (
-    MembershipRequestService,
-    MembershipRequestServiceDep,
-    MembershipTypeService,
-    MembershipTypeServiceDep,
-)
+from app.domains.memberships.services import MembershipRequestServiceDep, MembershipTypeServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
-from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
@@ -26,10 +20,10 @@ payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 class CreateMembershipApplicationPaymentAttemptUseCase:
     def __init__(
         self,
-        transaction_manager: BaseTransactionManager,
-        membership_service: MembershipRequestService,
-        membership_type_service: MembershipTypeService,
-        payment_service: PaymentService,
+        transaction_manager: TransactionManagerDep,
+        membership_service: MembershipRequestServiceDep,
+        membership_type_service: MembershipTypeServiceDep,
+        payment_service: PaymentServiceDep,
     ):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
@@ -117,20 +111,6 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
         return checkout.session.url
 
 
-def get_use_case(
-    transaction_manager: TransactionManagerDep,
-    membership_service: MembershipRequestServiceDep,
-    membership_type_service: MembershipTypeServiceDep,
-    payment_service: PaymentServiceDep,
-) -> CreateMembershipApplicationPaymentAttemptUseCase:
-    return CreateMembershipApplicationPaymentAttemptUseCase(
-        transaction_manager,
-        membership_service,
-        membership_type_service,
-        payment_service,
-    )
-
-
 CreateMembershipApplicationPaymentAttemptUseCaseDep = Annotated[
-    CreateMembershipApplicationPaymentAttemptUseCase, Depends(get_use_case)
+    CreateMembershipApplicationPaymentAttemptUseCase, Depends(CreateMembershipApplicationPaymentAttemptUseCase)
 ]
