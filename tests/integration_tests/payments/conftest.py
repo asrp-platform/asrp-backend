@@ -7,6 +7,7 @@ from app.domains.memberships.models import MembershipRequest, MembershipRequestS
 from app.domains.memberships.services import MembershipRequestService
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandler
+from app.domains.payments.purpose_handlers.membership_renewal import MembershipRenewalHandler
 from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistry
 from app.domains.payments.services import PaymentService
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCase
@@ -19,13 +20,19 @@ def process_payment_use_case(
     test_transaction_manager: TransactionManager,
     payment_service,
     membership_service,
+    user_membership_service,
 ):
     membership_application_handler = MembershipApplicationHandler(
         membership_service=membership_service,
         payment_service=payment_service,
     )
+    membership_renewal_handler = MembershipRenewalHandler(
+        user_membership_service=user_membership_service,
+        payment_service=payment_service,
+    )
     payment_purpose_handler_registry = PaymentPurposeHandlerRegistry(
         membership_application_handler=membership_application_handler,
+        membership_renewal_handler=membership_renewal_handler,
     )
     return ProcessPaymentUseCase(
         transaction_manager=test_transaction_manager,

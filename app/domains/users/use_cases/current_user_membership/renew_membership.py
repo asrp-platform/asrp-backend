@@ -26,8 +26,11 @@ class RenewMembershipUseCase:
         self.__user_membership_service = user_membership_service
         self.__payment_service = payment_service
 
-    async def execute(self, current_user_membership: UserMembership):
+    async def execute(self, current_user: UserMembership):
         async with self.__tm:
+            current_user_membership = await self.__user_membership_service.get_user_membership_by_user_id(
+                current_user.id
+            )
             membership_type: MembershipType = current_user_membership.membership_type
             membership_type_price_cents = to_stripe_amount(membership_type.price_usd)
 

@@ -231,11 +231,12 @@ class RenewMembershipResponses(Responses):
     summary="Create membership renewal checkout session",
 )
 async def renew_membership(
-    current_user_membership: CurrentUserMembershipDep,
+    # вот тут сделать current_user, по нему получать membership
+    current_user: CurrentUserDep,
     use_case: RenewMembershipUseCaseDep,
 ) -> PaymentCheckoutSchema:
     try:
-        checkout_session_url = await use_case.execute(current_user_membership)
+        checkout_session_url = await use_case.execute(current_user)
     except MembershipRenewalCheckoutError:
         raise RenewMembershipResponses.CHECKOUT_SESSION_CREATION_FAILED
 

@@ -119,17 +119,16 @@ class UserMembershipService:
         return await self.__tm.user_membership_repository.create(user_id=user_id, **kwargs)
 
     async def get_user_membership_by_user_id(self, user_id: int) -> UserMembership | None:
-        async with self.__tm:
-            stmt = select(UserMembership).options(selectinload(UserMembership.membership_type))
-            user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
+        stmt = select(UserMembership).options(selectinload(UserMembership.membership_type))
+        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
 
-            if user is None:
-                raise NotFoundError("User with provided ID not found")
+        if user is None:
+            raise NotFoundError("User with provided ID not found")
 
-            return await self.__tm.user_membership_repository.get_first_by_kwargs(
-                stmt=stmt,
-                user_id=user_id,
-            )
+        return await self.__tm.user_membership_repository.get_first_by_kwargs(
+            stmt=stmt,
+            user_id=user_id,
+        )
 
     async def get_user_membership_by_id(self, membership_id: int):
         return await self.__tm.user_membership_repository.get_first_by_kwargs(id=membership_id)
@@ -145,8 +144,10 @@ class UserMembershipService:
             selectinload(UserMembership.user),
             selectinload(UserMembership.membership_type),
         )
-        async with self.__tm:
-            return await self.__tm.user_membership_repository.list(limit, offset, order_by, filters, stmt=stmt)
+        return await self.__tm.user_membership_repository.list(limit, offset, order_by, filters, stmt=stmt)
+
+    async def update_user_membership(self, membership_id: int, **kwargs):
+        return await self.__tm.user_membership_repository.update(membership_id, **kwargs)
 
     async def suspend_membership(
         self,
