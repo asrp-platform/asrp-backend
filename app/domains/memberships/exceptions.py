@@ -52,3 +52,11 @@ class MembershipAlreadySuspendedError(Exception):
 
 class MembershipAlreadyTerminatedError(Exception):
     pass
+
+
+class MembershipTerminatedError(Exception):
+    pass
+
+
+class MembershipSuspendedError(Exception):
+    pass

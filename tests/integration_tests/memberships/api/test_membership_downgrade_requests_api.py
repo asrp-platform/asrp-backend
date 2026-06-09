@@ -64,6 +64,9 @@ def assert_updated_downgrade_request(
     assert downgrade_request.admin_comment == admin_comment
 
 
+# TODO: tests for membership downgrade request creation
+
+
 async def test_approve_membership_downgrade_request(
     client: AsyncClient,
     test_transaction_manager: TransactionManager,

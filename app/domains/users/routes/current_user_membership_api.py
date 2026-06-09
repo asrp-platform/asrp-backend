@@ -11,6 +11,9 @@ from app.domains.memberships.exceptions import (
     MembershipApplicationCheckoutError,
     MembershipRenewalCheckoutError,
     MembershipRequestCannotBeReappliedError,
+    MembershipSuspendedError,
+    MembershipTerminatedError,
+    NoMembershipError,
     SameMembershipTypeChangeRequestError,
 )
 from app.domains.memberships.schemas.membership_downgrade_schemas import UserMembershipTypeChangeRequestProfileSchema
@@ -218,7 +221,8 @@ async def create_membership_upgrade_checkout(
 
 
 class RenewMembershipResponses(Responses):
-    NO_ACTIVE_MEMBERSHIP = 403, "No active membership"
+    INVALID_TOKEN = 401, "Invalid token"
+    NO_MEMBERSHIP = 403, "No active membership"
     MEMBERSHIP_PERMANENTLY_BLOCKED = 403, "Membership is permanently blocked"
     MEMBERSHIP_TEMPORARILY_BLOCKED = 403, "Membership is temporarily blocked until 2026-06-08T12:00:00+00:00"
     CHECKOUT_SESSION_CREATION_FAILED = 502, "Failed to create checkout session"
@@ -231,13 +235,18 @@ class RenewMembershipResponses(Responses):
     summary="Create membership renewal checkout session",
 )
 async def renew_membership(
-    # вот тут сделать current_user, по нему получать membership
     current_user: CurrentUserDep,
     use_case: RenewMembershipUseCaseDep,
 ) -> PaymentCheckoutSchema:
     try:
         checkout_session_url = await use_case.execute(current_user)
+    except NoMembershipError:
+        raise RenewMembershipResponses.NO_MEMBERSHIP
     except MembershipRenewalCheckoutError:
         raise RenewMembershipResponses.CHECKOUT_SESSION_CREATION_FAILED
+    except MembershipTerminatedError:
+        raise RenewMembershipResponses.MEMBERSHIP_PERMANENTLY_BLOCKED
+    except MembershipSuspendedError:
+        raise RenewMembershipResponses.MEMBERSHIP_TEMPORARILY_BLOCKED
 
     return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
