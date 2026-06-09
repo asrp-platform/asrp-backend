@@ -62,13 +62,6 @@ class MembershipRenewalHandler:
             return
 
         provider_data = payment.provider_data or {}
-        if provider_data.get("membership_renewed_at") is not None:
-            payments_logger.info(
-                "Membership renewal already applied: event_id={} payment_id={}",
-                event.id,
-                payment.id,
-            )
-            return
 
         metadata = session.metadata or {}
         user_membership_id = provider_data.get("user_membership_id") or _get_metadata_value(
@@ -110,7 +103,6 @@ class MembershipRenewalHandler:
                 "checkout_session_id": session.id,
                 "checkout_session_status": getattr(session, "status", None),
                 "checkout_session_payment_status": session.payment_status,
-                "membership_renewed_at": now.isoformat(),
                 "previous_expires_at": user_membership.expires_at.isoformat(),
                 "new_expires_at": new_expires_at.isoformat(),
             },
