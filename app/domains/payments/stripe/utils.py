@@ -29,16 +29,21 @@ async def create_checkout_session(
     metadata: dict = None,
     *,
     success_url: str,
+    customer_email: str | None = None,
     mode: str = "payment",
 ) -> Session:
     metadata = metadata or {}
-    session = stripe.checkout.Session.create(
-        mode=mode,
-        success_url=success_url,
-        line_items=line_items,
-        metadata=metadata,
-        payment_intent_data={"metadata": metadata},
-    )
+    session_data = {
+        "mode": mode,
+        "success_url": success_url,
+        "line_items": line_items,
+        "metadata": metadata,
+        "payment_intent_data": {"metadata": metadata},
+    }
+    if customer_email is not None:
+        session_data["customer_email"] = customer_email
+
+    session = stripe.checkout.Session.create(**session_data)
     return session
 
 
@@ -136,6 +141,7 @@ async def create_membership_renewal_checkout_session(
     payment: Payment,
     membership_type: "MembershipType",
     user_membership: "UserMembership",
+    user_email: str,
 ) -> CheckoutSessionData:
     amount_cents = to_stripe_amount(membership_type.price_usd)
     metadata = {
@@ -147,7 +153,8 @@ async def create_membership_renewal_checkout_session(
     checkout_session = await create_checkout_session(
         build_membership_application_line_items(membership_type, amount_cents),
         metadata=metadata,
-        success_url=f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+        success_url=f"{settings.FRONTEND_DOMAIN}/membership/renewal-success",
+        customer_email=user_email,
     )
 
     return CheckoutSessionData(

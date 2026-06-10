@@ -89,7 +89,7 @@ class MembershipRenewalHandler:
 
         now = datetime.now(timezone.utc)
         renewal_starts_at = max(user_membership.expires_at, now)
-        new_expires_at = renewal_starts_at + timedelta(days=user_membership.membership_type.duration)
+        new_expires_at = renewal_starts_at + timedelta(days=365)
 
         await self.__user_membership_service.update_user_membership(
             user_membership_id,

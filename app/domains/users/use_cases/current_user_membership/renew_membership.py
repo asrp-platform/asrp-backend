@@ -62,6 +62,7 @@ class RenewMembershipUseCase:
                     payment=payment,
                     membership_type=membership_type,
                     user_membership=current_user_membership,
+                    user_email=current_user.email,
                 )
             except Exception as exc:
                 payments_logger.exception(

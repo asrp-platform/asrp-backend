@@ -14,7 +14,7 @@ pytestmark = pytest.mark.anyio
 
 @pytest.fixture()
 def mock_renewal_checkout(monkeypatch):
-    async def _create_checkout_session(*, payment, membership_type, user_membership):
+    async def _create_checkout_session(*, payment, membership_type, user_membership, user_email):
         session = SimpleNamespace(
             id="cs_test_membership_renewal",
             status="open",
@@ -129,7 +129,7 @@ async def test_renew_membership_checkout_creation_failed(
     user_membership: UserMembership,
     monkeypatch,
 ) -> None:
-    async def _raise_checkout_error(*, payment, membership_type, user_membership):
+    async def _raise_checkout_error(*, payment, membership_type, user_membership, user_email):
         raise RuntimeError("Stripe is unavailable")
 
     monkeypatch.setattr(
