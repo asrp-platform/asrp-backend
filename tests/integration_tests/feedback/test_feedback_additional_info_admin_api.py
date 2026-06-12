@@ -48,7 +48,7 @@ async def test_get_hear_about_stats_date_range_filter(
         user_factory,
         hear_about_asrp="Telegram or social media",
         tg_username="@tg_1",
-        interest_description="I want to contribute to educational events.",
+        interest_description="I want to contribute to educational events",
         created_at=dt_2025,
     )
     await _create_feedback_additional_info(
