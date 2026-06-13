@@ -32,16 +32,15 @@ class GetHearAboutStatsUseCase:
             date_to=date_to,
         )
 
-        # Keep stats aligned with Select options and fold unknown legacy values into "other".
+        # Keep stats aligned with Select options and fold unknown legacy values into "Other".
         stats_dict = {opt: 0 for opt in HEAR_ABOUT_ASRP_OPTIONS}
-        fallback_option = "other"
         for item in raw_stats:
             option = item["option"]
             count = item["count"]
             if option in stats_dict:
                 stats_dict[option] += count
             else:
-                stats_dict[fallback_option] += count
+                stats_dict["Other"] += count
 
         total_responses = sum(stats_dict.values())
 

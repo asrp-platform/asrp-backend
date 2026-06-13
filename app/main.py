@@ -26,12 +26,12 @@ from app.domains.feedback.routes.contact_messages_api import router as contact_m
 from app.domains.feedback.routes.feedback_additional_info_admin_api import (
     router as feedback_additional_info_admin_router,
 )
-from app.domains.feedback.routes.feedback_additional_info_api import router as feedback_additional_info_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_admin_api import router as membership_admin_router
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
+from app.domains.news.api import router as news_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
@@ -43,7 +43,6 @@ from app.domains.users.routes.professional_info_api import router as professiona
 from app.domains.users.routes.residency_api import router as residency_router
 from app.domains.users.routes.users_admin_api import router as users_admin_router
 from app.domains.users.routes.users_api import router as users_router
-
 
 configure_logging()
 request_logger = logger.bind(channel=REQUESTS_CHANNEL)
@@ -124,7 +123,7 @@ app.include_router(current_user_router, prefix="/api")
 app.include_router(current_user_membership_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
-app.include_router(feedback_additional_info_router, prefix="/api")
+app.include_router(news_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
 app.include_router(legal_documents_router, prefix="/api")
 app.include_router(professional_info_router, prefix="/api")

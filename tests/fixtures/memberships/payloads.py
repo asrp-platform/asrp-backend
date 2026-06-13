@@ -33,7 +33,7 @@ async def membership_reapply_payload(
 def feedback_additional_info_data(faker: Faker) -> dict:
     return {
         "hear_about_asrp": faker.random_element(HEAR_ABOUT_ASRP_OPTIONS),
-        "tg_username": f"@{faker.user_name()[:20]:_<5}",
+        "tg_username": f"@{faker.user_name()[:20]}",
         "interest_description": faker.text(max_nb_chars=200),
     }
 
