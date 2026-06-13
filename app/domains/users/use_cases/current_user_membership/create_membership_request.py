@@ -4,26 +4,15 @@ from fastapi import Depends
 from loguru import logger
 
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.feedback.services import (
-    FeedbackAdditionalInfoService,
-    FeedbackAdditionalInfoServiceDep,
-)
+from app.domains.feedback.services import FeedbackAdditionalInfoServiceDep
 from app.domains.memberships.exceptions import CantBuyHonoraryMembership, MembershipApplicationCheckoutError
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
-from app.domains.memberships.services import (
-    MembershipService,
-    MembershipServiceDep,
-    MembershipTypeService,
-    MembershipTypeServiceDep,
-)
+from app.domains.memberships.services import MembershipRequestServiceDep, MembershipTypeServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
-from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
-from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
-from app.domains.users.services import (
-    CommunicationPreferencesService,
-    CommunicationPreferencesServiceDep,
-)
+from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.users.services import CommunicationPreferencesServiceDep
 
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
@@ -31,12 +20,12 @@ payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 class CreateUserMembershipRequestUseCase:
     def __init__(
         self,
-        transaction_manager: TransactionManager,
-        membership_service: MembershipService,
-        membership_type_service: MembershipTypeService,
-        feedback_additional_info_service: FeedbackAdditionalInfoService,
-        communication_preference_service: CommunicationPreferencesService,
-        payment_service: PaymentService,
+        transaction_manager: TransactionManagerDep,
+        membership_service: MembershipRequestServiceDep,
+        membership_type_service: MembershipTypeServiceDep,
+        feedback_additional_info_service: FeedbackAdditionalInfoServiceDep,
+        communication_preference_service: CommunicationPreferencesServiceDep,
+        payment_service: PaymentServiceDep,
     ) -> None:
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
@@ -44,11 +33,6 @@ class CreateUserMembershipRequestUseCase:
         self.__feedback_additional_info_service = feedback_additional_info_service
         self.__communication_preference_service = communication_preference_service
         self.__payment_service = payment_service
-
-    @staticmethod
-    def __check_membership_type_purchasable(membership_type: MembershipTypeEnum):
-        if membership_type == MembershipTypeEnum.HONORARY:
-            raise CantBuyHonoraryMembership("Can't buy honorary membership")
 
     async def execute(
         self,
@@ -129,23 +113,12 @@ class CreateUserMembershipRequestUseCase:
 
         return checkout.session.url
 
-
-def get_use_case(
-    transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
-    membership_type_service: MembershipTypeServiceDep,
-    feedback_additional_info_service: FeedbackAdditionalInfoServiceDep,
-    communication_preference_service: CommunicationPreferencesServiceDep,
-    payment_service: PaymentServiceDep,
-) -> CreateUserMembershipRequestUseCase:
-    return CreateUserMembershipRequestUseCase(
-        transaction_manager,
-        membership_service,
-        membership_type_service,
-        feedback_additional_info_service,
-        communication_preference_service,
-        payment_service,
-    )
+    @staticmethod
+    def __check_membership_type_purchasable(membership_type: MembershipTypeEnum):
+        if membership_type == MembershipTypeEnum.HONORARY:
+            raise CantBuyHonoraryMembership("Can't buy honorary membership")
 
 
-CreateMembershipRequestUseCaseDep = Annotated[CreateUserMembershipRequestUseCase, Depends(get_use_case)]
+CreateMembershipRequestUseCaseDep = Annotated[
+    CreateUserMembershipRequestUseCase, Depends(CreateUserMembershipRequestUseCase)
+]

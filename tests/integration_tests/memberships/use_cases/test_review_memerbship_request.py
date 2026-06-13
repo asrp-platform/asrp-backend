@@ -8,7 +8,7 @@ import app.domains.memberships.use_cases.review_membership_request as review_mem
 from app.core.common.exceptions import PermissionDeniedError
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService, UserMembershipService
+from app.domains.memberships.services import MembershipRequestService, UserMembershipService
 from app.domains.memberships.use_cases.review_membership_request import ReviewMembershipRequestUseCase
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService
@@ -23,7 +23,7 @@ MEMBERSHIP_DURATION = timedelta(days=365)
 @pytest.fixture()
 def test_review_membership_request_use_case(
     test_transaction_manager: TransactionManager,
-    membership_service: MembershipService,
+    membership_service: MembershipRequestService,
     user_membership_service: UserMembershipService,
     payment_service: PaymentService,
 ) -> ReviewMembershipRequestUseCase:

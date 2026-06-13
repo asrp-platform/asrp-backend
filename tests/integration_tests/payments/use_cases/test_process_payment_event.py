@@ -1,7 +1,7 @@
 import pytest
 
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.payments.models import Payment, PaymentStatusEnum
+from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.shared.transaction_managers import TransactionManager
 
 pytestmark = pytest.mark.anyio
@@ -123,3 +123,42 @@ async def test_process_payment_event_is_idempotent(
 
     assert first_membership_request.status == expected_membership_request_status
     assert second_membership_request.status == expected_membership_request_status
+
+
+async def test_process_successful_membership_payment_expires_other_pending_membership_application_payments(
+    process_payment_use_case,
+    stripe_event,
+    payment_service,
+    test_transaction_manager: TransactionManager,
+    pending_payment: Payment,
+):
+    async with test_transaction_manager:
+        other_membership_payment = await test_transaction_manager.payment_repository.create(
+            provider=PaymentProvider.STRIPE,
+            amount=2000,
+            status=PaymentStatusEnum.PENDING,
+            purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+            user_id=pending_payment.user_id,
+            provider_data=None,
+        )
+        donation_payment = await test_transaction_manager.payment_repository.create(
+            provider=PaymentProvider.STRIPE,
+            amount=2000,
+            status=PaymentStatusEnum.PENDING,
+            purpose=PaymentPurposeEnum.DONATION,
+            user_id=pending_payment.user_id,
+            provider_data=None,
+        )
+
+    await process_payment_use_case.execute(
+        event=stripe_event,
+        target_payment_status=PaymentStatusEnum.SUCCEEDED,
+    )
+
+    updated_successful_payment = await payment_service.get_payment_by_id(str(pending_payment.id))
+    updated_other_membership_payment = await payment_service.get_payment_by_id(str(other_membership_payment.id))
+    updated_donation_payment = await payment_service.get_payment_by_id(str(donation_payment.id))
+
+    assert updated_successful_payment.status == PaymentStatusEnum.SUCCEEDED
+    assert updated_other_membership_payment.status == PaymentStatusEnum.EXPIRED
+    assert updated_donation_payment.status == PaymentStatusEnum.PENDING
