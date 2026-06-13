@@ -21,7 +21,6 @@ from app.domains.users.use_cases.current_user_membership.reapply_membership_appl
     ReapplyMembershipApplicationUseCase,
 )
 
-
 pytestmark = pytest.mark.anyio
 
 

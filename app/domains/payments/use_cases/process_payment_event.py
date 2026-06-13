@@ -11,7 +11,6 @@ from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandler
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
-
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
@@ -148,17 +147,21 @@ class ProcessPaymentUseCase:
         event_object = event.data.object
 
         if event.type.startswith("payment_intent."):
-            updated_provider_data.update({
-                "payment_intent_id": event_object.id,
-                "payment_intent_status": event_object.status,
-            })
+            updated_provider_data.update(
+                {
+                    "payment_intent_id": event_object.id,
+                    "payment_intent_status": event_object.status,
+                }
+            )
 
         elif event.type.startswith("checkout.session."):
-            updated_provider_data.update({
-                "checkout_session_id": event_object.id,
-                "checkout_session_status": getattr(event_object, "status", None),
-                "checkout_session_payment_status": getattr(event_object, "payment_status", None),
-            })
+            updated_provider_data.update(
+                {
+                    "checkout_session_id": event_object.id,
+                    "checkout_session_status": getattr(event_object, "status", None),
+                    "checkout_session_payment_status": getattr(event_object, "payment_status", None),
+                }
+            )
 
         return updated_provider_data
 

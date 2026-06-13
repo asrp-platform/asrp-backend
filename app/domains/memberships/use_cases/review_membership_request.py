@@ -110,7 +110,6 @@ class ReviewMembershipRequestUseCase:
                 refund_status="UNKNOWN",
                 error_type="stripe_api_connection_error",
             )
-            await self.__transaction_manager.commit()
             raise
         except stripe.error.StripeError:
             await self.__save_refund_error(
@@ -119,7 +118,6 @@ class ReviewMembershipRequestUseCase:
                 refund_status="FAILED",
                 error_type="stripe_api_error",
             )
-            await self.__transaction_manager.commit()
             raise
         except Exception:
             await self.__save_refund_error(
@@ -128,7 +126,6 @@ class ReviewMembershipRequestUseCase:
                 refund_status="FAILED",
                 error_type="refund_error",
             )
-            await self.__transaction_manager.commit()
             raise
 
         payments_logger.info(

@@ -9,7 +9,6 @@ from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.use_cases.current_user_membership import renew_membership as renew_membership_module
 from tests.fixtures.auth import AuthHeaders
 
-
 pytestmark = pytest.mark.anyio
 
 

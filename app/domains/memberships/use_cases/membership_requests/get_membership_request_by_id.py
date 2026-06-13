@@ -3,16 +3,19 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import PermissionDeniedError
-from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.utils.permissions import check_permissions
 from app.domains.memberships.models import MembershipRequest
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
 
 class GetMembershipRequestByIdUseCase:
-    def __init__(self, transaction_manager: BaseTransactionManager, membership_service: MembershipService):
+    def __init__(
+        self,
+        transaction_manager: TransactionManagerDep,
+        membership_service: MembershipRequestServiceDep,
+    ):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
 
@@ -47,10 +50,7 @@ class GetMembershipRequestByIdUseCase:
         return actor.id == membership_request.user_id
 
 
-def get_use_case(
-    transaction_manager: TransactionManagerDep, membership_service: MembershipServiceDep
-) -> GetMembershipRequestByIdUseCase:
-    return GetMembershipRequestByIdUseCase(transaction_manager, membership_service)
-
-
-GetMembershipRequestByIdUseCaseDep = Annotated[GetMembershipRequestByIdUseCase, Depends(get_use_case)]
+GetMembershipRequestByIdUseCaseDep = Annotated[
+    GetMembershipRequestByIdUseCase,
+    Depends(GetMembershipRequestByIdUseCase),
+]

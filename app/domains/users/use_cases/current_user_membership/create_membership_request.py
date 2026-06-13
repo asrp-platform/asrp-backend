@@ -14,7 +14,6 @@ from app.domains.payments.stripe.utils import create_membership_application_chec
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.services import CommunicationPreferencesServiceDep
 
-
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
@@ -60,7 +59,7 @@ class CreateUserMembershipRequestUseCase:
                 **feedback_additional_info_data,
             )
 
-            await self.__communication_preference_service.update_communication_preferences(
+            await self.__communication_preference_service.update_or_create_preferences(
                 user_id,
                 is_agrees_communications=is_agrees_communications,
             )
