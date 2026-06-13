@@ -1,6 +1,8 @@
-from typing import Annotated, Any
+from datetime import date, datetime, time, timedelta, timezone
+from typing import Annotated, Any, Sequence
 
 from fastapi import Depends
+from sqlalchemy import func, select
 
 from app.domains.emails.plugins.gmail_plugin import GmailPlugin
 from app.domains.emails.services import get_email_service
@@ -62,6 +64,88 @@ class FeedbackAdditionalInfoService:
             )
 
         return await self.transaction_manager.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
+
+    async def get_hear_about_stats(
+        self,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> list[dict[str, Any]]:
+        stmt = select(FeedbackAdditionalInfo.hear_about_asrp, func.count().label("count")).where(
+            FeedbackAdditionalInfo._deleted.is_(False)
+        )
+
+        if date_from is not None:
+            from_dt = datetime.combine(date_from, time.min).replace(tzinfo=timezone.utc)
+            stmt = stmt.where(FeedbackAdditionalInfo.created_at >= from_dt)
+
+        if date_to is not None:
+            to_dt_exclusive = datetime.combine(date_to + timedelta(days=1), time.min).replace(tzinfo=timezone.utc)
+            stmt = stmt.where(FeedbackAdditionalInfo.created_at < to_dt_exclusive)
+
+        stmt = stmt.group_by(FeedbackAdditionalInfo.hear_about_asrp)
+
+        async with self.transaction_manager:
+            result = await self.transaction_manager._session.execute(stmt)
+            return [{"option": row[0], "count": row[1]} for row in result.all()]
+
+    async def get_interests_paginated_counted(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+        search: str | None = None,
+        has_telegram: bool | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> tuple[Sequence[FeedbackAdditionalInfo], int]:
+        stmt = (
+            select(FeedbackAdditionalInfo)
+            .where(FeedbackAdditionalInfo.interest_description.isnot(None), FeedbackAdditionalInfo._deleted.is_(False))
+            .order_by(FeedbackAdditionalInfo.created_at.desc())
+        )
+
+        count_stmt = (
+            select(func.count())
+            .select_from(FeedbackAdditionalInfo)
+            .where(FeedbackAdditionalInfo.interest_description.isnot(None), FeedbackAdditionalInfo._deleted.is_(False))
+        )
+
+        if search:
+            stmt = stmt.where(FeedbackAdditionalInfo.interest_description.ilike(f"%{search}%"))
+            count_stmt = count_stmt.where(FeedbackAdditionalInfo.interest_description.ilike(f"%{search}%"))
+
+        if has_telegram is not None:
+            if has_telegram:
+                stmt = stmt.where(
+                    FeedbackAdditionalInfo.tg_username.isnot(None), FeedbackAdditionalInfo.tg_username != ""
+                )
+                count_stmt = count_stmt.where(
+                    FeedbackAdditionalInfo.tg_username.isnot(None), FeedbackAdditionalInfo.tg_username != ""
+                )
+            else:
+                stmt = stmt.where(
+                    (FeedbackAdditionalInfo.tg_username.is_(None)) | (FeedbackAdditionalInfo.tg_username == "")
+                )
+                count_stmt = count_stmt.where(
+                    (FeedbackAdditionalInfo.tg_username.is_(None)) | (FeedbackAdditionalInfo.tg_username == "")
+                )
+
+        if date_from is not None:
+            from_dt = datetime.combine(date_from, time.min).replace(tzinfo=timezone.utc)
+            stmt = stmt.where(FeedbackAdditionalInfo.created_at >= from_dt)
+            count_stmt = count_stmt.where(FeedbackAdditionalInfo.created_at >= from_dt)
+
+        if date_to is not None:
+            to_dt_exclusive = datetime.combine(date_to + timedelta(days=1), time.min).replace(tzinfo=timezone.utc)
+            stmt = stmt.where(FeedbackAdditionalInfo.created_at < to_dt_exclusive)
+            count_stmt = count_stmt.where(FeedbackAdditionalInfo.created_at < to_dt_exclusive)
+
+        if limit is not None and offset is not None:
+            stmt = stmt.offset(offset).limit(limit)
+
+        async with self.transaction_manager:
+            data = (await self.transaction_manager._session.execute(stmt)).scalars().all()
+            count = (await self.transaction_manager._session.execute(count_stmt)).scalar_one()
+            return data, count
 
 
 def get_feedback_additional_info_service(

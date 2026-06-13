@@ -23,6 +23,9 @@ from app.domains.directors_board.routes.directors_board_admin_api import router 
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
+from app.domains.feedback.routes.feedback_additional_info_admin_api import (
+    router as feedback_additional_info_admin_router,
+)
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_admin_api import router as membership_admin_router
@@ -136,6 +139,7 @@ app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 app.include_router(contact_messages_admin_router, prefix="/api/admin")
+app.include_router(feedback_additional_info_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
