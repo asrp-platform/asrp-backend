@@ -1,6 +1,7 @@
 from enum import Enum
 from os import getenv
 from pathlib import Path
+from urllib.parse import quote
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
@@ -73,6 +74,12 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     FRONTEND_DOMAIN_HTTP: str
     FRONTEND_DOMAIN: str
 
+    RABBITMQ_DEFAULT_USER: str
+    RABBITMQ_DEFAULT_PASS: str
+    RABBITMQ_DEFAULT_VHOST: str
+    RABBITMQ_HOST: str = "http://localhost"
+    RABBITMQ_PORT: int = 5672
+
     @property
     def refresh_token_cookie_max_age_seconds(self):
         return self.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS * 24 * 60 * 60
@@ -93,12 +100,21 @@ class Settings(BaseSettings, GmailConfig, S3Config):
     def fernet_key_bytes(self):
         return self.FERNET_KEY.encode()
 
+    @property
+    def celery_broker_url(self) -> str:
+        vhost = quote(self.RABBITMQ_DEFAULT_VHOST, safe="")
+        return (
+            f"amqp://{self.RABBITMQ_DEFAULT_USER}:"
+            f"{self.RABBITMQ_DEFAULT_PASS}@"
+            f"{self.RABBITMQ_HOST}:"
+            f"{self.RABBITMQ_PORT}/{vhost}"
+        )
+
     class ConfigDict:
         env: Path = BASE_DIR / ".env"
 
 
 settings = Settings()
-
 fernet = Fernet(settings.fernet_key_bytes)
 
 DB_URL: str = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"

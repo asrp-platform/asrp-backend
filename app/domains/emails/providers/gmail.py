@@ -2,10 +2,10 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from loguru import logger
 
 from app.core.config import settings
-from app.domains.emails.common.abstract_plugin import EmailPlugin
+from app.domains.emails.common.abstract_provider import EmailProvider
 
 
-class GmailPlugin(EmailPlugin):
+class GmailProvider(EmailProvider):
     def __init__(self):
         self.config = ConnectionConfig(
             MAIL_USERNAME=settings.GMAIL_USERNAME,
@@ -25,10 +25,10 @@ class GmailPlugin(EmailPlugin):
         to: str,
         subject: str,
         body: str,
-        plain: bool = True,
+        plain: bool = False,
     ):
+        subtype = MessageType.plain if plain else MessageType.html
         try:
-            subtype = MessageType.plain if plain else MessageType.html
             message = MessageSchema(
                 subject=subject,
                 recipients=[to],
@@ -38,3 +38,4 @@ class GmailPlugin(EmailPlugin):
             await self.fast_mail.send_message(message)
         except Exception as exc:
             logger.error("Failed to send confirmation email to {}", exc)
+            raise
