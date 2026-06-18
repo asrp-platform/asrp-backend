@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
@@ -18,6 +18,7 @@ from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.logging import REQUESTS_CHANNEL, configure_logging
 from app.core.utils.open_api import get_custom_open_api
+from app.core.utils.rate_limiter import rate_limiter_dependency
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
@@ -58,6 +59,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
+    dependencies=[
+        Depends(
+            rate_limiter_dependency,
+            use_cache=False,
+        )
+    ]
 )
 
 

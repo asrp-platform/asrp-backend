@@ -146,6 +146,38 @@ services:
     networks:
       - internal
 
+  redis:
+    container_name: redis
+    image: redis:7.4
+    expose:
+      - "6379"
+    env_file:
+      - .env
+    environment:
+      - RD_PASSWORD=${RD_PASSWORD}
+      - RD_USER=${RD_USER}
+    command: >
+      sh -c '  
+        mkdir -p /usr/local/etc/redis &&
+        echo "requirepass $RD_PASSWORD" >> /usr/local/etc/redis/redis.conf &&  
+        echo "appendonly yes" >> /usr/local/etc/redis/redis.conf &&  
+        echo "appendfsync everysec" >> /usr/local/etc/redis/redis.conf &&  
+      
+        # ACL  
+        echo "user default off ~* -@all" > /usr/local/etc/redis/users.acl &&  
+        echo "user $RD_USER on >$RD_PASSWORD ~* +@all" >> /usr/local/etc/redis/users.acl &&  
+      
+        redis-server /usr/local/etc/redis/redis.conf --aclfile /usr/local/etc/redis/users.acl  
+      '
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${RD_PASSWORD}", "PING" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - internal
+
 volumes:
   postgres_data:
   minio_data:

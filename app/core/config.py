@@ -29,6 +29,34 @@ class FileStorageTypeEnum(str, Enum):
     S3_STORAGE = "s3"
 
 
+class TierLimit(BaseModel):
+    capacity: float
+    refill_rate: float
+
+
+class RateLimiterConfig(BaseModel):
+    # refill_rate - tokens per second
+
+    RATE_LIMITER_GUEST_LIMITS: TierLimit = TierLimit(capacity=30.0, refill_rate=1.0)
+    RATE_LIMITER_AUTHENTICATED_LIMITS: TierLimit = TierLimit(capacity=100.0, refill_rate=2.0)
+    RATE_LIMITER_PAID_MEMBER_LIMITS: TierLimit = TierLimit(capacity=200.0, refill_rate=5.0)
+    RATE_LIMITER_ADMIN_LIMITS: TierLimit = TierLimit(capacity=500.0, refill_rate=10.0)
+
+    RATE_LIMITER_KEY_TTL: int = 3600
+
+
+class RedisConfig(BaseModel):
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_USER: str
+    REDIS_USER_PASSWORD: str
+
+    REDIS_DB_NUMBER: int
+    REDIS_TEST_DB_NUMBER: int
+
+    REDIS_SOCKET_TIMEOUT: float = 0.5
+
+
 class GmailConfig(BaseModel):
     GMAIL_USERNAME: str | None = None
     GMAIL_PASSWORD: str | None = None
@@ -47,7 +75,7 @@ class S3Config(BaseModel):
     S3_PUBLIC_URL: str | None = None
 
 
-class Settings(BaseSettings, GmailConfig, S3Config):
+class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Config):
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
     DB_PASSWORD: str = "test"
