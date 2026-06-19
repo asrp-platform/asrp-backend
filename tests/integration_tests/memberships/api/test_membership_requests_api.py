@@ -105,7 +105,7 @@ async def test_create_user_membership_already_exists(
         "api/users/current-user/membership-requests", headers=auth_headers, json=user_membership_request_data
     )
 
-    assert response.status_code == 409
+    assert response.status_code == 409, response.json()
 
 
 async def test_create_user_membership_honorary_not_allowed(
