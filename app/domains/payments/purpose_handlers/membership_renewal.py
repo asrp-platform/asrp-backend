@@ -11,6 +11,7 @@ from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.payments.models import Payment, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 
+
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 

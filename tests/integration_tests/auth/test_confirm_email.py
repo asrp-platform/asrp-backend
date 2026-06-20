@@ -8,6 +8,7 @@ from app.core.common.cryptographer import Cryptographer
 from app.domains.emails.email_queue import EmailQueue
 from tests.fixtures.auth import UserFactory
 
+
 pytestmark = pytest.mark.anyio
 
 

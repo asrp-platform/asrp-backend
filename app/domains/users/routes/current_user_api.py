@@ -31,6 +31,7 @@ from app.domains.users.use_cases.current_user.retrieve_current_user_payments imp
 from app.domains.users.use_cases.current_user.set_current_user_avatar import UploadCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.update_current_user import UpdateCurrentUserUseCaseDep
 
+
 router = APIRouter(tags=["Current User: Profile"], prefix="/users/current-user")
 
 

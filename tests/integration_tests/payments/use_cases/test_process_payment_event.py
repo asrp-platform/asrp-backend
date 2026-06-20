@@ -4,6 +4,7 @@ from app.domains.memberships.models import MembershipRequest, MembershipRequestS
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.shared.transaction_managers import TransactionManager
 
+
 pytestmark = pytest.mark.anyio
 
 

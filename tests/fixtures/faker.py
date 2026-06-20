@@ -1,6 +1,7 @@
 import pytest
 from faker import Faker
 
+
 pytestmark = pytest.mark.anyio
 
 

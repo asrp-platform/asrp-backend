@@ -19,6 +19,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
 
+
 router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends(get_admin_user)])
 
 

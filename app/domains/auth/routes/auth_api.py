@@ -29,6 +29,7 @@ from app.domains.shared.deps import (
 from app.domains.users.schemas import UserSchema
 from app.domains.users.services import UserServiceDep
 
+
 router = APIRouter(tags=["Authentication"], prefix="/auth")
 
 

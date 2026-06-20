@@ -12,6 +12,7 @@ from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.payments.models import Payment
 
+
 if TYPE_CHECKING:
     from app.domains.users.models import User
 

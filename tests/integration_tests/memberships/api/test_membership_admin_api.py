@@ -7,6 +7,7 @@ from app.domains.memberships.models import MembershipDowngradeRequest, Membershi
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 

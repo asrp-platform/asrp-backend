@@ -10,6 +10,7 @@ from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.memberships.models import MembershipRequest, UserMembership
 
+
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
     from app.domains.news.models import News

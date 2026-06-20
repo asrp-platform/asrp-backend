@@ -12,10 +12,11 @@ from app.domains.memberships.services import MembershipRequestService, UserMembe
 from app.domains.memberships.use_cases.membership_requests.review_membership_request import (
     ReviewMembershipRequestUseCase,
 )
-from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
+
 
 pytestmark = pytest.mark.anyio
 
@@ -28,12 +29,16 @@ def test_review_membership_request_use_case(
     membership_service: MembershipRequestService,
     user_membership_service: UserMembershipService,
     payment_service: PaymentService,
+    user_service,
+    email_queue,
 ) -> ReviewMembershipRequestUseCase:
     return ReviewMembershipRequestUseCase(
         test_transaction_manager,
         membership_service,
         user_membership_service,
         payment_service,
+        user_service,
+        email_queue,
     )
 
 
@@ -62,6 +67,7 @@ async def test_approve_membership_request(
     paid_membership_request: MembershipRequest,
     test_review_membership_request_use_case: ReviewMembershipRequestUseCase,
     test_user: User,
+    email_queue,
 ):
     before_review = datetime.now(timezone.utc)
 
@@ -91,6 +97,7 @@ async def test_approve_membership_request(
     assert (
         before_review + MEMBERSHIP_DURATION <= created_user_membership.expires_at <= after_review + MEMBERSHIP_DURATION
     )
+    email_queue.send_email.assert_awaited_once()
 
 
 async def test_reject_membership_request_without_payment(
@@ -165,9 +172,10 @@ async def test_reject_membership_request_with_succeeded_payment_creates_refund(
     admin_user: User,
     permissions_action_list: list[str],
     paid_membership_request: MembershipRequest,
-    succeeded_membership_application_payment,
+    succeeded_membership_application_payment: Payment,
     test_review_membership_request_use_case: ReviewMembershipRequestUseCase,
     monkeypatch: pytest.MonkeyPatch,
+    email_queue,
 ):
     admin_comment = "Application rejected after manual review"
     stripe_refund = SimpleNamespace(
@@ -220,6 +228,7 @@ async def test_reject_membership_request_with_succeeded_payment_creates_refund(
     }
 
     assert created_user_membership is None
+    email_queue.send_email.assert_awaited_once()
 
 
 async def test_reject_unpaid_membership_request(

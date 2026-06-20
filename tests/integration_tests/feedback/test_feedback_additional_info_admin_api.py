@@ -7,7 +7,15 @@ from app.domains.feedback.constants import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
+
 pytestmark = pytest.mark.anyio
+
+
+async def test_get_hear_about_options_public(client: AsyncClient) -> None:
+    response = await client.get("/api/feedback-additional-info/hear-about-options")
+
+    assert response.status_code == 200
+    assert tuple(response.json()) == HEAR_ABOUT_ASRP_OPTIONS
 
 
 async def _create_feedback_additional_info(
@@ -46,7 +54,7 @@ async def test_get_hear_about_stats_date_range_filter(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Telegram or social media",
+        hear_about_asrp="telegram",
         tg_username="@tg_1",
         interest_description="I want to contribute to educational events",
         created_at=dt_2025,
@@ -54,7 +62,7 @@ async def test_get_hear_about_stats_date_range_filter(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Telegram or social media",
+        hear_about_asrp="telegram",
         tg_username="@tg_2",
         interest_description="Interested in networking.",
         created_at=dt_2025,
@@ -62,7 +70,7 @@ async def test_get_hear_about_stats_date_range_filter(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Colleague / word of mouth",
+        hear_about_asrp="colleague",
         tg_username=None,
         interest_description=None,
         created_at=dt_2025,
@@ -70,7 +78,7 @@ async def test_get_hear_about_stats_date_range_filter(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="USCAP or other conference",
+        hear_about_asrp="conference",
         tg_username=None,
         interest_description="Would like to support community projects.",
         created_at=dt_2025,
@@ -89,7 +97,7 @@ async def test_get_hear_about_stats_date_range_filter(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username=None,
         interest_description="Out-of-year record",
         created_at=dt_2024,
@@ -107,21 +115,21 @@ async def test_get_hear_about_stats_date_range_filter(
     stats = {item["option"]: item for item in payload["stats"]}
 
     assert payload["total_responses"] == 5
-    assert payload["stats"][0]["option"] == "Telegram or social media"
+    assert payload["stats"][0]["option"] == "telegram"
 
     for option in HEAR_ABOUT_ASRP_OPTIONS:
         assert option in stats
 
-    assert stats["Telegram or social media"]["count"] == 2
-    assert stats["Telegram or social media"]["percentage"] == 40.0
-    assert stats["Colleague / word of mouth"]["count"] == 1
-    assert stats["Colleague / word of mouth"]["percentage"] == 20.0
-    assert stats["USCAP or other conference"]["count"] == 1
-    assert stats["USCAP or other conference"]["percentage"] == 20.0
-    assert stats["Institutional listserv / email"]["count"] == 0
-    assert stats["Institutional listserv / email"]["percentage"] == 0.0
-    assert stats["Other"]["count"] == 1
-    assert stats["Other"]["percentage"] == 20.0
+    assert stats["telegram"]["count"] == 2
+    assert stats["telegram"]["percentage"] == 40.0
+    assert stats["colleague"]["count"] == 1
+    assert stats["colleague"]["percentage"] == 20.0
+    assert stats["conference"]["count"] == 1
+    assert stats["conference"]["percentage"] == 20.0
+    assert stats["web_search"]["count"] == 0
+    assert stats["web_search"]["percentage"] == 0.0
+    assert stats["other"]["count"] == 1
+    assert stats["other"]["percentage"] == 20.0
 
 
 async def test_get_hear_about_stats_forbidden_without_permission(
@@ -146,7 +154,7 @@ async def test_get_hear_about_stats_filters_by_date_range(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Telegram or social media",
+        hear_about_asrp="telegram",
         tg_username=None,
         interest_description="Inside date range",
         created_at=datetime(2025, 6, 7, tzinfo=timezone.utc),
@@ -154,7 +162,7 @@ async def test_get_hear_about_stats_filters_by_date_range(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Colleague / word of mouth",
+        hear_about_asrp="colleague",
         tg_username=None,
         interest_description="Outside date range",
         created_at=datetime(2025, 7, 7, tzinfo=timezone.utc),
@@ -171,8 +179,8 @@ async def test_get_hear_about_stats_filters_by_date_range(
     stats = {item["option"]: item for item in payload["stats"]}
 
     assert payload["total_responses"] == 1
-    assert stats["Telegram or social media"]["count"] == 1
-    assert stats["Colleague / word of mouth"]["count"] == 0
+    assert stats["telegram"]["count"] == 1
+    assert stats["colleague"]["count"] == 0
 
 
 async def test_get_hear_about_stats_invalid_date_range(
@@ -202,7 +210,7 @@ async def test_get_interests_returns_only_non_null_and_not_deleted(
     included_id_1 = await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username="@tg_public",
         interest_description=f"Interested in committee work and mentorship. {token}",
         created_at=dt,
@@ -210,7 +218,7 @@ async def test_get_interests_returns_only_non_null_and_not_deleted(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username="@tg_hidden",
         interest_description=None,
         created_at=dt,
@@ -218,7 +226,7 @@ async def test_get_interests_returns_only_non_null_and_not_deleted(
     included_id_2 = await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username=None,
         interest_description=f"Interested in speaker opportunities. {token}",
         created_at=dt,
@@ -226,7 +234,7 @@ async def test_get_interests_returns_only_non_null_and_not_deleted(
     await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username="@deleted",
         interest_description="Should not be shown",
         created_at=dt,
@@ -298,7 +306,7 @@ async def test_get_interests_filters_by_date_range(
     included_id = await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username="@inside",
         interest_description=f"Included by date range {token}",
         created_at=dt_inside,
@@ -306,7 +314,7 @@ async def test_get_interests_filters_by_date_range(
     excluded_id = await _create_feedback_additional_info(
         test_transaction_manager,
         user_factory,
-        hear_about_asrp="Other",
+        hear_about_asrp="other",
         tg_username="@outside",
         interest_description=f"Excluded by date range {token}",
         created_at=dt_outside,

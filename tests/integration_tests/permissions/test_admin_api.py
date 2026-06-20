@@ -9,6 +9,7 @@ from app.domains.permissions.services import get_permissions_service
 from app.domains.shared.deps import get_users_permissions
 from app.main import app
 
+
 pytestmark = pytest.mark.anyio
 
 

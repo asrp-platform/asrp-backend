@@ -12,6 +12,7 @@ from app.domains.feedback.use_cases.get_hear_about_stats import GetHearAboutStat
 from app.domains.feedback.use_cases.get_interests import GetInterestsUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
+
 router = APIRouter(
     prefix="/feedback-additional-info",
     tags=["Admin: Feedback Additional Info"],

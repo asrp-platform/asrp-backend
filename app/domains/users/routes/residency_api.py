@@ -10,6 +10,7 @@ from app.domains.users.exceptions import (
 from app.domains.users.schemas import ResidencyCreateSchema, ResidencyUpdateSchema, ResidencyViewSchema
 from app.domains.users.services import ResidencyServiceDep
 
+
 router = APIRouter(prefix="/users/{user_id}/residencies", tags=["Residency"])
 
 

@@ -19,6 +19,7 @@ from app.domains.memberships.use_cases.membership_requests.review_membership_req
 )
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 
+
 router = APIRouter(prefix="/membership-requests", tags=["Admin: Membership Requests"])
 
 

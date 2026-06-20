@@ -14,6 +14,7 @@ from app.domains.payments.services import PaymentServiceDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
 
+
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 

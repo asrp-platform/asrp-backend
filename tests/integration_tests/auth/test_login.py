@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.domains.users.models import User
 from tests.integration_tests.auth.utils import decode_jwt
 
+
 pytestmark = pytest.mark.anyio
 
 

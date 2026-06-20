@@ -9,6 +9,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import FellowshipServiceDep
 
+
 router = APIRouter(
     prefix="/users/{user_id}/fellowships",
     tags=["Fellowship"],

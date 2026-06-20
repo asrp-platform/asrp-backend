@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings
 
+
 load_dotenv()
 
 DEV_MODE: bool = getenv("DEV_MODE", "true").strip().lower() in {"true", "1", "yes"}

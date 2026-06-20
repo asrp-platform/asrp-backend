@@ -7,6 +7,7 @@ from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import NameChangeRequest, NameChangeRequestStatusEnum, User
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 

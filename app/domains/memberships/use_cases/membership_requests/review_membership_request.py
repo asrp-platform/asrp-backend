@@ -27,6 +27,7 @@ from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
 
+
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 

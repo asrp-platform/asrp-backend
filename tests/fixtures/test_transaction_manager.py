@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.shared.transaction_managers import TransactionManager
 
+
 pytestmark = pytest.mark.anyio
 
 

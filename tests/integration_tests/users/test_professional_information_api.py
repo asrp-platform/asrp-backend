@@ -5,6 +5,7 @@ from app.domains.shared.deps import create_access_token
 from app.domains.users.models import ProfessionalInformation, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
+
 pytestmark = pytest.mark.anyio
 
 

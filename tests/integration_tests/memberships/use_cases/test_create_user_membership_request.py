@@ -13,6 +13,7 @@ from app.domains.users.use_cases.current_user_membership.create_membership_reque
     CreateUserMembershipRequestUseCase,
 )
 
+
 pytestmark = pytest.mark.anyio
 
 

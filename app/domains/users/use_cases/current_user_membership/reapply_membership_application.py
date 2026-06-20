@@ -29,6 +29,7 @@ from app.domains.payments.stripe.utils import create_membership_application_chec
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 
+
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 

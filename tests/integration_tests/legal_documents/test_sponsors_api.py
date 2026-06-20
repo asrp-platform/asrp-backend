@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.legal_documents.models import Sponsor
 
+
 pytestmark = pytest.mark.anyio
 
 

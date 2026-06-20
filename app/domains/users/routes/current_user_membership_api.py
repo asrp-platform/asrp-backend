@@ -47,6 +47,7 @@ from app.domains.users.use_cases.current_user_membership.request_membership_down
     RequestMembershipDowngradeUseCaseDep,
 )
 
+
 router = APIRouter(tags=["Current User: Membership"], prefix="/users/current-user")
 
 

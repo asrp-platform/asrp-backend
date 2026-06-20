@@ -19,6 +19,7 @@ from app.domains.users.use_cases.retrieve_user_communication_preferences import 
 )
 from app.domains.users.use_cases.update_user_communication_preferences import UpdateCommunicationPreferencesUseCaseDep
 
+
 router = APIRouter(tags=["Users"], prefix="/users")
 
 

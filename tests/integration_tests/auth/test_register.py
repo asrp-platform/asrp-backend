@@ -8,6 +8,7 @@ from httpx import AsyncClient
 from app.domains.emails.email_queue import EmailQueue
 from app.domains.shared.transaction_managers import TransactionManager
 
+
 pytestmark = pytest.mark.anyio
 
 

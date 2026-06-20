@@ -7,6 +7,7 @@ import pytest
 from app.domains.payments.models import PaymentPurposeEnum
 from app.domains.payments.stripe import utils as stripe_utils
 
+
 pytestmark = pytest.mark.anyio
 
 

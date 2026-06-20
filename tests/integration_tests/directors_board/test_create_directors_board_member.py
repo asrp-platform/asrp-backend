@@ -6,6 +6,7 @@ from httpx import AsyncClient
 
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 
