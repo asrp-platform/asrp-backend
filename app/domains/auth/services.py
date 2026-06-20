@@ -64,8 +64,6 @@ class AuthService:
         )
         await self.email_queue.send_email(to=user.email, subject=subject, body=body)
 
-        # await self.send_email_confirm_link(existing_user)
-
         return user
 
     async def set_new_password(self, email, password):

@@ -4,13 +4,15 @@ from types import SimpleNamespace
 
 import pytest
 
-import app.domains.memberships.use_cases.review_membership_request as review_membership_request_module
+import app.domains.memberships.use_cases.membership_requests.review_membership_request as review_membership_request_module
 from app.core.common.exceptions import PermissionDeniedError
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestService, UserMembershipService
-from app.domains.memberships.use_cases.review_membership_request import ReviewMembershipRequestUseCase
-from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.memberships.use_cases.membership_requests.review_membership_request import (
+    ReviewMembershipRequestUseCase,
+)
+from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentService
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
@@ -160,7 +162,7 @@ async def test_reject_membership_request_with_succeeded_payment_creates_refund(
     admin_user: User,
     permissions_action_list: list[str],
     paid_membership_request: MembershipRequest,
-    succeeded_membership_application_payment,
+    succeeded_membership_application_payment: Payment,
     test_review_membership_request_use_case: ReviewMembershipRequestUseCase,
     monkeypatch: pytest.MonkeyPatch,
 ):
