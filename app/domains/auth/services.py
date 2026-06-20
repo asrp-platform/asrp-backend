@@ -59,9 +59,7 @@ class AuthService:
         token = self.cryptographer.create_token(user.email)
         link = f"{settings.FRONTEND_DOMAIN}/registration/complete?token={token.decode()}"
 
-        subject, body = build_email_verification_html(
-            full_name=f"{user.firstname} {user.lastname}", verification_link=link
-        )
+        subject, body = build_email_verification_html(full_name=user.full_name, verification_link=link)
         await self.email_queue.send_email(to=user.email, subject=subject, body=body)
 
         return user
@@ -100,9 +98,7 @@ class AuthService:
         token = self.cryptographer.create_token(user.email)
         link = f"{settings.FRONTEND_DOMAIN}/registration/complete?token={token.decode()}"
 
-        subject, body = build_email_verification_html(
-            full_name=f"{user.firstname} {user.lastname}", verification_link=link
-        )
+        subject, body = build_email_verification_html(full_name=user.full_name, verification_link=link)
         await self.email_queue.send_email(to=user.email, subject=subject, body=body)
 
     async def resend_email_confirmation_link(self, email: str):

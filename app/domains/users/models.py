@@ -79,6 +79,10 @@ class User(Base):
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
 
     @property
+    def full_name(self) -> str:
+        return f"{self.firstname} {self.lastname}"
+
+    @property
     def password(self) -> str:
         return self._password
 
