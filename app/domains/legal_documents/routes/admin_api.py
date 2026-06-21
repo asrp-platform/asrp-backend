@@ -20,6 +20,7 @@ from app.domains.legal_documents.use_cases.upsert_bylaws import UpsertBylawsUseC
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 from app.domains.shared.types import FileData
 
+
 router = APIRouter(prefix="/legal-documents", tags=["Admin: Legal Documents"])
 
 

@@ -16,6 +16,7 @@ from app.domains.permissions.services import PermissionServiceDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
 
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 refresh_token_cookie = APIKeyCookie(name="refresh_token", auto_error=False)
 access_token_header = HTTPBearer(auto_error=False)

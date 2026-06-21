@@ -26,6 +26,7 @@ dependencies = [
     "loguru (>=0.7.3,<0.8.0)",
     "aiobotocore (>=3.3.0,<4.0.0)",
     "stripe (>=15.0.1,<16.0.0)",
+    "celery (>=5.6.3,<6.0.0)",
 ]
 
 [tool.poetry]
@@ -44,6 +45,8 @@ httpx = "^0.28.1"
 pre-commit = "^4.2.0"
 
 [tool.ruff]
+preview = true
+
 line-length = 120  # Устанавливаем максимальную длину строки в 120 символов
 
 [tool.ruff.lint]
@@ -53,7 +56,7 @@ select = [
     "E",  # pycodestyle - ошибки форматирования
     "W",  # pycodestyle - предупреждения о коде
     "B",  # flake8-bugbear потентциальные баги
-    "C90", #  ьссфиу - сложность кода
+    "C90", #  сложность кода
     "T201", # search for prints
     "SIM", # flake8-simplify
 ]
@@ -70,3 +73,4 @@ line-ending = "lf"  # Использовать Unix-стиль переносо�
 [tool.ruff.lint.isort]
 known-first-party = ["my_project"]  # Эти настройки сортируют импорты
 combine-as-imports = true
+lines-after-imports = 2

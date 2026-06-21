@@ -11,6 +11,7 @@ from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
+
 router = APIRouter(tags=["Admin: Payments"], prefix="/payments", dependencies=[Depends(get_admin_user)])
 
 

@@ -4,7 +4,7 @@ from typing import Annotated, Any, Sequence
 from fastapi import Depends
 from sqlalchemy import func, select
 
-from app.domains.emails.plugins.gmail_plugin import GmailPlugin
+from app.domains.emails.providers.gmail import GmailProvider
 from app.domains.emails.services import get_email_service
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.feedback.models import FeedbackAdditionalInfo
@@ -14,7 +14,7 @@ from app.domains.shared.transaction_managers import TransactionManager, Transact
 class FeedbackService:
     def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
-        self.email_provider = get_email_service(GmailPlugin)
+        self.email_provider = get_email_service(GmailProvider)
 
     async def create_contact_message(self, data: dict):
         async with self.transaction_manager:

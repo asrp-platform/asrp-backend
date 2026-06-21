@@ -12,6 +12,7 @@ from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.models import User
 
+
 privileges_logger = logger.bind(channel=PRIVILEGES_CHANNEL)
 
 
@@ -26,7 +27,7 @@ class PermissionsService:
     async def get_permissions_by_ids(self, permissions_ids: list[int]):
         stmt = select(Permission).where(Permission.id.in_(permissions_ids))
         async with self.transaction_manager:
-            data, count = await self.transaction_manager.permission_repository.list(stmt=stmt)
+            data, _ = await self.transaction_manager.permission_repository.list(stmt=stmt)
             return data
 
     async def get_user_permissions(self, user_id: int) -> list[Permission]:

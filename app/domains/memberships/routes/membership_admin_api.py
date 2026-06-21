@@ -25,6 +25,7 @@ from app.domains.memberships.use_cases.memberships.review_downgrade_request impo
 from app.domains.memberships.use_cases.memberships.suspend_user_membership import SuspendUserMembershipUseCase
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
+
 router = APIRouter(prefix="/memberships", tags=["Admin: Memberships"], dependencies=[Depends(get_admin_user)])
 
 

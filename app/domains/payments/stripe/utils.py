@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.payments.models import Payment, PaymentPurposeEnum
 
+
 if TYPE_CHECKING:
     from app.domains.memberships.models import MembershipRequest, MembershipType, UserMembership
 

@@ -22,6 +22,7 @@ from app.domains.payments.models import Payment  # noqa
 from app.domains.permissions.models import Permission, UserPermission  # noqa
 from app.domains.users.models import User  # noqa
 
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

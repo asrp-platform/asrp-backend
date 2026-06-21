@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
 
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.memberships.models import MembershipDowngradeRequest, MembershipRequest, UserMembership
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
+
 
 pytestmark = pytest.mark.anyio
 
@@ -90,16 +93,18 @@ async def test_suspend_membership(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
-    response = await client.post(
-        f"/api/admin/memberships/{active_user_membership.id}/restrictions",
-        headers=admin_auth_headers,
-        json={
-            "suspended_until": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
-            "reason": "Terms violation",
-        },
-    )
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post(
+            f"/api/admin/memberships/{active_user_membership.id}/restrictions",
+            headers=admin_auth_headers,
+            json={
+                "suspended_until": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                "reason": "Terms violation",
+            },
+        )
 
     assert response.status_code == 201
+    mock_send_email.assert_awaited_once()
 
 
 async def test_terminate_membership(
@@ -108,16 +113,18 @@ async def test_terminate_membership(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
-    response = await client.post(
-        f"/api/admin/memberships/{active_user_membership.id}/restrictions",
-        headers=admin_auth_headers,
-        json={
-            "suspended_until": None,
-            "reason": "Repeated terms violation",
-        },
-    )
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post(
+            f"/api/admin/memberships/{active_user_membership.id}/restrictions",
+            headers=admin_auth_headers,
+            json={
+                "suspended_until": None,
+                "reason": "Repeated terms violation",
+            },
+        )
 
     assert response.status_code == 201
+    mock_send_email.assert_awaited_once()
 
 
 async def test_restrict_membership_not_found(

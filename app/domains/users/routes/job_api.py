@@ -12,6 +12,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import JobServiceDep
 
+
 router = APIRouter(
     prefix="/users/{user_id}/jobs",
     tags=["Job"],

@@ -5,6 +5,7 @@ from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.schemas import ProfessionalInformationCreateOrUpdateSchema, ProfessionalInformationViewSchema
 from app.domains.users.services import ProfessionalInformationServiceDep
 
+
 router = APIRouter(tags=["Professional information"], prefix="/users/{user_id}/professional-information")
 
 

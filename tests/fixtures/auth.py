@@ -10,6 +10,7 @@ from app.domains.shared.deps import create_access_token, create_refresh_token
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 
+
 pytestmark = pytest.mark.anyio
 
 
@@ -80,7 +81,7 @@ def admin_auth_headers(admin_user: User):
 def user_registration_data(faker: Faker) -> dict[str, Any]:
     password = faker.password()
     return {
-        "email": f'{uuid4()}@example.com',
+        "email": f"{uuid4()}@example.com",
         "password": password,
         "repeat_password": password,
         "firstname": faker.first_name(),

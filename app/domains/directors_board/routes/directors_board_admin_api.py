@@ -22,6 +22,7 @@ from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 from app.domains.shared.schemas import UploadedImageSchema
 from app.domains.shared.types import FileData
 
+
 router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
 
 
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], d
 async def get_all_directors_board_members(
     use_case: GetDirectorsBoardMembersUseCaseDep,
 ) -> list[BoardMemberSchema]:
-    data, count = await use_case.execute()
+    data, _ = await use_case.execute()
     return data
 
 

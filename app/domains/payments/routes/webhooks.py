@@ -10,6 +10,7 @@ from app.domains.payments.use_cases.process_async_payment_event import ProcessCh
 from app.domains.payments.use_cases.process_checkout_session_completed import ProcessCheckoutSessionCompletedUseCaseDep
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCaseDep
 
+
 stripe.api_key = settings.STRIPE_API_KEY
 
 stripe_logger = logger.bind(channel=STRIPE_CHANNEL)

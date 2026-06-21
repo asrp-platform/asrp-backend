@@ -6,6 +6,7 @@ from app.domains.feedback.schemas import (
 )
 from app.domains.feedback.services import FeedbackServiceDep
 
+
 router = APIRouter(prefix="/contact-messages", tags=["Contact Messages"])
 
 

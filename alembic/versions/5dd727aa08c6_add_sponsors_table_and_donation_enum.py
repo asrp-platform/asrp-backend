@@ -5,15 +5,17 @@ Revises: 6e29a6badfb9
 Create Date: 2026-05-14 17:35:25.549479
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
 
 from alembic import op
 
+
 # revision identifiers, used by Alembic.
-revision: str = '5dd727aa08c6'
-down_revision: Union[str, None] = '6e29a6badfb9'
+revision: str = "5dd727aa08c6"
+down_revision: Union[str, None] = "6e29a6badfb9"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -33,16 +35,17 @@ NEW_VALUES = (
 
 
 def upgrade() -> None:
-    op.create_table('sponsors',
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('short_name', sa.String(), nullable=True),
-    sa.Column('logo_key', sa.String(), nullable=True),
-    sa.Column('link', sa.String(), nullable=False),
-    sa.Column('_deleted', sa.Boolean(), server_default=sa.text('false'), nullable=False),
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sponsors'))
+    op.create_table(
+        "sponsors",
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("short_name", sa.String(), nullable=True),
+        sa.Column("logo_key", sa.String(), nullable=True),
+        sa.Column("link", sa.String(), nullable=False),
+        sa.Column("_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_sponsors")),
     )
 
     op.execute(

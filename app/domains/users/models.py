@@ -10,6 +10,7 @@ from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.memberships.models import MembershipRequest, UserMembership
 
+
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
     from app.domains.news.models import News
@@ -77,6 +78,10 @@ class User(Base):
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.firstname} {self.lastname}"
 
     @property
     def password(self) -> str:

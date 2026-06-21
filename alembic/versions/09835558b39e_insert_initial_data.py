@@ -16,6 +16,7 @@ from passlib.handlers.bcrypt import bcrypt
 from alembic import op
 from app.core.config import DEV_MODE
 
+
 revision: str = "09835558b39e"
 down_revision: Union[str, None] = "4f420931157f"
 branch_labels: Union[str, Sequence[str], None] = None

@@ -2,6 +2,7 @@ from loguru import logger
 
 from app.core.config import BASE_DIR, DEV_MODE
 
+
 LOG_DIR = BASE_DIR / "logs"
 
 REQUEST_LOG_DIR = LOG_DIR / "requests"

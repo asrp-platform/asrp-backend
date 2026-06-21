@@ -16,6 +16,7 @@ from app.domains.feedback.schemas import (
 from app.domains.feedback.services import FeedbackServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
+
 router = APIRouter(prefix="/contact-messages", tags=["Admin: Contact Messages"], dependencies=[Depends(get_admin_user)])
 
 
