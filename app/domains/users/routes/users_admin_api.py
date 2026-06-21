@@ -11,7 +11,13 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
-from app.domains.users.exceptions import GrantAdminRoleForbiddenError, RevokeAdminRoleForbiddenError
+from app.domains.users.exceptions import (
+    CantBanSelfError,
+    CantBanSuperadminError,
+    CantUnbanSelfError,
+    GrantAdminRoleForbiddenError,
+    RevokeAdminRoleForbiddenError,
+)
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
     BanUserSchema,
@@ -21,6 +27,8 @@ from app.domains.users.schemas import (
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.use_cases.ban_user import BanUserUseCaseDep
+from app.domains.users.use_cases.unban_user import UnbanUserUseCaseDep
 from app.domains.users.use_cases.update_user_by_admin import UpdateUserByAdminUseCaseDep
 
 
@@ -230,29 +238,25 @@ class BanUserResponses(Responses):
 async def ban_user(
     user_id: Annotated[int, Path()],
     ban_data: BanUserSchema,
-    user_service: UserServiceDep,
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
+    use_case: BanUserUseCaseDep,
 ) -> UserSchema:
-    if admin.id == user_id:
+    try:
+        return await use_case.execute(
+            user_id=user_id,
+            admin=admin,
+            permissions=permissions,
+            ban_reason=ban_data.ban_reason,
+        )
+    except CantBanSelfError:
         raise BanUserResponses.CANT_BAN_SELF
-
-    target_user = await user_service.get_user_by_kwargs(id=user_id)
-    if target_user is None:
+    except NotFoundError:
         raise BanUserResponses.USER_NOT_FOUND
-
-    if target_user.superuser:
+    except CantBanSuperadminError:
         raise BanUserResponses.CANT_BAN_SUPERADMIN
-
-    if target_user.admin:
-        if "admin.update" not in permissions:
-            raise BanUserResponses.PERMISSION_ERROR
-    else:
-        if "users.update" not in permissions:
-            raise BanUserResponses.PERMISSION_ERROR
-
-    user = await user_service.ban_user(user_id, ban_data.ban_reason)
-    return UserSchema.model_validate(user)
+    except PermissionDeniedError:
+        raise BanUserResponses.PERMISSION_ERROR
 
 
 @router.delete(
@@ -262,26 +266,19 @@ async def ban_user(
 )
 async def unban_user(
     user_id: Annotated[int, Path()],
-    user_service: UserServiceDep,
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
+    use_case: UnbanUserUseCaseDep,
 ) -> UserSchema:
-    if admin.id == user_id:
+    try:
+        return await use_case.execute(
+            user_id=user_id,
+            admin=admin,
+            permissions=permissions,
+        )
+    except CantUnbanSelfError:
         raise BanUserResponses.CANT_UNBAN_SELF
-
-    target_user = await user_service.get_user_by_kwargs(id=user_id)
-    if target_user is None:
+    except NotFoundError:
         raise BanUserResponses.USER_NOT_FOUND
-
-    if target_user.superuser:
+    except PermissionDeniedError:
         raise BanUserResponses.PERMISSION_ERROR
-
-    if target_user.admin:
-        if "admin.update" not in permissions:
-            raise BanUserResponses.PERMISSION_ERROR
-    else:
-        if "users.update" not in permissions:
-            raise BanUserResponses.PERMISSION_ERROR
-
-    user = await user_service.unban_user(user_id)
-    return UserSchema.model_validate(user)

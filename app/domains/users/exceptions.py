@@ -31,3 +31,15 @@ class GrantAdminRoleForbiddenError(Exception):
 
 class RevokeAdminRoleForbiddenError(Exception):
     pass
+
+
+class CantBanSelfError(Exception):
+    pass
+
+
+class CantUnbanSelfError(Exception):
+    pass
+
+
+class CantBanSuperadminError(Exception):
+    pass
