@@ -230,7 +230,7 @@ class BanUserResponses(Responses):
     PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
-@router.put(
+@router.patch(
     "/{user_id}/ban",
     responses=BanUserResponses.responses,
     summary="Ban a user",
