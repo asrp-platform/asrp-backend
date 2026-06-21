@@ -266,3 +266,109 @@ def build_membership_application_rejected_html(
 </html>
 """,
     )
+
+
+def build_membership_suspended_html(
+    full_name: str,
+    reason: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+    safe_reason = escape(reason)
+
+    return (
+        "Your ASRP membership suspended",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        This email serves as formal notice that your ASRP membership and account
+        access have been temporarily suspended due to a violation of the ASRP
+        Code of Conduct and/or Community Guidelines.
+    </p>
+
+    <p>
+        <strong>Reason for Suspension:</strong> {safe_reason}
+    </p>
+
+    <p>
+        During the suspension period, you will not have access to member-only
+        resources, discussion forums, events, or other membership benefits. You
+        may submit an appeal by contacting admin@asrpath.org. If the suspension
+        is lifted, your membership privileges may be restored, provided no
+        additional violations occur and any applicable conditions have been
+        satisfied.
+    </p>
+
+    <p>
+        ASRP is committed to maintaining a professional, respectful, and
+        inclusive environment for all members.
+    </p>
+
+    <p>
+        Sincerely,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )
+
+
+def build_membership_terminated_html(
+    full_name: str,
+    reason: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+    safe_reason = escape(reason)
+
+    return (
+        "Your ASRP membership terminated",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        This email serves as formal notice that your membership in the American
+        Society of Russian-Speaking Pathologists (ASRP) has been terminated
+        following a review of conduct that was determined to violate the ASRP
+        Code of Conduct and/or Community Guidelines.
+    </p>
+
+    <p>
+        <strong>Reason for Termination:</strong> {safe_reason}
+    </p>
+
+    <p>
+        Effective immediately, your membership status has been revoked and your
+        account access has been permanently disabled. You will no longer be
+        eligible to participate in ASRP member activities, access member-only
+        resources, or represent yourself as an active member of ASRP.
+    </p>
+
+    <p>
+        If you believe this action was taken in error, you may submit an appeal
+        by contacting admin@asrpath.org within 30 days of receiving this notice.
+        Any appeal will be reviewed by the appropriate ASRP leadership body, and
+        its decision will be final.
+    </p>
+
+    <p>
+        ASRP remains committed to fostering a professional, respectful, and
+        supportive community for all members.
+    </p>
+
+    <p>
+        Sincerely,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )

@@ -233,7 +233,8 @@ class ReviewMembershipRequestUseCase:
             )
         except Exception:
             payments_logger.exception(
-                "Failed to persist refund error: payment_id={} membership_request_id={} refund_status={} error_type={} idempotency_key={}",
+                "Failed to persist refund error: payment_id={} membership_request_id={} refund_status={} error_type={"
+                "} idempotency_key={}",
                 payment.id,
                 payment.membership_request_id,
                 refund_status,
@@ -255,6 +256,8 @@ class ReviewMembershipRequestUseCase:
         **kwargs,
     ):
         """kwargs may include (status) when approved or (status, admin_comment) when rejected"""
+        email_payload = None
+
         async with self.__transaction_manager:
             check_permissions("memberships.update", permissions)
             membership_request = await self.__check_membership_request_paid(membership_request_id)
@@ -263,15 +266,19 @@ class ReviewMembershipRequestUseCase:
 
             if approval_status == MembershipRequestStatusEnum.APPROVED:
                 await self.__approve_membership_request(membership_request_id, reviewer, **kwargs)
-                subject, message = build_membership_application_approved_html(
+                subject, body = build_membership_application_approved_html(
                     full_name=user.full_name, login_link=f"{settings.FRONTEND_DOMAIN}/login"
                 )
-                await self.__email_queue.send_email(to=user.email, subject=subject, body=message)
+                email_payload = (user.email, subject, body)
 
             elif approval_status == MembershipRequestStatusEnum.REJECTED:
                 await self.__reject_membership_request(membership_request_id, reviewer, **kwargs)
-                subject, message = build_membership_application_rejected_html(user.full_name)
-                await self.__email_queue.send_email(to=user.email, subject=subject, body=message)
+                subject, body = build_membership_application_rejected_html(user.full_name)
+                email_payload = (user.email, subject, body)
+
+        if email_payload is not None:
+            email_to, subject, body = email_payload
+            await self.__email_queue.send_email(to=email_to, subject=subject, body=body)
 
 
 ReviewMembershipRequestUseCaseDep = Annotated[ReviewMembershipRequestUseCase, Depends(ReviewMembershipRequestUseCase)]
