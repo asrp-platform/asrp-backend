@@ -141,14 +141,10 @@ class UserService:
         )
 
     async def ban_user(self, user_id: int, ban_reason: str) -> User:
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.update(user_id, banned=True, ban_reason=ban_reason)
-        return user
+        return await self.transaction_manager.user_repository.update(user_id, banned=True, ban_reason=ban_reason)
 
     async def unban_user(self, user_id: int) -> User:
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.update(user_id, banned=False, ban_reason=None)
-        return user
+        return await self.transaction_manager.user_repository.update(user_id, banned=False, ban_reason=None)
 
 
 class ProfessionalInformationService:
