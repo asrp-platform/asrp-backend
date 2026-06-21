@@ -25,22 +25,23 @@ class RegisterResponses(Responses):
 
 class AuthService:
     def __init__(self, transaction_manager: TransactionManagerDep, email_queue: EmailQueueDep):
-        self.__tm = transaction_manager
+        self.transaction_manager = transaction_manager
         self.cryptographer = Cryptographer(fernet)
-        self.__email_queue = email_queue
+        self.email_queue = email_queue
 
     async def register_user(self, register_form_data: RegisterFormData):
+        """Creates or extends subscription"""
+
         user_data = register_form_data.model_dump()
         user_data.pop("repeat_password")
+
         email = user_data["email"]
 
-        async with self.__tm:
-            existing_user: User = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            existing_user: User = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
             if existing_user is None:
-                user = await self.__tm.user_repository.create(**user_data, pending=True)
-                await self.__tm.flush()
-                await self.__tm.communication_preferences_repository.create(user_id=user.id)
+                user = await self.transaction_manager.user_repository.create(**user_data, pending=True)
 
             elif existing_user.pending is True:
                 existing_user.firstname = user_data["firstname"]
@@ -49,6 +50,7 @@ class AuthService:
                 existing_user.city = user_data["city"]
                 existing_user.password = user_data["password"]
                 existing_user.pending = True
+
                 user = existing_user
 
             else:
@@ -58,24 +60,26 @@ class AuthService:
         link = f"{settings.FRONTEND_DOMAIN}/registration/complete?token={token.decode()}"
 
         subject, body = build_email_verification_html(full_name=user.full_name, verification_link=link)
-        await self.__email_queue.send_email(to=user.email, subject=subject, body=body)
+        await self.email_queue.send_email(to=user.email, subject=subject, body=body)
 
         return user
 
     async def set_new_password(self, email, password):
-        async with self.__tm:
-            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
             if user is None:
                 raise NotFoundError("User with provided email not found")
 
             user.password = password
-            await self.__tm._session.flush()  # noqa property's setter manual calling
-            await self.__tm.user_repository.update(user.id, last_password_change=datetime.now(tz=timezone.utc))
+            await self.transaction_manager._session.flush()  # noqa property's setter manual calling
+            await self.transaction_manager.user_repository.update(
+                user.id, last_password_change=datetime.now(tz=timezone.utc)
+            )
 
     async def reset_password(self, email: str):
-        async with self.__tm:
-            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
         if user is None:
             return
@@ -84,7 +88,7 @@ class AuthService:
         link = f"{settings.FRONTEND_DOMAIN}/password-reset/confirm/?token={token.decode()}"
         subject, body = build_password_reset_html(reset_link=link)
 
-        await self.__email_queue.send_email(
+        await self.email_queue.send_email(
             to=email,
             subject=subject,
             body=body,
@@ -95,11 +99,11 @@ class AuthService:
         link = f"{settings.FRONTEND_DOMAIN}/registration/complete?token={token.decode()}"
 
         subject, body = build_email_verification_html(full_name=user.full_name, verification_link=link)
-        await self.__email_queue.send_email(to=user.email, subject=subject, body=body)
+        await self.email_queue.send_email(to=user.email, subject=subject, body=body)
 
     async def resend_email_confirmation_link(self, email: str):
-        async with self.__tm:
-            existing_user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            existing_user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
             if existing_user is None:
                 raise NotFoundError("User with provided email not found")
@@ -116,8 +120,8 @@ class AuthService:
         except ValueError as e:
             raise EmailConfirmationExpiredError("Invalid or expired token") from e
 
-        async with self.__tm:
-            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
 
             if user is None:
                 raise EmailConfirmationExpiredError("Invalid or expired token")

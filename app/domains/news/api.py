@@ -13,6 +13,7 @@ from app.domains.news.services import NewsServiceDep
 from app.domains.shared.deps import AdminUserDep
 from app.domains.shared.types import FileData
 
+
 router = APIRouter(prefix="/news", tags=["News"])
 
 

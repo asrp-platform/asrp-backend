@@ -21,10 +21,14 @@ def process_payment_use_case(
     payment_service,
     membership_service,
     user_membership_service,
+    user_service,
+    email_queue,
 ):
     membership_application_handler = MembershipApplicationHandler(
         membership_service=membership_service,
         payment_service=payment_service,
+        email_queue=email_queue,
+        user_service=user_service,
     )
     membership_renewal_handler = MembershipRenewalHandler(
         user_membership_service=user_membership_service,

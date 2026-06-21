@@ -29,6 +29,7 @@ from app.domains.users.use_cases.users_admin.get_user_by_id import GetUserByIdUs
 from app.domains.users.use_cases.users_admin.get_users import GetUsersUseCaseDep
 
 
+
 router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends(get_admin_user)])
 
 

@@ -9,6 +9,7 @@ from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandler
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
+
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 

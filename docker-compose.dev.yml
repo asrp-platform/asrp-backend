@@ -40,8 +40,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - internal
 
   asrp_backend:
     container_name: asrp_backend

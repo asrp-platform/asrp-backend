@@ -5,10 +5,15 @@ from loguru import logger
 from stripe import Event
 
 from app.core.logging import PAYMENTS_CHANNEL
+from app.domains.emails.common.messages import build_membership_application_html
+from app.domains.emails.email_queue import EmailQueueDep
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestServiceDep
 from app.domains.payments.models import Payment, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
+from app.domains.users.models import User
+from app.domains.users.services import UserServiceDep
+
 
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
@@ -18,9 +23,13 @@ class MembershipApplicationHandler:
         self,
         membership_service: MembershipRequestServiceDep,
         payment_service: PaymentServiceDep,
+        email_queue: EmailQueueDep,
+        user_service: UserServiceDep,
     ):
         self.__membership_service = membership_service
         self.__payment_service = payment_service
+        self.__email_queue = email_queue
+        self.__user_service = user_service
 
     async def on_succeeded(self, payment: Payment, event: Event) -> None:
         pending_application_payments = await self.__payment_service.get_pending_membership_application_user_payment(
@@ -58,6 +67,9 @@ class MembershipApplicationHandler:
         await self.__membership_service.update_membership_request(
             payment.membership_request_id, status=MembershipRequestStatusEnum.PAID
         )
+        user: User = await self.__user_service.get_user_by_kwargs(id=payment.user_id)
+        subject, body = build_membership_application_html(user.full_name)
+        await self.__email_queue.send_emailbody(to=user.email, subject=subject, body=body)
 
 
 MembershipApplicationHandlerDep = Annotated[MembershipApplicationHandler, Depends(MembershipApplicationHandler)]

@@ -22,18 +22,9 @@ async def test_register(
 
     async with test_transaction_manager:
         user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
-        communication_preferences = (
-            await test_transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user.id)
-        )
 
     assert response.status_code == 201
     assert user is not None
-    assert communication_preferences is not None
-    assert communication_preferences.user_id == user.id
-    assert not communication_preferences.newsletters
-    assert not communication_preferences.events_meetings
-    assert not communication_preferences.committees_leadership
-    assert not communication_preferences.volunteer_opportunities
     mock_send_email.assert_awaited_once()
 
 
