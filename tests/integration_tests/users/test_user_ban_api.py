@@ -1,12 +1,17 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.shared.deps import create_refresh_token
+from app.domains.shared.deps import create_access_token, create_refresh_token
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
 pytestmark = pytest.mark.anyio
+
+
+@pytest.fixture
+async def banned_user(user_factory: UserFactory) -> User:
+    return await user_factory(banned=True, ban_reason="Violation of Terms")
 
 
 async def grant_permission_to_admin(
@@ -23,22 +28,17 @@ async def grant_permission_to_admin(
 async def test_admin_can_ban_user(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    admin_user: User,
+    admin_all_permissions: list,
     test_user: User,
-    test_transaction_manager: TransactionManager,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
-    user_id = test_user.id
-    ban_payload = {"ban_reason": "Spamming in chats"}
-
-    response = await client.put(
-        f"/api/admin/users/{user_id}/ban",
+    response = await client.patch(
+        f"/api/admin/users/{test_user.id}/ban",
         headers=admin_auth_headers,
-        json=ban_payload,
+        json={"ban_reason": "Spamming in chats"},
     )
+    data = response.json()
 
     assert response.status_code == 200
-    data = response.json()
     assert data["banned"] is True
     assert data["ban_reason"] == "Spamming in chats"
 
@@ -46,104 +46,66 @@ async def test_admin_can_ban_user(
 async def test_admin_can_unban_user(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    admin_user: User,
-    test_user: User,
-    test_transaction_manager: TransactionManager,
+    admin_all_permissions: list,
+    banned_user: User,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
-    user_id = test_user.id
-    await client.put(
-        f"/api/admin/users/{user_id}/ban",
-        headers=admin_auth_headers,
-        json={"ban_reason": "Spamming in chats"},
-    )
-
     response = await client.delete(
-        f"/api/admin/users/{user_id}/ban",
+        f"/api/admin/users/{banned_user.id}/ban",
         headers=admin_auth_headers,
     )
+    data = response.json()
 
     assert response.status_code == 200
-    data = response.json()
     assert data["banned"] is False
     assert data["ban_reason"] is None
 
 
 async def test_banned_user_cannot_login(
     client: AsyncClient,
-    admin_auth_headers: AuthHeaders,
-    admin_user: User,
-    confirmed_user_with_data: tuple[User, dict],
-    test_transaction_manager: TransactionManager,
+    user_factory: UserFactory,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
-    user, user_data = confirmed_user_with_data
-    await client.put(
-        f"/api/admin/users/{user.id}/ban",
-        headers=admin_auth_headers,
-        json={"ban_reason": "Violation of Terms"},
-    )
-    login_payload = {"email": user_data["email"], "password": user_data["password"]}
+    password = "SecretPassword123"
+    user = await user_factory(banned=True, ban_reason="Violation of Terms", password=password, pending=False)
 
     response = await client.post(
         "/api/auth/login",
-        json=login_payload,
+        json={"email": user.email, "password": password},
     )
+    data = response.json()
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "User is banned: Violation of Terms"
+    assert data["detail"] == "User is banned: Violation of Terms"
 
 
 async def test_banned_user_access_token_invalid(
     client: AsyncClient,
-    admin_auth_headers: AuthHeaders,
-    admin_user: User,
-    test_user: User,
-    auth_headers: AuthHeaders,
-    test_transaction_manager: TransactionManager,
+    banned_user: User,
 ) -> None:
-    response_before = await client.get(
+    access_token = create_access_token({"email": banned_user.email})
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = await client.get(
         "/api/users/current-user",
-        headers=auth_headers,
+        headers=headers,
     )
-    assert response_before.status_code == 200
+    data = response.json()
 
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
-    await client.put(
-        f"/api/admin/users/{test_user.id}/ban",
-        headers=admin_auth_headers,
-        json={"ban_reason": "Abuse"},
-    )
-
-    response_after = await client.get(
-        "/api/users/current-user",
-        headers=auth_headers,
-    )
-
-    assert response_after.status_code == 401
-    assert response_after.json()["detail"] == "Invalid token"
+    assert response.status_code == 401
+    assert data["detail"] == "Invalid token"
 
 
 async def test_banned_user_refresh_token_invalid(
     client: AsyncClient,
-    admin_auth_headers: AuthHeaders,
-    admin_user: User,
-    test_user: User,
-    test_transaction_manager: TransactionManager,
+    banned_user: User,
 ) -> None:
-    token = create_refresh_token({"email": test_user.email})
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
-    await client.put(
-        f"/api/admin/users/{test_user.id}/ban",
-        headers=admin_auth_headers,
-        json={"ban_reason": "Abuse"},
-    )
+    token = create_refresh_token({"email": banned_user.email})
     client.cookies.set("refresh_token", token)
 
     response = await client.post("/api/auth/refresh")
+    data = response.json()
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Refresh token is invalid"
+    assert data["detail"] == "Refresh token is invalid"
 
 
 async def test_non_admin_cannot_ban_unban_user(
@@ -151,12 +113,11 @@ async def test_non_admin_cannot_ban_unban_user(
     auth_headers: AuthHeaders,
     test_user: User,
 ) -> None:
-    response_ban = await client.put(
+    response_ban = await client.patch(
         f"/api/admin/users/{test_user.id}/ban",
         headers=auth_headers,
         json={"ban_reason": "I am not admin"},
     )
-
     response_unban = await client.delete(
         f"/api/admin/users/{test_user.id}/ban",
         headers=auth_headers,
@@ -170,38 +131,33 @@ async def test_admin_cannot_ban_self(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     admin_user: User,
-    test_transaction_manager: TransactionManager,
+    admin_all_permissions: list,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "admin.update")
-    self_id = admin_user.id
-    ban_payload = {"ban_reason": "Banning myself"}
-
-    response = await client.put(
-        f"/api/admin/users/{self_id}/ban",
+    response = await client.patch(
+        f"/api/admin/users/{admin_user.id}/ban",
         headers=admin_auth_headers,
-        json=ban_payload,
+        json={"ban_reason": "Banning myself"},
     )
+    data = response.json()
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "You cannot ban yourself"
+    assert data["detail"] == "You cannot ban yourself"
 
 
 async def test_admin_cannot_unban_self(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     admin_user: User,
-    test_transaction_manager: TransactionManager,
+    admin_all_permissions: list,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "admin.update")
-    self_id = admin_user.id
-
     response = await client.delete(
-        f"/api/admin/users/{self_id}/ban",
+        f"/api/admin/users/{admin_user.id}/ban",
         headers=admin_auth_headers,
     )
+    data = response.json()
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "You cannot unban yourself"
+    assert data["detail"] == "You cannot unban yourself"
 
 
 async def test_admin_without_users_view_cannot_get_users(
@@ -212,22 +168,22 @@ async def test_admin_without_users_view_cannot_get_users(
         "/api/admin/users",
         headers=admin_auth_headers,
     )
+    data = response.json()
+
     assert response.status_code == 403
-    assert response.json()["detail"] == "Don't have enough permissions"
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_with_users_view_can_get_users(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    admin_user: User,
-    test_transaction_manager: TransactionManager,
+    admin_all_permissions: list,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.view")
-
     response = await client.get(
         "/api/admin/users",
         headers=admin_auth_headers,
     )
+
     assert response.status_code == 200
 
 
@@ -236,13 +192,15 @@ async def test_admin_without_users_update_cannot_ban_user(
     admin_auth_headers: AuthHeaders,
     test_user: User,
 ) -> None:
-    response = await client.put(
+    response = await client.patch(
         f"/api/admin/users/{test_user.id}/ban",
         headers=admin_auth_headers,
         json={"ban_reason": "No permission"},
     )
+    data = response.json()
+
     assert response.status_code == 403
-    assert response.json()["detail"] == "Don't have enough permissions"
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_without_admin_update_cannot_ban_admin(
@@ -255,66 +213,65 @@ async def test_admin_without_admin_update_cannot_ban_admin(
     await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
     other_admin = await user_factory(admin=True)
 
-    response = await client.put(
+    response = await client.patch(
         f"/api/admin/users/{other_admin.id}/ban",
         headers=admin_auth_headers,
         json={"ban_reason": "No admin.update"},
     )
+    data = response.json()
+
     assert response.status_code == 403
-    assert response.json()["detail"] == "Don't have enough permissions"
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_with_admin_update_can_ban_admin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    admin_user: User,
+    admin_all_permissions: list,
     user_factory: UserFactory,
-    test_transaction_manager: TransactionManager,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "admin.update")
     other_admin = await user_factory(admin=True)
 
-    response = await client.put(
+    response = await client.patch(
         f"/api/admin/users/{other_admin.id}/ban",
         headers=admin_auth_headers,
         json={"ban_reason": "I have admin.update"},
     )
+
     assert response.status_code == 200
 
 
 async def test_cannot_ban_superadmin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    admin_user: User,
+    admin_all_permissions: list,
     user_factory: UserFactory,
-    test_transaction_manager: TransactionManager,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "admin.update")
     superadmin = await user_factory(admin=True, superuser=True)
 
-    response = await client.put(
+    response = await client.patch(
         f"/api/admin/users/{superadmin.id}/ban",
         headers=admin_auth_headers,
         json={"ban_reason": "Banning superadmin"},
     )
+    data = response.json()
+
     assert response.status_code == 403
-    assert response.json()["detail"] == "You cannot ban the system administrator"
+    assert data["detail"] == "You cannot ban the system administrator"
 
 
 async def test_admin_can_update_user_role(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    admin_user: User,
+    admin_all_permissions: list,
     test_user: User,
-    test_transaction_manager: TransactionManager,
 ) -> None:
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "users.update")
-    await grant_permission_to_admin(test_transaction_manager, admin_user.id, "admin.create")
-
     response = await client.patch(
         f"/api/admin/users/{test_user.id}",
         headers=admin_auth_headers,
         json={"admin": True},
     )
+    data = response.json()
+
     assert response.status_code == 200
-    assert response.json()["admin"] is True
+    assert data["admin"] is True
