@@ -87,6 +87,14 @@ class User(Base):
         return f"{self.firstname} {self.lastname}"
 
     @property
+    def avatar_url(self) -> str | None:
+        return getattr(self, "_avatar_url", None)
+
+    @avatar_url.setter
+    def avatar_url(self, value: str | None):
+        self._avatar_url = value  # noqa
+
+    @property
     def password(self) -> str:
         return self._password
 

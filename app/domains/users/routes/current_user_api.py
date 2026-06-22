@@ -5,6 +5,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.core.storage.storage_factory import FileStorageDep
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep
@@ -36,7 +37,12 @@ router = APIRouter(tags=["Current User: Profile"], prefix="/users/current-user")
 
 
 @router.get("")
-async def get_current_user(current_user: CurrentUserDep) -> UserSchema:
+async def get_current_user(
+    current_user: CurrentUserDep,
+    file_storage: FileStorageDep,
+) -> UserSchema:
+    if current_user.avatar_path is not None:
+        current_user.avatar_url = await file_storage.get_file_url(current_user.avatar_path)
     return current_user
 
 

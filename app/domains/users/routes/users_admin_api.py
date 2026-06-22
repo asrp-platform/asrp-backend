@@ -103,9 +103,7 @@ async def get_user_by_admin(
     permissions: AdminPermissionsDep,
     use_case: GetUserByIdUseCaseDep,
 ) -> UserSchema:
-    user, avatar_url = await use_case.execute(permissions, user_id)
-    response = UserSchema.model_validate(user)
-    return response.model_copy(update={"avatar_path": avatar_url})
+    return await use_case.execute(permissions, user_id)
 
 
 class UpdateUserByAdminResponses(Responses):

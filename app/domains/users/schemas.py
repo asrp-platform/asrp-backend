@@ -60,6 +60,7 @@ class UserSchema(BaseModel):
     phone_number: str | None
     pending: bool
     last_password_change: datetime | None
+    avatar_url: str | None
 
     model_config = {
         "from_attributes": True,

@@ -20,17 +20,15 @@ class GetUserByIdUseCase:
         self.__user_service = user_service
         self.__file_storage = file_storage
 
-    async def execute(self, permissions: list[str], user_id: int) -> tuple[User, str]:
-        """Returns tuple of User, avatar_url"""
+    async def execute(self, permissions: list[str], user_id: int) -> User:
         # check_permissions("users.view", permissions)
-        avatar_url = None
         async with self.__tm:
             user = await self.__user_service.get_user_by_kwargs(id=user_id)
             if user is None:
                 raise NotFoundError("User with provided ID not found")
             if user.avatar_path is not None:
-                avatar_url = await self.__file_storage.get_file_url(user.avatar_path)
-            return user, avatar_url
+                user.avatar_url = await self.__file_storage.get_file_url(user.avatar_path)
+            return user
 
 
 GetUserByIdUseCaseDep = Annotated[GetUserByIdUseCase, Depends(GetUserByIdUseCase)]
