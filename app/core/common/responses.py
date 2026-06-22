@@ -14,6 +14,10 @@ class PaginatedResponse(BaseModel, Generic[DataModel]):
     data: list[DataModel]
 
 
+class NotAuthorizedResponses(Responses):
+    NOT_AUTHORIZED = 401, "Not authorized"
+
+
 class InvalidRequestParamsResponses(Responses):
     INVALID_FILTER_FIELD = 400, "Invalid filter field"
     INVALID_SORTER_FIELD = 400, "Invalid sorter field"

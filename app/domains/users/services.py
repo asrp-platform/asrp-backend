@@ -51,8 +51,7 @@ class UserService:
     async def get_all_paginated_counted(
         self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> [list[User], int]:
-        async with self.transaction_manager:
-            return await self.transaction_manager.user_repository.list(limit, offset, order_by, filters)
+        return await self.transaction_manager.user_repository.list(limit, offset, order_by, filters)
 
     async def get_all_users_count(self) -> int:
         async with self.transaction_manager:
@@ -502,14 +501,12 @@ class CommunicationPreferencesService:
         if not communication_preferences:
             create_data = {"user_id": user_id}
             if is_agrees_communications:
-                create_data.update(
-                    {
-                        "newsletters": True,
-                        "events_meetings": True,
-                        "committees_leadership": True,
-                        "volunteer_opportunities": True,
-                    }
-                )
+                create_data.update({
+                    "newsletters": True,
+                    "events_meetings": True,
+                    "committees_leadership": True,
+                    "volunteer_opportunities": True,
+                })
 
             communication_preferences = await self.transaction_manager.communication_preferences_repository.create(
                 **create_data
@@ -533,14 +530,12 @@ class CommunicationPreferencesService:
         if not communication_preferences:
             create_data = {"user_id": user_id}
             if is_agrees_communications:
-                create_data.update(
-                    {
-                        "newsletters": True,
-                        "events_meetings": True,
-                        "committees_leadership": True,
-                        "volunteer_opportunities": True,
-                    }
-                )
+                create_data.update({
+                    "newsletters": True,
+                    "events_meetings": True,
+                    "committees_leadership": True,
+                    "volunteer_opportunities": True,
+                })
 
             return await self.transaction_manager.communication_preferences_repository.create(**create_data)
 
