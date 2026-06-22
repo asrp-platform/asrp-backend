@@ -67,7 +67,7 @@ class MembershipApplicationHandler:
         await self.__membership_service.update_membership_request(
             payment.membership_request_id, status=MembershipRequestStatusEnum.PAID
         )
-        user: User = await self.__user_service.get_user_by_kwargs(id=payment.user_id)
+        user: User = await self.__user_service._get_user_by_kwargs(id=payment.user_id)
         subject, body = build_membership_application_html(user.full_name)
         await self.__email_queue.send_emailbody(to=user.email, subject=subject, body=body)
 

@@ -25,7 +25,7 @@ class RegisterResponses(Responses):
 
 class AuthService:
     def __init__(self, transaction_manager: TransactionManagerDep, email_queue: EmailQueueDep):
-        self.transaction_manager = transaction_manager
+        self.__tm = transaction_manager
         self.cryptographer = Cryptographer(fernet)
         self.email_queue = email_queue
 
@@ -37,11 +37,11 @@ class AuthService:
 
         email = user_data["email"]
 
-        async with self.transaction_manager:
-            existing_user: User = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
+        async with self.__tm:
+            existing_user: User = await self.__tm.user_repository.get_first_by_kwargs(email=email)
 
             if existing_user is None:
-                user = await self.transaction_manager.user_repository.create(**user_data, pending=True)
+                user = await self.__tm.user_repository.create(**user_data, pending=True)
 
             elif existing_user.pending is True:
                 existing_user.firstname = user_data["firstname"]
@@ -65,21 +65,19 @@ class AuthService:
         return user
 
     async def set_new_password(self, email, password):
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
+        async with self.__tm:
+            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
 
             if user is None:
                 raise NotFoundError("User with provided email not found")
 
             user.password = password
-            await self.transaction_manager._session.flush()  # noqa property's setter manual calling
-            await self.transaction_manager.user_repository.update(
-                user.id, last_password_change=datetime.now(tz=timezone.utc)
-            )
+            await self.__tm._session.flush()  # noqa property's setter manual calling
+            await self.__tm.user_repository.update(user.id, last_password_change=datetime.now(tz=timezone.utc))
 
     async def reset_password(self, email: str):
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
+        async with self.__tm:
+            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
 
         if user is None:
             return
@@ -102,8 +100,8 @@ class AuthService:
         await self.email_queue.send_email(to=user.email, subject=subject, body=body)
 
     async def resend_email_confirmation_link(self, email: str):
-        async with self.transaction_manager:
-            existing_user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
+        async with self.__tm:
+            existing_user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
 
             if existing_user is None:
                 raise NotFoundError("User with provided email not found")
@@ -120,8 +118,8 @@ class AuthService:
         except ValueError as e:
             raise EmailConfirmationExpiredError("Invalid or expired token") from e
 
-        async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(email=email)
+        async with self.__tm:
+            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
 
             if user is None:
                 raise EmailConfirmationExpiredError("Invalid or expired token")

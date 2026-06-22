@@ -11,7 +11,6 @@ from app.core.common.responses import (
     PaginatedResponse,
     PermissionsResponses,
 )
-from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
@@ -24,6 +23,7 @@ from app.domains.users.schemas import (
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.use_cases.users_admin.get_user_by_id import GetUserByIdUseCaseDep
 from app.domains.users.use_cases.users_admin.get_users import GetUsersUseCaseDep
 from app.domains.users.use_cases.ban_user import BanUserUseCaseDep
 from app.domains.users.use_cases.unban_user import UnbanUserUseCaseDep
@@ -83,22 +83,27 @@ async def get_name_change_requests(
     if "name_change_requests.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    try:
-        name_change_requests, count = await service.get_all_paginated_counted_name_change_requests(
-            order_by=ordering,
-            filters=filters.model_dump(exclude_none=True),
-            limit=params["limit"],
-            offset=params["offset"],
-        )
-        data = [NameChangeRequestViewSchema.model_validate(request) for request in name_change_requests]
-        return PaginatedResponse(
-            count=count,
-            data=data,
-            page=params["page"],
-            page_size=params["page_size"],
-        )
-    except InvalidOrderAttributeError:
-        raise NameChangeRequestResponses.INVALID_SORTER_FIELD
+    data, count = await service.get_all_paginated_counted_name_change_requests(
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True),
+        limit=params["limit"],
+        offset=params["offset"],
+    )
+    return PaginatedResponse(
+        count=count,
+        data=data,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
+
+
+@router.get("/{user_id}")
+async def get_user_by_admin(
+    user_id: int,
+    permissions: AdminPermissionsDep,
+    use_case: GetUserByIdUseCaseDep,
+) -> UserSchema:
+    return await use_case.execute(permissions, user_id)
 
 
 class UpdateUserByAdminResponses(Responses):

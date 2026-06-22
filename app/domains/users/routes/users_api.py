@@ -29,7 +29,7 @@ async def get_user(
     current_user: CurrentUserDep,  # noqa
     user_service: UserServiceDep,
 ) -> UserSchema:
-    user = await user_service.get_user_by_kwargs(id=user_id)
+    user = await user_service._get_user_by_kwargs(id=user_id)
     if user is None:
         raise GetUserResponses.USER_NOT_FOUND
     return UserSchema.from_orm(user)
