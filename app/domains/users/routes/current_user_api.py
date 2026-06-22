@@ -59,7 +59,7 @@ async def get_user_avatar(
     user_service: UserServiceDep,
 ) -> str | None:
     # Using use case here is overhead
-    return await user_service.get_user_avatar_url(current_user.id)
+    return await user_service._get_user_by_kwargs(id=current_user.id)
 
 
 class UploadAvatarResponses(UpdateUserDataResponses):

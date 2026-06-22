@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError
+from app.core.storage.storage_factory import FileStorageDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
@@ -13,17 +14,23 @@ class GetUserByIdUseCase:
         self,
         user_service: UserServiceDep,
         transaction_manager: TransactionManagerDep,
+        file_storage: FileStorageDep,
     ):
         self.__tm = transaction_manager
         self.__user_service = user_service
+        self.__file_storage = file_storage
 
-    async def execute(self, permissions: list[str], user_id: int) -> User:
+    async def execute(self, permissions: list[str], user_id: int) -> tuple[User, str]:
+        """Returns tuple of User, avatar_url"""
         # check_permissions("users.view", permissions)
+        avatar_url = None
         async with self.__tm:
             user = await self.__user_service.get_user_by_kwargs(id=user_id)
             if user is None:
                 raise NotFoundError("User with provided ID not found")
-            return user
+            if user.avatar_path is not None:
+                avatar_url = await self.__file_storage.get_file_url(user.avatar_path)
+            return user, avatar_url
 
 
 GetUserByIdUseCaseDep = Annotated[GetUserByIdUseCase, Depends(GetUserByIdUseCase)]

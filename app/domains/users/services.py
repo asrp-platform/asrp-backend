@@ -6,7 +6,6 @@ from loguru import logger
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, NotResourceOwnerError
 from app.core.config import settings
-from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
@@ -31,7 +30,7 @@ from app.domains.users.models import (
 
 
 class UserService:
-    def __init__(self, transaction_manager: TransactionManager, file_storage: BaseFileStorage):
+    def __init__(self, transaction_manager: TransactionManagerDep, file_storage: FileStorageDep):
         self.transaction_manager = transaction_manager
         self.file_storage = file_storage
 
@@ -123,6 +122,16 @@ class UserService:
     async def unban_user(self, user_id: int) -> User:
         return await self.transaction_manager.user_repository.update(user_id, banned=False, ban_reason=None)
 
+
+    async def _get_user_avatar_url(self, user_id: int):
+        async with self.transaction_manager:
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+            if user is None:
+                raise NotFoundError("User with provided ID not found")
+            avatar_object_key = user.avatar_path
+        if avatar_object_key is None:
+            return None
+        return await self.file_storage.get_file_url(avatar_object_key)
 
 
 class ProfessionalInformationService:  # noqa B903
@@ -525,13 +534,6 @@ class CommunicationPreferencesService:
         )
 
 
-def get_user_service(
-    transaction_manager: TransactionManagerDep,
-    file_storage: FileStorageDep,
-) -> UserService:
-    return UserService(transaction_manager, file_storage)
-
-
 def get_professional_information_service(
     transaction_manager: TransactionManagerDep,
 ) -> ProfessionalInformationService:
@@ -566,7 +568,7 @@ def get_communication_preferences_service(
     return CommunicationPreferencesService(transaction_manager)
 
 
-UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+UserServiceDep = Annotated[UserService, Depends(UserService)]
 ProfessionalInformationServiceDep = Annotated[
     ProfessionalInformationService, Depends(get_professional_information_service)
 ]
