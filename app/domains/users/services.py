@@ -466,10 +466,10 @@ class NameChangeRequestService:
 
 class CommunicationPreferencesService:
     def __init__(self, transaction_manager):
-        self.transaction_manager = transaction_manager
+        self.__tm = transaction_manager
 
     async def check_resource_owner(self, user_id: int, *, current_user_id: int = None):
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
+        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
 
         if user is None:
             raise NotFoundError("User with provided ID not found")
@@ -477,64 +477,30 @@ class CommunicationPreferencesService:
         if current_user_id is not None and user_id != current_user_id:
             raise NotResourceOwnerError("Not resource owner")
 
-    async def get_or_create(self, user_id: int, is_agrees_communications: bool = False) -> CommunicationPreferences:
-        """
-        Retrieves communication settings for the user or creates them with default values.
-        This ensures that the user always has the settings after calling the method.
-        """
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-
+    async def get_communication_preferences(self, user_id: int) -> CommunicationPreferences:
+        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
         if user is None:
             raise NotFoundError("User with provided ID not found")
 
-        communication_preferences = (
-            await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
-        )
+        return await self.__tm.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
 
-        if not communication_preferences:
-            create_data = {"user_id": user_id}
-            if is_agrees_communications:
-                create_data.update({
-                    "newsletters": True,
-                    "events_meetings": True,
-                    "committees_leadership": True,
-                    "volunteer_opportunities": True,
-                })
-
-            communication_preferences = await self.transaction_manager.communication_preferences_repository.create(
-                **create_data
-            )
-
-        return communication_preferences
-
-    async def update_or_create_preferences(
+    async def update_communication_preferences(
         self,
         user_id: int,
         update_data: dict | None = None,
-        is_agrees_communications: bool = False,
     ) -> CommunicationPreferences:
         if update_data is None:
             update_data = {}
 
-        communication_preferences = (
-            await self.transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user_id)
+        user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)
+        if user is None:
+            raise NotFoundError("User with provided ID not found")
+
+        communication_preferences = await self.__tm.communication_preferences_repository.get_first_by_kwargs(
+            user_id=user_id
         )
 
-        if not communication_preferences:
-            create_data = {"user_id": user_id}
-            if is_agrees_communications:
-                create_data.update({
-                    "newsletters": True,
-                    "events_meetings": True,
-                    "committees_leadership": True,
-                    "volunteer_opportunities": True,
-                })
-
-            return await self.transaction_manager.communication_preferences_repository.create(**create_data)
-
-        return await self.transaction_manager.communication_preferences_repository.update(
-            communication_preferences.id, **update_data
-        )
+        return await self.__tm.communication_preferences_repository.update(communication_preferences.id, **update_data)
 
 
 def get_professional_information_service(
