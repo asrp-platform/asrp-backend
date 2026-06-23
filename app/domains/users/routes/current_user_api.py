@@ -20,7 +20,7 @@ from app.domains.users.schemas import (
     NameChangeRequestCreateSchema,
     NameChangeRequestViewSchema,
     UpdateUserSchema,
-    UserSchema,
+    UserPrivateSchema,
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
@@ -40,7 +40,7 @@ router = APIRouter(tags=["Current User: Profile"], prefix="/users/current-user")
 async def get_current_user(
     current_user: CurrentUserDep,
     file_storage: FileStorageDep,
-) -> UserSchema:
+) -> UserPrivateSchema:
     if current_user.avatar_path is not None:
         current_user.avatar_url = await file_storage.get_file_url(current_user.avatar_path)
     return current_user
@@ -53,7 +53,7 @@ class UpdateUserDataResponses(Responses):
 @router.patch("", summary="Update current authenticated user", responses=UpdateUserDataResponses.responses)
 async def update_user(
     current_user: CurrentUserDep, update_data: UpdateUserSchema, use_case: UpdateCurrentUserUseCaseDep
-) -> UserSchema:
+) -> UserPrivateSchema:
     return await use_case.execute(current_user, **update_data.model_dump(exclude_unset=True))
 
 

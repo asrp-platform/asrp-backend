@@ -26,7 +26,7 @@ from app.domains.shared.deps import (
     create_access_token,
     create_refresh_token,
 )
-from app.domains.users.schemas import UserSchema
+from app.domains.users.schemas import UserPrivateSchema
 from app.domains.users.services import UserServiceDep
 
 
@@ -51,9 +51,9 @@ REFRESH_COOKIE_KWARGS = {
 async def register(
     register_form_data: RegisterFormData,
     auth_service: AuthServiceDep,
-) -> UserSchema:
+) -> UserPrivateSchema:
     user = await auth_service.register_user(register_form_data)
-    return UserSchema.model_validate(user)
+    return UserPrivateSchema.model_validate(user)
 
 
 class LoginResponses(ApiResponses):

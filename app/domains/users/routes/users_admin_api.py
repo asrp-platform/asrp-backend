@@ -20,7 +20,7 @@ from app.domains.users.schemas import (
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
     UpdateUserByAdminSchema,
-    UserSchema,
+    UserPrivateSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
 from app.domains.users.use_cases.users_admin.get_user_by_id import GetUserByIdUseCaseDep
@@ -44,7 +44,7 @@ async def get_users(
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[UsersFilter, Depends()] = None,
-) -> PaginatedResponse[UserSchema]:
+) -> PaginatedResponse[UserPrivateSchema]:
     data, count = await use_case.execute(
         permissions,
         order_by=ordering,
@@ -102,7 +102,7 @@ async def get_user_by_admin(
     user_id: int,
     permissions: AdminPermissionsDep,
     use_case: GetUserByIdUseCaseDep,
-) -> UserSchema:
+) -> UserPrivateSchema:
     return await use_case.execute(permissions, user_id)
 
 

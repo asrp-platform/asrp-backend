@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal, Optional
 
 import phonenumbers
-from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
@@ -35,7 +35,7 @@ class UserShortSchema(BaseModel):
     email: str
 
 
-class UserSchema(BaseModel):
+class UserPublicSchema(BaseModel):
     id: int
     firstname: str
     middlename: str | None
@@ -54,17 +54,24 @@ class UserSchema(BaseModel):
     city: str
     languages_spoken: str | None
     professional_interests: str | None
-    telegram_username: str | None
-    created_at: datetime
-    avatar_path: str | None
-    phone_number: str | None
-    pending: bool
-    last_password_change: datetime | None
     avatar_url: str | None
 
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserPrivateSchema(UserPublicSchema):
+    email: str
+    admin: bool
+    telegram_username: str | None
+    avatar_path: str | None
+    avatar_url: str | None
+    phone_number: str | None
+    pending: bool
+    created_at: datetime
+    last_password_change: datetime | None
+    superuser: bool
+    banned: bool
+    ban_reason: str | None
 
 
 class UpdateUserByAdminSchema(BaseModel):

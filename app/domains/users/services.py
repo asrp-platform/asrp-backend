@@ -115,13 +115,16 @@ class UserService:
     async def _get_user_by_kwargs(self, **kwargs) -> User:
         """Method closes transaction. Can't be used in transaction manager"""
         async with self.transaction_manager:
-            return await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
+            user = await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
+            if user is None:
+                raise NotFoundError("User with the provided ID not found")
+            return user
+
     async def ban_user(self, user_id: int, ban_reason: str) -> User:
         return await self.transaction_manager.user_repository.update(user_id, banned=True, ban_reason=ban_reason)
 
     async def unban_user(self, user_id: int) -> User:
         return await self.transaction_manager.user_repository.update(user_id, banned=False, ban_reason=None)
-
 
     async def _get_user_avatar_url(self, user_id: int):
         async with self.transaction_manager:
