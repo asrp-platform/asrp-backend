@@ -37,7 +37,7 @@ async def get_user_communication_preferences(
     user_id: Annotated[int, Path()],
     current_user: CurrentUserDep,  # noqa
     use_case: RetrieveCommunicationPreferencesUseCaseDep,
-) -> CommunicationPreferencesViewSchema:
+) -> CommunicationPreferencesViewSchema | None:
     return await use_case.execute(user_id)
 
 

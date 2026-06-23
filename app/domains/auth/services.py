@@ -39,7 +39,8 @@ class AuthService:
 
             if existing_user is None:
                 user = await self.__tm.user_repository.create(**user_data, pending=True)
-                await self.__tm.communication_preferences_repository.create()
+                await self.__tm.flush()
+                await self.__tm.communication_preferences_repository.create(user_id=user.id)
 
             elif existing_user.pending is True:
                 existing_user.firstname = user_data["firstname"]

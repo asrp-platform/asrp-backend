@@ -9,8 +9,9 @@ from tests.fixtures.auth import AuthHeaders, UserFactory
 pytestmark = pytest.mark.anyio
 
 
-async def test_create_user_communication_preferences_success(
+async def test_get_user_communication_preferences_does_not_create_missing_preferences(
     client: AsyncClient,
+    test_transaction_manager,
     test_user: User,
     auth_headers: AuthHeaders,
 ):
@@ -22,10 +23,16 @@ async def test_create_user_communication_preferences_success(
     data = response.json()
 
     assert response.status_code == 200
-    assert not data["newsletters"]
-    assert not data["events_meetings"]
-    assert not data["committees_leadership"]
-    assert not data["volunteer_opportunities"]
+    assert data is None
+
+    async with test_transaction_manager:
+        communication_preferences = (
+            await test_transaction_manager.communication_preferences_repository.get_first_by_kwargs(
+                user_id=test_user.id
+            )
+        )
+
+    assert communication_preferences is None
 
 
 async def test_get_user_communication_preferences(

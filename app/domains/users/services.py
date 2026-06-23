@@ -488,6 +488,7 @@ class CommunicationPreferencesService:
         self,
         user_id: int,
         update_data: dict | None = None,
+        is_agrees_communications: bool = False,
     ) -> CommunicationPreferences:
         if update_data is None:
             update_data = {}
@@ -499,6 +500,17 @@ class CommunicationPreferencesService:
         communication_preferences = await self.__tm.communication_preferences_repository.get_first_by_kwargs(
             user_id=user_id
         )
+
+        if is_agrees_communications:
+            update_data.update({
+                "newsletters": True,
+                "events_meetings": True,
+                "committees_leadership": True,
+                "volunteer_opportunities": True,
+            })
+
+        if communication_preferences is None:
+            return await self.__tm.communication_preferences_repository.create(user_id=user_id, **update_data)
 
         return await self.__tm.communication_preferences_repository.update(communication_preferences.id, **update_data)
 
