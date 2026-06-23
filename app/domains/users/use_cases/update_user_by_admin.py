@@ -17,13 +17,13 @@ class UpdateUserByAdminUseCase:
 
     async def execute(
         self,
-        user_id: int,
+        target_user_id: int,
         admin: User,
         permissions: list[str],
         update_data: dict,
     ) -> User:
         async with self.__transaction_manager:
-            target_user = await self.__user_service.get_user_by_kwargs(id=user_id)
+            target_user = await self.__user_service.get_user_by_kwargs(id=target_user_id)
             if target_user is None:
                 raise NotFoundError()
 
@@ -43,10 +43,10 @@ class UpdateUserByAdminUseCase:
                 if "admin.delete" not in permissions:
                     raise PermissionDeniedError("Don't have enough permissions")
 
-            if is_admin_flag and admin.id == user_id:
+            if is_admin_flag and admin.id == target_user_id:
                 raise PermissionDeniedError("Don't have enough permissions")
 
-            return await self.__user_service.update_user(user_id, **update_data)
+            return await self.__user_service.update_user(target_user_id, **update_data)
 
 
 def get_update_user_by_admin_use_case(

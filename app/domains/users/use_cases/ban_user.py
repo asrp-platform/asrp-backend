@@ -17,16 +17,16 @@ class BanUserUseCase:
 
     async def execute(
         self,
-        user_id: int,
+        target_user_id: int,
         admin: User,
         permissions: list[str],
         ban_reason: str,
     ) -> User:
-        if admin.id == user_id:
+        if admin.id == target_user_id:
             raise PermissionDeniedError("Don't have enough permissions")
 
         async with self.__transaction_manager:
-            target_user = await self.__user_service.get_user_by_kwargs(id=user_id)
+            target_user = await self.__user_service.get_user_by_kwargs(id=target_user_id)
             if target_user is None:
                 raise NotFoundError()
 
@@ -40,7 +40,7 @@ class BanUserUseCase:
                 if "users.update" not in permissions:
                     raise PermissionDeniedError("Don't have enough permissions")
 
-            return await self.__user_service.ban_user(user_id, ban_reason)
+            return await self.__user_service.ban_user(target_user_id, ban_reason)
 
 
 def get_ban_user_use_case(
