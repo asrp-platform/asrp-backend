@@ -140,8 +140,8 @@ async def test_admin_cannot_ban_self(
     )
     data = response.json()
 
-    assert response.status_code == 400
-    assert data["detail"] == "You cannot ban yourself"
+    assert response.status_code == 403
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_cannot_unban_self(
@@ -156,8 +156,8 @@ async def test_admin_cannot_unban_self(
     )
     data = response.json()
 
-    assert response.status_code == 400
-    assert data["detail"] == "You cannot unban yourself"
+    assert response.status_code == 403
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_without_users_view_cannot_get_users(
@@ -257,7 +257,7 @@ async def test_cannot_ban_superadmin(
     data = response.json()
 
     assert response.status_code == 403
-    assert data["detail"] == "You cannot ban the system administrator"
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_can_update_user_role(
