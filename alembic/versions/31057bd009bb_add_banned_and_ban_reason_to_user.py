@@ -11,6 +11,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
+from app.core.config import DEV_MODE
 
 # revision identifiers, used by Alembic.
 revision: str = "31057bd009bb"
@@ -25,7 +26,9 @@ def upgrade() -> None:
     op.add_column("users", sa.Column("ban_reason", sa.String(length=512), nullable=True))
 
     op.add_column("users", sa.Column("superuser", sa.Boolean(), server_default=sa.text("false"), nullable=False))
-    op.execute("UPDATE users SET superuser = true WHERE email = 'admin@mail.com'")
+
+    if DEV_MODE:
+        op.execute("UPDATE users SET superuser = true WHERE email = 'admin@mail.com'")
     # ### end Alembic commands ###
 
 
