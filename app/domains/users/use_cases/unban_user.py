@@ -3,15 +3,15 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
-from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
-from app.domains.users.services import UserService, UserServiceDep
+from app.domains.users.services import UserServiceDep
 
 
 class UnbanUserUseCase:
     """Use case for unbanning a user."""
 
-    def __init__(self, transaction_manager: TransactionManager, user_service: UserService) -> None:
+    def __init__(self, transaction_manager: TransactionManagerDep, user_service: UserServiceDep) -> None:
         self.__transaction_manager = transaction_manager
         self.__user_service = user_service
 
@@ -42,11 +42,4 @@ class UnbanUserUseCase:
             return await self.__user_service.unban_user(target_user_id)
 
 
-def get_unban_user_use_case(
-    transaction_manager: TransactionManagerDep,
-    user_service: UserServiceDep,
-) -> UnbanUserUseCase:
-    return UnbanUserUseCase(transaction_manager, user_service)
-
-
-UnbanUserUseCaseDep = Annotated[UnbanUserUseCase, Depends(get_unban_user_use_case)]
+UnbanUserUseCaseDep = Annotated[UnbanUserUseCase, Depends()]

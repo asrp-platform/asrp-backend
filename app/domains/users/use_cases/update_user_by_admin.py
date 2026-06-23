@@ -3,15 +3,15 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
-from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
+from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
-from app.domains.users.services import UserService, UserServiceDep
+from app.domains.users.services import UserServiceDep
 
 
 class UpdateUserByAdminUseCase:
     """Use case for updating user data by an administrator."""
 
-    def __init__(self, transaction_manager: TransactionManager, user_service: UserService) -> None:
+    def __init__(self, transaction_manager: TransactionManagerDep, user_service: UserServiceDep) -> None:
         self.__transaction_manager = transaction_manager
         self.__user_service = user_service
 
@@ -29,10 +29,10 @@ class UpdateUserByAdminUseCase:
 
             if target_user.admin:
                 if "admin.update" not in permissions:
-                    raise PermissionDeniedError()
+                    raise PermissionDeniedError("Don't have enough permissions")
             else:
                 if "users.update" not in permissions:
-                    raise PermissionDeniedError()
+                    raise PermissionDeniedError("Don't have enough permissions")
 
             is_admin_flag = update_data.get("admin")
 
@@ -49,11 +49,4 @@ class UpdateUserByAdminUseCase:
             return await self.__user_service.update_user(target_user_id, **update_data)
 
 
-def get_update_user_by_admin_use_case(
-    transaction_manager: TransactionManagerDep,
-    user_service: UserServiceDep,
-) -> UpdateUserByAdminUseCase:
-    return UpdateUserByAdminUseCase(transaction_manager, user_service)
-
-
-UpdateUserByAdminUseCaseDep = Annotated[UpdateUserByAdminUseCase, Depends(get_update_user_by_admin_use_case)]
+UpdateUserByAdminUseCaseDep = Annotated[UpdateUserByAdminUseCase, Depends()]
