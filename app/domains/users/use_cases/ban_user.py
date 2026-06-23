@@ -4,7 +4,6 @@ from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
-from app.domains.users.exceptions import CantBanSelfError, CantBanSuperadminError
 from app.domains.users.models import User
 from app.domains.users.services import UserService, UserServiceDep
 
@@ -24,7 +23,7 @@ class BanUserUseCase:
         ban_reason: str,
     ) -> User:
         if admin.id == user_id:
-            raise CantBanSelfError()
+            raise PermissionDeniedError("Don't have enough permissions")
 
         async with self.__transaction_manager:
             target_user = await self.__user_service.get_user_by_kwargs(id=user_id)
@@ -32,14 +31,14 @@ class BanUserUseCase:
                 raise NotFoundError()
 
             if target_user.superuser:
-                raise CantBanSuperadminError()
+                raise PermissionDeniedError("Don't have enough permissions")
 
             if target_user.admin:
                 if "admin.update" not in permissions:
-                    raise PermissionDeniedError()
+                    raise PermissionDeniedError("Don't have enough permissions")
             else:
                 if "users.update" not in permissions:
-                    raise PermissionDeniedError()
+                    raise PermissionDeniedError("Don't have enough permissions")
 
             return await self.__user_service.ban_user(user_id, ban_reason)
 

@@ -23,23 +23,3 @@ class NameChangeRequestCooldownNotExpiredError(TimeCooldownError):
 
 class CannotDeleteLastResidencyError(InvalidOperationError):
     pass
-
-
-class GrantAdminRoleForbiddenError(Exception):
-    pass
-
-
-class RevokeAdminRoleForbiddenError(Exception):
-    pass
-
-
-class CantBanSelfError(Exception):
-    pass
-
-
-class CantUnbanSelfError(Exception):
-    pass
-
-
-class CantBanSuperadminError(Exception):
-    pass

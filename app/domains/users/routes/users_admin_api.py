@@ -4,20 +4,12 @@ from fastapi import APIRouter, Depends
 from fastapi.params import Path
 from fastapi_exception_responses import Responses
 
-from app.core.common.exceptions import NotFoundError, PermissionDeniedError
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
-from app.domains.users.exceptions import (
-    CantBanSelfError,
-    CantBanSuperadminError,
-    CantUnbanSelfError,
-    GrantAdminRoleForbiddenError,
-    RevokeAdminRoleForbiddenError,
-)
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
     BanUserSchema,
@@ -110,8 +102,6 @@ async def get_name_change_requests(
 
 
 class UpdateUserByAdminResponses(Responses):
-    CANT_GRANT_ADMIN_ROLE = 403, "Don't have enough permissions to grand admin role"
-    CANT_REVOKE_ADMIN_ROLE = 403, "Don't have enough permissions to revoke admin role"
     USER_NOT_FOUND = 404, "User with provided ID not found"
     PERMISSION_ERROR = 403, "Don't have enough permissions"
 
@@ -128,21 +118,9 @@ async def update_user_by_admin(
     update_data: UpdateUserByAdminSchema,
     use_case: UpdateUserByAdminUseCaseDep,
 ):
-    try:
-        return await use_case.execute(
-            user_id=user_id,
-            admin=admin,
-            permissions=permissions,
-            update_data=update_data.model_dump(exclude_unset=True),
-        )
-    except NotFoundError:
-        raise UpdateUserByAdminResponses.USER_NOT_FOUND
-    except PermissionDeniedError:
-        raise UpdateUserByAdminResponses.PERMISSION_ERROR
-    except GrantAdminRoleForbiddenError:
-        raise UpdateUserByAdminResponses.CANT_GRANT_ADMIN_ROLE
-    except RevokeAdminRoleForbiddenError:
-        raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
+    return await use_case.execute(
+        user_id=user_id, admin=admin, permissions=permissions, update_data=update_data.model_dump(exclude_unset=True)
+    )
 
 
 class GetPermissionsResponses(PermissionsResponses):
@@ -224,9 +202,6 @@ async def update_name_change_request(
 
 class BanUserResponses(Responses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
-    CANT_BAN_SELF = 400, "You cannot ban yourself"
-    CANT_UNBAN_SELF = 400, "You cannot unban yourself"
-    CANT_BAN_SUPERADMIN = 403, "You cannot ban the system administrator"
     PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
@@ -242,21 +217,7 @@ async def ban_user(
     permissions: AdminPermissionsDep,
     use_case: BanUserUseCaseDep,
 ) -> UserSchema:
-    try:
-        return await use_case.execute(
-            user_id=user_id,
-            admin=admin,
-            permissions=permissions,
-            ban_reason=ban_data.ban_reason,
-        )
-    except CantBanSelfError:
-        raise BanUserResponses.CANT_BAN_SELF
-    except NotFoundError:
-        raise BanUserResponses.USER_NOT_FOUND
-    except CantBanSuperadminError:
-        raise BanUserResponses.CANT_BAN_SUPERADMIN
-    except PermissionDeniedError:
-        raise BanUserResponses.PERMISSION_ERROR
+    return await use_case.execute(user_id=user_id, admin=admin, permissions=permissions, ban_reason=ban_data.ban_reason)
 
 
 @router.delete(
@@ -270,15 +231,8 @@ async def unban_user(
     permissions: AdminPermissionsDep,
     use_case: UnbanUserUseCaseDep,
 ) -> UserSchema:
-    try:
-        return await use_case.execute(
-            user_id=user_id,
-            admin=admin,
-            permissions=permissions,
-        )
-    except CantUnbanSelfError:
-        raise BanUserResponses.CANT_UNBAN_SELF
-    except NotFoundError:
-        raise BanUserResponses.USER_NOT_FOUND
-    except PermissionDeniedError:
-        raise BanUserResponses.PERMISSION_ERROR
+    return await use_case.execute(
+        user_id=user_id,
+        admin=admin,
+        permissions=permissions,
+    )

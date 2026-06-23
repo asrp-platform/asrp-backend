@@ -4,7 +4,6 @@ from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
-from app.domains.users.exceptions import GrantAdminRoleForbiddenError, RevokeAdminRoleForbiddenError
 from app.domains.users.models import User
 from app.domains.users.services import UserService, UserServiceDep
 
@@ -39,13 +38,13 @@ class UpdateUserByAdminUseCase:
 
             if is_admin_flag:
                 if "admin.create" not in permissions:
-                    raise GrantAdminRoleForbiddenError()
+                    raise PermissionDeniedError("Don't have enough permissions")
             else:
                 if "admin.delete" not in permissions:
-                    raise RevokeAdminRoleForbiddenError()
+                    raise PermissionDeniedError("Don't have enough permissions")
 
             if is_admin_flag and admin.id == user_id:
-                raise RevokeAdminRoleForbiddenError()
+                raise PermissionDeniedError("Don't have enough permissions")
 
             return await self.__user_service.update_user(user_id, **update_data)
 
