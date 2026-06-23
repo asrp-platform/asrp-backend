@@ -119,7 +119,10 @@ async def update_user_by_admin(
     use_case: UpdateUserByAdminUseCaseDep,
 ):
     return await use_case.execute(
-        user_id=user_id, admin=admin, permissions=permissions, update_data=update_data.model_dump(exclude_unset=True)
+        target_user_id=user_id,
+        admin=admin,
+        permissions=permissions,
+        update_data=update_data.model_dump(exclude_unset=True),
     )
 
 
@@ -217,7 +220,9 @@ async def ban_user(
     permissions: AdminPermissionsDep,
     use_case: BanUserUseCaseDep,
 ) -> UserSchema:
-    return await use_case.execute(user_id=user_id, admin=admin, permissions=permissions, ban_reason=ban_data.ban_reason)
+    return await use_case.execute(
+        target_user_id=user_id, admin=admin, permissions=permissions, ban_reason=ban_data.ban_reason
+    )
 
 
 @router.delete(
@@ -232,7 +237,7 @@ async def unban_user(
     use_case: UnbanUserUseCaseDep,
 ) -> UserSchema:
     return await use_case.execute(
-        user_id=user_id,
+        target_user_id=user_id,
         admin=admin,
         permissions=permissions,
     )
