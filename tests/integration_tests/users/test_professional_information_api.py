@@ -11,10 +11,11 @@ pytestmark = pytest.mark.anyio
 
 async def test_get_professional_information_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     professional_information: ProfessionalInformation,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/professional-information")
+    response = await client.get(f"/api/users/{test_user.id}/professional-information", headers=auth_headers)
     data = response.json()
 
     assert response.status_code == 200
@@ -24,9 +25,10 @@ async def test_get_professional_information_success(
 
 async def test_get_professional_information_success_none(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/professional-information")
+    response = await client.get(f"/api/users/{test_user.id}/professional-information", headers=auth_headers)
     data = response.json()
 
     assert response.status_code == 200
@@ -35,10 +37,20 @@ async def test_get_professional_information_success_none(
 
 async def test_get_professional_information_user_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
 ):
-    response = await client.get("api/users/999999/professional-information")
+    response = await client.get("api/users/999999/professional-information", headers=auth_headers)
 
     assert response.status_code == 404
+
+
+async def test_get_professional_information_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+):
+    response = await client.get(f"/api/users/{test_user.id}/professional-information")
+
+    assert response.status_code == 401
 
 
 async def test_put_professional_information_create_success(

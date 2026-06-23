@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi_exception_responses import Responses as ApiResponses
 from starlette.responses import Response
 
+from app.core.common.exceptions import NotFoundError
 from app.core.config import settings
 from app.domains.auth.exceptions import (
     EmailAlreadyConfirmedError,
@@ -68,7 +69,10 @@ async def login(
     user_service: UserServiceDep,
 ) -> JWTTokenResponse:
     email, password, remember = login_data.model_dump().values()
-    user = await user_service._get_user_by_kwargs(email=email)
+    try:
+        user = await user_service._get_user_by_kwargs(email=email)
+    except NotFoundError:
+        raise LoginResponses.WRONG_CREDENTIALS
 
     if user is None or not user.verify_password(password) or user.pending is True:
         raise LoginResponses.WRONG_CREDENTIALS

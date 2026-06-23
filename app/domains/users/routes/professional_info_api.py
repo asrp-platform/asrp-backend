@@ -20,6 +20,7 @@ class GetUserProfessionalInformationResponses(Responses):
 )
 async def get_user_professional_information(
     user_id: int,
+    current_user: CurrentUserDep,  # noqa
     professional_information_service: ProfessionalInformationServiceDep,
 ) -> ProfessionalInformationViewSchema | None:
     return await professional_information_service._get_by_user_id(user_id)
