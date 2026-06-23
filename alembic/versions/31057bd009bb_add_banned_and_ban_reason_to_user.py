@@ -13,6 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 from app.core.config import DEV_MODE
 
+
 # revision identifiers, used by Alembic.
 revision: str = "31057bd009bb"
 down_revision: Union[str, None] = "c85804cc0c22"
