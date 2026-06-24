@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.params import Path
-from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import (
@@ -22,12 +21,12 @@ from app.domains.users.schemas import (
     UpdateUserByAdminSchema,
     UserPrivateSchema,
 )
-from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
-from app.domains.users.use_cases.users_admin.get_user_by_id import GetUserByIdUseCaseDep
-from app.domains.users.use_cases.users_admin.get_users import GetUsersUseCaseDep
+from app.domains.users.services import NameChangeRequestServiceDep
 from app.domains.users.use_cases.ban_user import BanUserUseCaseDep
 from app.domains.users.use_cases.unban_user import UnbanUserUseCaseDep
 from app.domains.users.use_cases.update_user_by_admin import UpdateUserByAdminUseCaseDep
+from app.domains.users.use_cases.users_admin.get_user_by_id import GetUserByIdUseCaseDep
+from app.domains.users.use_cases.users_admin.get_users import GetUsersUseCaseDep
 
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends(get_admin_user)])
@@ -106,9 +105,8 @@ async def get_user_by_admin(
     return await use_case.execute(permissions, user_id)
 
 
-class UpdateUserByAdminResponses(Responses):
+class UpdateUserByAdminResponses(PermissionsResponses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
-    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.patch(
@@ -132,7 +130,6 @@ async def update_user_by_admin(
 
 
 class GetPermissionsResponses(PermissionsResponses):
-    PERMISSION_ERROR = 403, "Don't have enough permissions to read user permissions"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -152,7 +149,6 @@ async def get_user_permissions(
 
 
 class ManagePermissionsResponses(PermissionsResponses):
-    PERMISSION_ERROR = 403, "Don't have enough permissions to manage user permissions"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -200,17 +196,17 @@ async def update_name_change_request(
     permissions: AdminPermissionsDep,
     service: NameChangeRequestServiceDep,
 ) -> None:
-    if "name_change_requests.update" not in permissions:
-        raise NameChangeRequestResponses.PERMISSION_ERROR
-
-    await service.update_name_change_request(
-        user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
+    await service._update_name_change_request(  # noqa intensional direct call from service
+        permissions,
+        user_id,
+        name_change_request_id,
+        name_change_request_data.action,
+        name_change_request_data.reason_rejecting,
     )
 
 
-class BanUserResponses(Responses):
+class BanUserResponses(PermissionsResponses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
-    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.patch(
@@ -224,7 +220,7 @@ async def ban_user(
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
     use_case: BanUserUseCaseDep,
-) -> UserSchema:
+) -> UserPrivateSchema:
     return await use_case.execute(
         target_user_id=user_id, admin=admin, permissions=permissions, ban_reason=ban_data.ban_reason
     )
@@ -240,7 +236,7 @@ async def unban_user(
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
     use_case: UnbanUserUseCaseDep,
-) -> UserSchema:
+) -> UserPrivateSchema:
     return await use_case.execute(
         target_user_id=user_id,
         admin=admin,

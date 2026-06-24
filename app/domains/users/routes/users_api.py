@@ -29,7 +29,7 @@ async def get_user(
     current_user: CurrentUserDep,  # noqa
     user_service: UserServiceDep,
 ) -> UserPublicSchema:
-    return await user_service._get_user_by_kwargs(id=user_id)
+    return await user_service._get_user_by_kwargs(raise_not_found=True, id=user_id)  # noqa intensional direct call from service
 
 
 @router.get("/{user_id}/communication-preferences")

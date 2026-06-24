@@ -7,6 +7,7 @@ from loguru import logger
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, NotResourceOwnerError
 from app.core.config import settings
 from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.permissions import check_permissions
 from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.shared.types import FileData
@@ -112,11 +113,11 @@ class UserService:
             user.id, last_password_change=datetime.now(tz=timezone.utc)
         )
 
-    async def _get_user_by_kwargs(self, **kwargs) -> User:
+    async def _get_user_by_kwargs(self, raise_not_found: bool = False, **kwargs) -> User | None:
         """Method closes transaction. Can't be used in transaction manager"""
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
-            if user is None:
+            if user is None and raise_not_found:
                 raise NotFoundError("User with the provided ID not found")
             return user
 
@@ -419,17 +420,21 @@ class NameChangeRequestService:
 
         return await self.transaction_manager.name_change_request_repository.create(user_id=user_id, **kwargs)
 
-    async def update_name_change_request(
+    async def _update_name_change_request(
         self,
+        permissions,
         user_id: int,
         name_change_request_id: int,
         action: Literal["approve", "reject"],
         reason_rejecting: str | None,
     ) -> None:
-        if action == "approve":
-            await self._approve_name_change_request(user_id, name_change_request_id)
-        if action == "reject":
-            await self._reject_name_change_request(user_id, name_change_request_id, reason_rejecting)
+        """Method used directly from service"""
+        check_permissions("name_change_requests.update", permissions)
+        async with self.transaction_manager:
+            if action == "approve":
+                await self._approve_name_change_request(user_id, name_change_request_id)
+            if action == "reject":
+                await self._reject_name_change_request(user_id, name_change_request_id, reason_rejecting)
 
     async def _approve_name_change_request(self, user_id: int, name_change_request_id: int) -> None:
         await self.check_resource_existence(user_id, name_change_request_id=name_change_request_id)
