@@ -12,28 +12,35 @@ from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
+    BanUserSchema,
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
     UpdateUserByAdminSchema,
     UserSchema,
 )
 from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.use_cases.ban_user import BanUserUseCaseDep
+from app.domains.users.use_cases.unban_user import UnbanUserUseCaseDep
+from app.domains.users.use_cases.update_user_by_admin import UpdateUserByAdminUseCaseDep
 
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends(get_admin_user)])
 
 
 class UserListResponses(InvalidRequestParamsResponses):
-    pass
+    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.get("", responses=UserListResponses.responses)
 async def get_users(
     user_service: UserServiceDep,
     params: PaginationParamsDep,
+    permissions: AdminPermissionsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[UsersFilter, Depends()] = None,
 ) -> PaginatedResponse[UserSchema]:
+    if "users.view" not in permissions:
+        raise UserListResponses.PERMISSION_ERROR
     try:
         users, users_count = await user_service.get_all_paginated_counted(
             order_by=ordering,
@@ -95,9 +102,8 @@ async def get_name_change_requests(
 
 
 class UpdateUserByAdminResponses(Responses):
-    CANT_GRANT_ADMIN_ROLE = 403, "Don't have enough permissions to grand admin role"
-    CANT_REVOKE_ADMIN_ROLE = 403, "Don't have enough permissions to revoke admin role"
     USER_NOT_FOUND = 404, "User with provided ID not found"
+    PERMISSION_ERROR = 403, "Don't have enough permissions"
 
 
 @router.patch(
@@ -107,19 +113,17 @@ class UpdateUserByAdminResponses(Responses):
 )
 async def update_user_by_admin(
     user_id: Annotated[int, Path()],
-    user_service: UserServiceDep,
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
     update_data: UpdateUserByAdminSchema,
+    use_case: UpdateUserByAdminUseCaseDep,
 ):
-    if update_data.admin is True and "admin.create" not in permissions:
-        raise UpdateUserByAdminResponses.CANT_GRANT_ADMIN_ROLE
-    if update_data.admin is not True and "admin.delete" not in permissions:
-        raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
-    if update_data.admin and admin.id == user_id:
-        raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
-
-    return await user_service.update_user(user_id, admin, update_data.model_dump())
+    return await use_case.execute(
+        target_user_id=user_id,
+        admin=admin,
+        permissions=permissions,
+        update_data=update_data.model_dump(exclude_unset=True),
+    )
 
 
 class GetPermissionsResponses(PermissionsResponses):
@@ -196,4 +200,44 @@ async def update_name_change_request(
 
     await service.update_name_change_request(
         user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
+    )
+
+
+class BanUserResponses(Responses):
+    USER_NOT_FOUND = 404, "User with provided ID not found"
+    PERMISSION_ERROR = 403, "Don't have enough permissions"
+
+
+@router.patch(
+    "/{user_id}/ban",
+    responses=BanUserResponses.responses,
+    summary="Ban a user",
+)
+async def ban_user(
+    user_id: Annotated[int, Path()],
+    ban_data: BanUserSchema,
+    admin: AdminUserDep,
+    permissions: AdminPermissionsDep,
+    use_case: BanUserUseCaseDep,
+) -> UserSchema:
+    return await use_case.execute(
+        target_user_id=user_id, admin=admin, permissions=permissions, ban_reason=ban_data.ban_reason
+    )
+
+
+@router.delete(
+    "/{user_id}/ban",
+    responses=BanUserResponses.responses,
+    summary="Unban a user",
+)
+async def unban_user(
+    user_id: Annotated[int, Path()],
+    admin: AdminUserDep,
+    permissions: AdminPermissionsDep,
+    use_case: UnbanUserUseCaseDep,
+) -> UserSchema:
+    return await use_case.execute(
+        target_user_id=user_id,
+        admin=admin,
+        permissions=permissions,
     )
