@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError
 from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.permissions import check_permissions
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
@@ -21,7 +22,7 @@ class GetUserByIdUseCase:
         self.__file_storage = file_storage
 
     async def execute(self, permissions: list[str], user_id: int) -> User:
-        # check_permissions("users.view", permissions)
+        check_permissions("users.view", permissions)
         async with self.__tm:
             user = await self.__user_service.get_user_by_kwargs(id=user_id)
             if user is None:

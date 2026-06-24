@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class MembershipTypeEnum(Enum):
-    ACTIVE = "ACTIVE"
+    ACTIVE = "ACTIVE"  # now full member
     TRAINEE = "TRAINEE"
     AFFILIATE = "AFFILIATE"
     HONORARY = "HONORARY"
