@@ -4,8 +4,11 @@ import pytest
 from faker import Faker
 
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipService
+from app.domains.memberships.services import MembershipRequestService
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandler
+from app.domains.payments.purpose_handlers.membership_renewal import MembershipRenewalHandler
+from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistry
 from app.domains.payments.services import PaymentService
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCase
 from app.domains.shared.transaction_managers import TransactionManager
@@ -17,18 +20,36 @@ def process_payment_use_case(
     test_transaction_manager: TransactionManager,
     payment_service,
     membership_service,
+    user_membership_service,
+    user_service,
+    email_queue,
 ):
+    membership_application_handler = MembershipApplicationHandler(
+        membership_service=membership_service,
+        payment_service=payment_service,
+        email_queue=email_queue,
+        user_service=user_service,
+    )
+    membership_renewal_handler = MembershipRenewalHandler(
+        user_membership_service=user_membership_service,
+        payment_service=payment_service,
+    )
+    payment_purpose_handler_registry = PaymentPurposeHandlerRegistry(
+        membership_application_handler=membership_application_handler,
+        membership_renewal_handler=membership_renewal_handler,
+    )
     return ProcessPaymentUseCase(
         transaction_manager=test_transaction_manager,
         payment_service=payment_service,
         membership_service=membership_service,
+        payment_purpose_handler_registry=payment_purpose_handler_registry,
     )
 
 
 @pytest.fixture()
 async def membership_request_payment_pending(
     test_user: User,
-    membership_service: MembershipService,
+    membership_service: MembershipRequestService,
     membership_request_create_data,
 ):
     membership_request = await membership_service.create_membership_request(
@@ -49,12 +70,14 @@ async def pending_payment(
     membership_request_payment_pending: MembershipRequest,
 ):
     async with test_transaction_manager:
+        await test_transaction_manager.flush()
         payment = await test_transaction_manager.payment_repository.create(
             provider=PaymentProvider.STRIPE,
             amount=2000,
             status=PaymentStatusEnum.PENDING,
             purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
             user_id=test_user.id,
+            membership_request_id=membership_request_payment_pending.id,
             provider_data=None,
         )
         await test_transaction_manager._session.flush()

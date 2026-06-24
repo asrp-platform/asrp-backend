@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from app.domains.feedback.models import ContactMessage
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 

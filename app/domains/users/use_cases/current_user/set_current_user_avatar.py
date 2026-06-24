@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import Depends, File
+from fastapi import Depends
 
 from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.shared.types import FileData
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
 
@@ -12,9 +13,9 @@ class UploadCurrentUserAvatarUseCase:
         self.__transaction_manager = transaction_manager
         self.__service = service
 
-    async def execute(self, current_user: User, file: File):
+    async def execute(self, current_user: User, file_data: FileData) -> str:
         async with self.__transaction_manager:
-            await self.__service.upload_avatar(current_user.id, file)
+            await self.__service.upload_avatar(current_user.id, file_data)
             return await self.__service.get_user_avatar_url(current_user.id)
 
 

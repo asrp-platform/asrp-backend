@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Path, UploadFile
 
-from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.common.responses import PermissionsResponses
 from app.core.utils.permissions import check_permissions
 from app.domains.legal_documents.schemas import (
@@ -20,6 +19,7 @@ from app.domains.legal_documents.use_cases.upload_sponsor_logo import UploadSpon
 from app.domains.legal_documents.use_cases.upsert_bylaws import UpsertBylawsUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 from app.domains.shared.types import FileData
+
 
 router = APIRouter(prefix="/legal-documents", tags=["Admin: Legal Documents"])
 
@@ -70,11 +70,8 @@ async def upsert_bylaws(
         filename=file.filename,
     )
 
-    try:
-        url = await use_case.execute(file_data)
-        return ViewLegalDocumentSchema(url=url)
-    except InvalidMimeTypeError:
-        raise BylawsAdminResponses.INVALID_CONTENT_TYPE
+    url = await use_case.execute(file_data)
+    return ViewLegalDocumentSchema(url=url)
 
 
 @router.delete(
@@ -164,8 +161,5 @@ async def upload_sponsor_logo(
         filename=file.filename,
     )
 
-    try:
-        url = await use_case.execute(file_data)
-        return ViewLegalDocumentSchema(url=url)
-    except InvalidMimeTypeError:
-        raise UploadLogoResponses.INVALID_CONTENT_TYPE
+    url = await use_case.execute(file_data)
+    return ViewLegalDocumentSchema(url=url)

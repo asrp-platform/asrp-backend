@@ -12,6 +12,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import JobServiceDep
 
+
 router = APIRouter(
     prefix="/users/{user_id}/jobs",
     tags=["Job"],
@@ -29,6 +30,7 @@ class GetUserJobsResponses(Responses):
 )
 async def get_user_jobs(
     user_id: int,
+    current_user: CurrentUserDep,  # noqa
     service: JobServiceDep,
 ) -> list[JobViewSchema]:
     return await service.list_for_user(user_id)
@@ -46,6 +48,7 @@ class GetSingleUserJobResponses(GetUserJobsResponses):
 async def get_single_user_job(
     user_id: int,
     job_id: int,
+    current_user: CurrentUserDep,  # noqa
     service: JobServiceDep,
 ) -> JobViewSchema:
     return await service.get_for_user(

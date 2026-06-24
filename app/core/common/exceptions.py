@@ -30,3 +30,7 @@ class PermissionDeniedError(Exception):
 
 class InvalidStorageTypeError(Exception):
     pass
+
+
+class HandlerNotFoundError(Exception):
+    pass

@@ -6,12 +6,13 @@ from fastapi_exception_responses import Responses
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse
 from app.core.database.base_repository import InvalidOrderAttributeError
-from app.core.utils.save_file import save_file
 from app.domains.news.exceptions import NewsNotFoundError
 from app.domains.news.filters import NewsFilter
 from app.domains.news.models import CreateNewsSchema, NewsSchema, UpdateNewsSchema
 from app.domains.news.services import NewsServiceDep
 from app.domains.shared.deps import AdminUserDep
+from app.domains.shared.types import FileData
+
 
 router = APIRouter(prefix="/news", tags=["News"])
 
@@ -27,19 +28,22 @@ async def create_news(
 
 
 class UploadImageResponses(Responses):
-    INVALID_CONTENT_TYPE = 422, "Invalid image content type"
+    INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
 
 @router.post("/images", responses=UploadImageResponses.responses, summary="Upload image for a single news")
 async def upload_image(
     file: Annotated[UploadFile, File(...)],
     admin: AdminUserDep,  # noqa
+    service: NewsServiceDep,
 ) -> dict:
-    if not file.content_type.startswith("image/"):
-        raise UploadImageResponses.INVALID_CONTENT_TYPE
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
 
-    # TODO: Refactor to use file storage
-    relative_filepath = await save_file(file, Path("path"))
+    relative_filepath = await service.upload_image(file_data)
 
     return {"path": relative_filepath.as_posix()}
 

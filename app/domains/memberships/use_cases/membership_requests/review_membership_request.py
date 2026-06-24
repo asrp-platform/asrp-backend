@@ -6,22 +6,27 @@ import stripe
 from fastapi import Depends
 from loguru import logger
 
-from app.core.database.base_transaction_manager import BaseTransactionManager
+from app.core.config import settings
 from app.core.logging import PAYMENTS_CHANNEL
 from app.core.utils.permissions import check_permissions
+from app.domains.emails.common.messages import (
+    build_membership_application_approved_html,
+    build_membership_application_rejected_html,
+)
+from app.domains.emails.email_queue import EmailQueueDep
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import (
-    MembershipService,
-    MembershipServiceDep,
-    UserMembershipService,
+    MembershipRequestServiceDep,
     UserMembershipServiceDep,
 )
 from app.domains.payments.models import Payment, PaymentStatusEnum
-from app.domains.payments.services import PaymentService, PaymentServiceDep
+from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_stripe_refund
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
+from app.domains.users.services import UserServiceDep
+
 
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
@@ -29,15 +34,19 @@ payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 class ReviewMembershipRequestUseCase:
     def __init__(
         self,
-        transaction_manager: BaseTransactionManager,
-        membership_service: MembershipService,
-        user_membership_service: UserMembershipService,
-        payment_service: PaymentService,
+        transaction_manager: TransactionManagerDep,
+        membership_request_service: MembershipRequestServiceDep,
+        user_membership_service: UserMembershipServiceDep,
+        payment_service: PaymentServiceDep,
+        user_service: UserServiceDep,
+        email_queue: EmailQueueDep,
     ):
         self.__transaction_manager = transaction_manager
-        self.__membership_service = membership_service
+        self.__membership_request_service = membership_request_service
         self.__user_membership_service = user_membership_service
         self.__payment_service = payment_service
+        self.__user_service = user_service
+        self.__email_queue = email_queue
 
     async def __approve_membership_request(
         self,
@@ -49,7 +58,7 @@ class ReviewMembershipRequestUseCase:
         Updates MembershipRequest: status, reviewer_id, reviewed_at
         Creates user membership
         """
-        membership_request = await self.__membership_service.update_membership_request(
+        membership_request = await self.__membership_request_service.update_membership_request(
             membership_request_id, reviewer_id=reviewer.id, reviewed_at=datetime.now(timezone.utc), **kwargs
         )
         await self.__user_membership_service.create_user_membership(
@@ -81,12 +90,12 @@ class ReviewMembershipRequestUseCase:
         if admin_comment is None:
             raise MissingRejectingCommentError("When status is REJECTED admin_comment must be provided")
 
-        membership_request = await self.__membership_service.get_membership_request_by_id(membership_request_id)
+        membership_request = await self.__membership_request_service.get_membership_request_by_id(membership_request_id)
         succeeded_payment = await self.__payment_service.get_succeeded_application_payment_for_request(
             membership_request.id,
         )
 
-        await self.__membership_service.update_membership_request(
+        await self.__membership_request_service.update_membership_request(
             membership_request_id, reviewer_id=reviewer.id, reviewed_at=datetime.now(timezone.utc), **kwargs
         )
 
@@ -224,7 +233,8 @@ class ReviewMembershipRequestUseCase:
             )
         except Exception:
             payments_logger.exception(
-                "Failed to persist refund error: payment_id={} membership_request_id={} refund_status={} error_type={} idempotency_key={}",
+                "Failed to persist refund error: payment_id={} membership_request_id={} refund_status={} error_type={"
+                "} idempotency_key={}",
                 payment.id,
                 payment.membership_request_id,
                 refund_status,
@@ -233,9 +243,10 @@ class ReviewMembershipRequestUseCase:
             )
 
     async def __check_membership_request_paid(self, membership_request_id: int):
-        membership_request = await self.__membership_service.get_membership_request_by_id(membership_request_id)
+        membership_request = await self.__membership_request_service.get_membership_request_by_id(membership_request_id)
         if membership_request.status != MembershipRequestStatusEnum.PAID:
             raise MissingMembershipRequestPayment("Can't review approve or reject unpaid membership request")
+        return membership_request
 
     async def execute(
         self,
@@ -245,27 +256,29 @@ class ReviewMembershipRequestUseCase:
         **kwargs,
     ):
         """kwargs may include (status) when approved or (status, admin_comment) when rejected"""
+        email_payload = None
+
         async with self.__transaction_manager:
             check_permissions("memberships.update", permissions)
-            await self.__check_membership_request_paid(membership_request_id)
+            membership_request = await self.__check_membership_request_paid(membership_request_id)
+            user = await self.__user_service._get_user_by_kwargs(id=membership_request.user_id)
             approval_status = kwargs.get("status")
 
             if approval_status == MembershipRequestStatusEnum.APPROVED:
                 await self.__approve_membership_request(membership_request_id, reviewer, **kwargs)
+                subject, body = build_membership_application_approved_html(
+                    full_name=user.full_name, login_link=f"{settings.FRONTEND_DOMAIN}/login"
+                )
+                email_payload = (user.email, subject, body)
 
             elif approval_status == MembershipRequestStatusEnum.REJECTED:
                 await self.__reject_membership_request(membership_request_id, reviewer, **kwargs)
+                subject, body = build_membership_application_rejected_html(user.full_name)
+                email_payload = (user.email, subject, body)
+
+        if email_payload is not None:
+            email_to, subject, body = email_payload
+            await self.__email_queue.send_email(to=email_to, subject=subject, body=body)
 
 
-def get_use_case(
-    transaction_manager: TransactionManagerDep,
-    membership_service: MembershipServiceDep,
-    user_membership_service: UserMembershipServiceDep,
-    payment_service: PaymentServiceDep,
-) -> ReviewMembershipRequestUseCase:
-    return ReviewMembershipRequestUseCase(
-        transaction_manager, membership_service, user_membership_service, payment_service
-    )
-
-
-ReviewMembershipRequestUseCaseDep = Annotated[ReviewMembershipRequestUseCase, Depends(get_use_case)]
+ReviewMembershipRequestUseCaseDep = Annotated[ReviewMembershipRequestUseCase, Depends(ReviewMembershipRequestUseCase)]

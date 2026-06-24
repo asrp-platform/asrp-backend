@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+
 pytestmark = pytest.mark.anyio
 
 

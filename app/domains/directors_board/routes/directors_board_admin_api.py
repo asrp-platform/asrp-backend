@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 
-from app.core.common.exceptions import InvalidMimeTypeError
 from app.core.common.responses import PermissionsResponses
 from app.domains.directors_board.exceptions import InvalidReorderItemsCountError
 from app.domains.directors_board.schemas import (
@@ -23,6 +22,7 @@ from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 from app.domains.shared.schemas import UploadedImageSchema
 from app.domains.shared.types import FileData
 
+
 router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], dependencies=[Depends(get_admin_user)])
 
 
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/directors-board", tags=["Admin: Directors board"], d
 async def get_all_directors_board_members(
     use_case: GetDirectorsBoardMembersUseCaseDep,
 ) -> list[BoardMemberSchema]:
-    data, count = await use_case.execute()
+    data, _ = await use_case.execute()
     return data
 
 
@@ -107,11 +107,8 @@ async def upload_directors_board_member_photo(
         filename=file.filename,
     )
 
-    try:
-        file_path = await use_case.execute(permissions, file_data)
-        return UploadedImageSchema(path=file_path)
-    except InvalidMimeTypeError:
-        raise UploadImageResponses.INVALID_CONTENT_TYPE
+    file_path = await use_case.execute(permissions, file_data)
+    return UploadedImageSchema(path=file_path)
 
 
 class ReorderCardResponses(PermissionsResponses):

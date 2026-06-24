@@ -5,7 +5,7 @@ from stripe import Event
 
 from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.domains.memberships.models import MembershipRequestStatusEnum
-from app.domains.memberships.services import MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestServiceDep
 from app.domains.payments.models import PaymentStatusEnum
 from app.domains.payments.services import PaymentService, PaymentServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
@@ -89,7 +89,7 @@ class ProcessCheckoutSessionAsyncPaymentUseCase:
 def get_process_checkout_session_async_payment_use_case(
     transaction_manager: TransactionManagerDep,
     payment_service: PaymentServiceDep,
-    membership_service: MembershipServiceDep,
+    membership_service: MembershipRequestServiceDep,
 ) -> ProcessCheckoutSessionAsyncPaymentUseCase:
     return ProcessCheckoutSessionAsyncPaymentUseCase(
         transaction_manager,

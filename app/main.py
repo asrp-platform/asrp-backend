@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.core.common.exceptions import (
+    InvalidMimeTypeError,
     NotFoundError,
     NotResourceOwnerError,
     PermissionDeniedError,
@@ -22,22 +23,27 @@ from app.domains.directors_board.routes.directors_board_admin_api import router 
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
+from app.domains.feedback.routes.feedback_additional_info_admin_api import (
+    router as feedback_additional_info_admin_router,
+)
+from app.domains.feedback.routes.feedback_additional_info_api import router as feedback_additional_info_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_admin_api import router as membership_admin_router
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
-from app.domains.news.api import router as news_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
 from app.domains.users.routes.current_user_api import router as current_user_router
+from app.domains.users.routes.current_user_membership_api import router as current_user_membership_router
 from app.domains.users.routes.fellowship_api import router as fellowship_router
 from app.domains.users.routes.job_api import router as job_router
 from app.domains.users.routes.professional_info_api import router as professional_info_router
 from app.domains.users.routes.residency_api import router as residency_router
 from app.domains.users.routes.users_admin_api import router as users_admin_router
 from app.domains.users.routes.users_api import router as users_router
+
 
 configure_logging()
 request_logger = logger.bind(channel=REQUESTS_CHANNEL)
@@ -85,6 +91,11 @@ async def invalid_filter_error_handler(request: Request, exc: InvalidFilterError
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
+@app.exception_handler(InvalidMimeTypeError)
+async def invalid_mime_type_error_handler(request: Request, exc: InvalidMimeTypeError) -> JSONResponse:
+    return JSONResponse(status_code=415, content={"detail": str(exc) or "Unsupported Media Type"})
+
+
 # --- Обработчик ошибок 422 ---
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -110,9 +121,10 @@ app.openapi = get_custom_open_api(app)
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(current_user_router, prefix="/api")
+app.include_router(current_user_membership_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
-app.include_router(news_router, prefix="/api")
+app.include_router(feedback_additional_info_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
 app.include_router(legal_documents_router, prefix="/api")
 app.include_router(professional_info_router, prefix="/api")
@@ -128,6 +140,7 @@ app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 app.include_router(contact_messages_admin_router, prefix="/api/admin")
+app.include_router(feedback_additional_info_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")

@@ -1,10 +1,13 @@
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from faker import Faker
 from httpx import AsyncClient
 
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.shared.transaction_managers import TransactionManager
+
 
 pytestmark = pytest.mark.anyio
 
@@ -14,12 +17,24 @@ async def test_register(
     test_transaction_manager: TransactionManager,
     user_registration_data,
 ) -> None:
-    response = await client.post("api/auth/register", json=user_registration_data)
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post("api/auth/register", json=user_registration_data)
+
     async with test_transaction_manager:
         user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=user_registration_data["email"])
+        communication_preferences = (
+            await test_transaction_manager.communication_preferences_repository.get_first_by_kwargs(user_id=user.id)
+        )
 
     assert response.status_code == 201
     assert user is not None
+    assert communication_preferences is not None
+    assert communication_preferences.user_id == user.id
+    assert not communication_preferences.newsletters
+    assert not communication_preferences.events_meetings
+    assert not communication_preferences.committees_leadership
+    assert not communication_preferences.volunteer_opportunities
+    mock_send_email.assert_awaited_once()
 
 
 async def test_register_updates_existing_pending_user(
@@ -31,9 +46,11 @@ async def test_register_updates_existing_pending_user(
     async with test_transaction_manager:
         await test_transaction_manager.user_repository.create(**user_creation_data)
 
-    response = await client.post("api/auth/register", json={**user_data, "repeat_password": user_data["password"]})
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post("api/auth/register", json={**user_data, "repeat_password": user_data["password"]})
 
     assert response.status_code == 201
+    mock_send_email.assert_awaited_once()
 
 
 async def test_register_rejects_existing_confirmed_user(

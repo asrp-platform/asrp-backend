@@ -3,6 +3,7 @@ from typing import Generic, TypeVar
 from fastapi_exception_responses import Responses
 from pydantic import BaseModel
 
+
 DataModel = TypeVar("DataModel")
 
 
@@ -11,6 +12,10 @@ class PaginatedResponse(BaseModel, Generic[DataModel]):
     page: int
     page_size: int
     data: list[DataModel]
+
+
+class NotAuthorizedResponses(Responses):
+    NOT_AUTHORIZED = 401, "Not authorized"
 
 
 class InvalidRequestParamsResponses(Responses):

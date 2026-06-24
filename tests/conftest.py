@@ -5,12 +5,13 @@ from tests.fixtures.client import *  # noqa
 from tests.fixtures.database import *  # noqa
 from tests.fixtures.faker import *  # noqa
 from tests.fixtures.file_storage import *  # noqa
-from tests.fixtures.memberships.membership_requests import *  # noqa
+from tests.fixtures.memberships.membership import *  # noqa
 from tests.fixtures.memberships.payloads import *  # noqa
 from tests.fixtures.memberships.types import *  # noqa
 from tests.fixtures.permissions import *  # noqa
 from tests.fixtures.services import *  # noqa
 from tests.fixtures.test_transaction_manager import *  # noqa
+
 
 pytest_plugins = ("anyio",)
 

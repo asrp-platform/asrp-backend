@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from app.domains.directors_board.models import DirectorBoardMember
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 

@@ -9,6 +9,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import FellowshipServiceDep
 
+
 router = APIRouter(
     prefix="/users/{user_id}/fellowships",
     tags=["Fellowship"],
@@ -26,6 +27,7 @@ class GetUserFellowshipsResponses(Responses):
 )
 async def get_user_fellowships(
     user_id: int,
+    current_user: CurrentUserDep,  # noqa
     service: FellowshipServiceDep,
 ) -> list[FellowshipViewSchema]:
     return await service.list_for_user(user_id)
@@ -43,6 +45,7 @@ class GetSingleUserFellowshipResponses(GetUserFellowshipsResponses):
 async def get_single_user_fellowship(
     user_id: int,
     fellowship_id: int,
+    current_user: CurrentUserDep,  # noqa
     service: FellowshipServiceDep,
 ) -> FellowshipViewSchema:
     return await service.get_for_user(

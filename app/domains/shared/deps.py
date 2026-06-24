@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from starlette import status
 from starlette.exceptions import HTTPException
 
+from app.core.common.exceptions import NotFoundError
 from app.core.config import settings
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.services import UserMembershipServiceDep
@@ -15,6 +16,7 @@ from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 refresh_token_cookie = APIKeyCookie(name="refresh_token", auto_error=False)
@@ -64,8 +66,8 @@ async def verify_refresh_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")
     try:
         payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user = await user_service.get_user_by_kwargs(email=payload["email"])
-        if user is None:
+        user = await user_service._get_user_by_kwargs(email=payload["email"])
+        if user is None or user.banned:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid")
         return payload
     except JWTError:
@@ -77,9 +79,12 @@ async def get_current_user(
     access_token: Annotated[HTTPAuthorizationCredentials, Depends(access_token_header)],
 ) -> User:
     email = get_email_by_access_token(access_token)
-    user = await user_service.get_user_by_kwargs(email=email)
+    try:
+        user = await user_service._get_user_by_kwargs(email=email)
+    except NotFoundError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    if user is None:
+    if user is None or user.banned:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     return user
@@ -111,7 +116,26 @@ async def get_current_user_membership(
 ) -> UserMembership:
     user_membership = await user_membership_service.get_user_membership_by_user_id(current_user.id)
     if user_membership is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No active membership")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No active membership",
+        )
+
+    if user_membership.terminated:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Membership is permanently blocked")
+
+    if user_membership.is_suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Membership is temporarily blocked until {user_membership.suspended_until.isoformat()}",
+        )
+
+    if not user_membership.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No active membership",
+        )
+
     return user_membership
 
 

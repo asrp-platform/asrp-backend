@@ -14,6 +14,10 @@ class MembershipApplicationCheckoutError(Exception):
     pass
 
 
+class MembershipRenewalCheckoutError(Exception):
+    pass
+
+
 class MissingRejectingCommentError(Exception):
     pass
 
@@ -39,4 +43,20 @@ class InvalidMembershipTypeUpgradeError(Exception):
 
 
 class InvalidMembershipTypeDowngradeError(Exception):
+    pass
+
+
+class MembershipAlreadySuspendedError(Exception):
+    pass
+
+
+class MembershipAlreadyTerminatedError(Exception):
+    pass
+
+
+class MembershipTerminatedError(Exception):
+    pass
+
+
+class MembershipSuspendedError(Exception):
     pass

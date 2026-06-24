@@ -12,8 +12,8 @@ from app.domains.memberships.exceptions import (
 from app.domains.memberships.models import MembershipType, MembershipTypeEnum, UserMembership
 from app.domains.memberships.services import (
     MembershipDowngradeService,
-    MembershipService,
-    MembershipServiceDep,
+    MembershipRequestService,
+    MembershipRequestServiceDep,
     MembershipTypeChangeServiceDep,
     MembershipTypeService,
     MembershipTypeServiceDep,
@@ -26,7 +26,7 @@ class RequestMembershipDowngradeUseCase:
         self,
         transaction_manager: TransactionManager,
         membership_type_change_requests_service: MembershipDowngradeService,
-        membership_service: MembershipService,
+        membership_service: MembershipRequestService,
         membership_type_service: MembershipTypeService,
     ):
         self.__transaction_manager = transaction_manager
@@ -98,7 +98,7 @@ class RequestMembershipDowngradeUseCase:
 def get_use_case(
     transaction_manager: TransactionManagerDep,
     membership_type_change_requests_service: MembershipTypeChangeServiceDep,
-    membership_service: MembershipServiceDep,
+    membership_service: MembershipRequestServiceDep,
     membership_type_service: MembershipTypeServiceDep,
 ) -> RequestMembershipDowngradeUseCase:
     return RequestMembershipDowngradeUseCase(

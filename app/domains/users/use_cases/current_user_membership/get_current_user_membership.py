@@ -2,13 +2,13 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.domains.memberships.services import MembershipService, MembershipServiceDep
+from app.domains.memberships.services import MembershipRequestService, MembershipRequestServiceDep
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.users.models import User
 
 
 class GetCurrentUserMembershipRequestUseCase:
-    def __init__(self, transaction_manager: TransactionManager, membership_service: MembershipService):
+    def __init__(self, transaction_manager: TransactionManager, membership_service: MembershipRequestService):
         self.__transaction_manager = transaction_manager
         self.__membership_service = membership_service
 
@@ -18,7 +18,7 @@ class GetCurrentUserMembershipRequestUseCase:
 
 
 def get_use_case(
-    transaction_manager: TransactionManagerDep, membership_service: MembershipServiceDep
+    transaction_manager: TransactionManagerDep, membership_service: MembershipRequestServiceDep
 ) -> GetCurrentUserMembershipRequestUseCase:
     return GetCurrentUserMembershipRequestUseCase(transaction_manager, membership_service)
 

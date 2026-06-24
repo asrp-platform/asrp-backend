@@ -11,6 +11,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.core.config import CONVENTION, DB_URL, DEV_MODE
 
+
 async_engine: AsyncEngine = create_async_engine(
     url=DB_URL,
     echo=DEV_MODE,

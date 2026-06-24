@@ -1,6 +1,7 @@
 import pytest
 from faker import Faker
 
+from app.domains.feedback.constants import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.memberships.models import MembershipTypeEnum
 
 
@@ -31,8 +32,8 @@ async def membership_reapply_payload(
 @pytest.fixture()
 def feedback_additional_info_data(faker: Faker) -> dict:
     return {
-        "hear_about_asrp": faker.sentence(),
-        "tg_username": f"@{faker.user_name()[:20]}",
+        "hear_about_asrp": faker.random_element(HEAR_ABOUT_ASRP_OPTIONS),
+        "tg_username": f"@{faker.user_name()[:20]:_<5}",
         "interest_description": faker.text(max_nb_chars=200),
     }
 

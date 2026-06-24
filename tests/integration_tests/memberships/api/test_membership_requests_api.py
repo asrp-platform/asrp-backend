@@ -10,6 +10,7 @@ from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 
@@ -105,7 +106,7 @@ async def test_create_user_membership_already_exists(
         "api/users/current-user/membership-requests", headers=auth_headers, json=user_membership_request_data
     )
 
-    assert response.status_code == 409
+    assert response.status_code == 409, response.json()
 
 
 async def test_create_user_membership_honorary_not_allowed(

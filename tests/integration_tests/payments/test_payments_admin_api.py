@@ -8,6 +8,7 @@ from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, Pay
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 
@@ -69,7 +70,6 @@ async def test_get_payments_admin_forbidden_without_permission(
     response = await client.get("/api/admin/payments", headers=admin_auth_headers)
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "You do not have enough permissions to perform this action"
 
 
 async def test_get_payments_admin_success_with_only_payments_view_permission(

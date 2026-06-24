@@ -6,15 +6,17 @@ from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import Fellowship, Job, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
+
 pytestmark = pytest.mark.anyio
 
 
 async def test_get_user_jobs_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     job: Job,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/jobs")
+    response = await client.get(f"/api/users/{test_user.id}/jobs", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json()[0]["user_id"] == test_user.id
@@ -22,20 +24,31 @@ async def test_get_user_jobs_success(
 
 async def test_get_user_jobs_user_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     job: Job,
 ):
-    response = await client.get(f"/api/users/{99999999}/jobs")
+    response = await client.get(f"/api/users/{99999999}/jobs", headers=auth_headers)
 
     assert response.status_code == 404
 
 
+async def test_get_user_jobs_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+):
+    response = await client.get(f"/api/users/{test_user.id}/jobs")
+
+    assert response.status_code == 401
+
+
 async def test_get_single_user_job_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     job: Job,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/jobs/{job.id}")
+    response = await client.get(f"/api/users/{test_user.id}/jobs/{job.id}", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json()["user_id"] == test_user.id
@@ -44,22 +57,34 @@ async def test_get_single_user_job_success(
 
 async def test_get_single_user_job_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     job: Job,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/jobs/{9999999}")
+    response = await client.get(f"/api/users/{test_user.id}/jobs/{9999999}", headers=auth_headers)
 
     assert response.status_code == 404
 
 
 async def test_get_single_user_job_user_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     job: Job,
 ):
-    response = await client.get(f"/api/users/{9999999}/jobs/{job.id}")
+    response = await client.get(f"/api/users/{9999999}/jobs/{job.id}", headers=auth_headers)
 
     assert response.status_code == 404
+
+
+async def test_get_single_user_job_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+    job: Job,
+):
+    response = await client.get(f"/api/users/{test_user.id}/jobs/{job.id}")
+
+    assert response.status_code == 401
 
 
 async def test_create_user_job_success(

@@ -11,15 +11,15 @@ from app.domains.shared.transaction_managers import TransactionManagerDep
 
 @dataclass
 class DirectorBoardMemberDTO:
-        id: int
-        created_at: datetime
-        updated_at: datetime
-        role: str
-        name: str
-        order: int
-        is_visible: bool
-        content: dict
-        photo_url: str | None = None
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    role: str
+    name: str
+    order: int
+    is_visible: bool
+    content: dict
+    photo_url: str | None = None
 
 
 class GetDirectorsBoardMembersUseCase:
@@ -58,6 +58,7 @@ class GetDirectorsBoardMembersUseCase:
                 members_data.append(member_data)
 
             return members_data, count
+
 
 def get_use_case(
     transaction_manager: TransactionManagerDep,

@@ -6,15 +6,17 @@ from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import Fellowship, Job, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
+
 pytestmark = pytest.mark.anyio
 
 
 async def test_get_user_fellowships_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/fellowships")
+    response = await client.get(f"/api/users/{test_user.id}/fellowships", headers=auth_headers)
 
     data = response.json()
 
@@ -24,18 +26,29 @@ async def test_get_user_fellowships_success(
 
 async def test_get_user_fellowships_user_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
 ):
-    response = await client.get("/api/users/999999/fellowships")
+    response = await client.get("/api/users/999999/fellowships", headers=auth_headers)
 
     assert response.status_code == 404
 
 
+async def test_get_user_fellowships_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+):
+    response = await client.get(f"/api/users/{test_user.id}/fellowships")
+
+    assert response.status_code == 401
+
+
 async def test_get_single_user_fellowship_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     fellowship: Fellowship,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/fellowships/{fellowship.id}")
+    response = await client.get(f"/api/users/{test_user.id}/fellowships/{fellowship.id}", headers=auth_headers)
 
     data = response.json()
 
@@ -46,11 +59,22 @@ async def test_get_single_user_fellowship_success(
 
 async def test_get_single_user_fellowship_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/fellowships/999999")
+    response = await client.get(f"/api/users/{test_user.id}/fellowships/999999", headers=auth_headers)
 
     assert response.status_code == 404
+
+
+async def test_get_single_user_fellowship_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+    fellowship: Fellowship,
+):
+    response = await client.get(f"/api/users/{test_user.id}/fellowships/{fellowship.id}")
+
+    assert response.status_code == 401
 
 
 async def test_create_user_fellowship_success(

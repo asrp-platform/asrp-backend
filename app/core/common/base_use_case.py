@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+
 # Type variables for input and output data
 RequestType = TypeVar("RequestType")
 ResponseType = TypeVar("ResponseType")

@@ -1,9 +1,13 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from faker import Faker
 from httpx import AsyncClient
 
 from app.core.common.cryptographer import Cryptographer
+from app.domains.emails.email_queue import EmailQueue
 from tests.fixtures.auth import UserFactory
+
 
 pytestmark = pytest.mark.anyio
 
@@ -14,10 +18,12 @@ async def test_send_email_confirmation_link_for_pending_user(
 ) -> None:
     test_user = await user_factory(pending=True)
 
-    response = await client.post("api/auth/email-confirmation-requests", json={"email": test_user.email})
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post("api/auth/email-confirmation-requests", json={"email": test_user.email})
 
     assert response.status_code == 201
     assert response.json() == {"detail": "Confirmation email sent"}
+    mock_send_email.assert_awaited_once()
 
 
 async def test_send_email_confirmation_link_user_not_found(client: AsyncClient, faker: Faker) -> None:
@@ -56,7 +62,7 @@ async def test_confirm_email_success(
     response = await client.get("api/auth/email-confirmations", params={"token": token}, follow_redirects=False)
 
     assert response.status_code == 200
-    assert response.json()['detail'] == 'Email successfully confirmed'
+    assert response.json()["detail"] == "Email successfully confirmed"
 
 
 async def test_confirm_email_invalid_token(
@@ -68,7 +74,7 @@ async def test_confirm_email_invalid_token(
     response = await client.get("api/auth/email-confirmations", params={"token": fake_token}, follow_redirects=False)
 
     assert response.status_code == 401
-    assert response.json()['detail'] == 'Invalid or expired token'
+    assert response.json()["detail"] == "Invalid or expired token"
 
 
 async def test_confirm_email_already_registered(
@@ -82,4 +88,4 @@ async def test_confirm_email_already_registered(
     response = await client.get("api/auth/email-confirmations", params={"token": token}, follow_redirects=False)
 
     assert response.status_code == 409
-    assert response.json()['detail'] == 'Registration already completed'
+    assert response.json()["detail"] == "Registration already completed"

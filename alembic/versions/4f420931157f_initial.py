@@ -13,6 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
+
 # revision identifiers, used by Alembic.
 revision: str = "4f420931157f"
 down_revision: Union[str, None] = None

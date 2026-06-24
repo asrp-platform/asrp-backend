@@ -6,6 +6,7 @@ from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 
+
 pytestmark = pytest.mark.anyio
 
 

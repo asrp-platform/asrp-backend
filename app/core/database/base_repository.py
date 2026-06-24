@@ -15,6 +15,10 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
+    def get_all_by_kwargs(self, **kwargs):
+        pass
+
+    @abstractmethod
     def list(self):
         pass
 
@@ -134,6 +138,29 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
         if result is None:
             raise NotFoundError(f"{self.model.__name__} with provided ID not found")
+
+        return result
+
+    async def update_by_ids(self, object_ids: Iterable[Any], **kwargs) -> Sequence[T]:
+        object_ids = list(dict.fromkeys(object_ids))
+        if not object_ids:
+            return []
+
+        result = (
+            (
+                await self.session.execute(
+                    update(self.model)
+                    .where(self.model.id.in_(object_ids), self.model._deleted.is_(False))
+                    .values(**kwargs)
+                    .returning(self.model)
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        if len(result) != len(object_ids):
+            raise NotFoundError(f"One or more {self.model.__name__} rows with provided IDs were not found")
 
         return result
 

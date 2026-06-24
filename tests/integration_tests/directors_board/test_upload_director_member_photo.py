@@ -7,6 +7,7 @@ from httpx import AsyncClient
 
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 
@@ -51,7 +52,7 @@ async def test_upload_director_member_photo_no_permissions(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     fake_file,
-        spy_file_storage,
+    spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -70,7 +71,7 @@ async def test_upload_director_member_photo_by_user(
     client: AsyncClient,
     auth_headers: AuthHeaders,
     fake_file,
-        spy_file_storage,
+    spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -88,7 +89,7 @@ async def test_upload_director_member_photo_by_user(
 async def test_upload_director_member_photo_not_authenticated(
     client: AsyncClient,
     fake_file,
-        spy_file_storage,
+    spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",
@@ -107,7 +108,7 @@ async def test_upload_director_member_photo_invalid_content_type(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     fake_file,
-        spy_file_storage,
+    spy_file_storage,
 ) -> None:
     response = await client.put(
         "/api/admin/directors-board/images",

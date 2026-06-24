@@ -29,6 +29,7 @@ class ContactMessage(BaseModel):
     contact_message: Annotated[str | None, Field(min_length=10)] = None
     model_config = ConfigDict(extra="forbid")
 
+
 class DonationSponsorshipMessage(BaseModel):
     organization: Annotated[str | None, Field(min_length=2)] = None
     donation_type: DonationTypeEnum
@@ -72,3 +73,24 @@ class ContactMessageReplyResponseSchema(UCIMixinSchema):
     answer: str
 
     model_config = {"from_attributes": True}
+
+
+class HearAboutOptionStatsSchema(BaseModel):
+    option: str
+    count: int
+    percentage: float
+
+
+class HearAboutStatsResponseSchema(BaseModel):
+    total_responses: int
+    stats: list[HearAboutOptionStatsSchema]
+
+
+class FeedbackInterestResponseSchema(BaseModel):
+    id: int
+    user_id: int
+    interest_description: str
+    tg_username: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

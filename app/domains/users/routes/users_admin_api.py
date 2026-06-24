@@ -2,57 +2,64 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.params import Path
-from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
-from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
-from app.core.database.base_repository import InvalidOrderAttributeError
+from app.core.common.responses import (
+    InvalidRequestParamsResponses,
+    NotAuthorizedResponses,
+    PaginatedResponse,
+    PermissionsResponses,
+)
 from app.domains.permissions.models import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter
 from app.domains.users.schemas import (
+    BanUserSchema,
     NameChangeRequestUpdateByAdminSchema,
     NameChangeRequestViewSchema,
     UpdateUserByAdminSchema,
-    UserSchema,
+    UserPrivateSchema,
 )
-from app.domains.users.services import NameChangeRequestServiceDep, UserServiceDep
+from app.domains.users.services import NameChangeRequestServiceDep
+from app.domains.users.use_cases.ban_user import BanUserUseCaseDep
+from app.domains.users.use_cases.unban_user import UnbanUserUseCaseDep
+from app.domains.users.use_cases.update_user_by_admin import UpdateUserByAdminUseCaseDep
+from app.domains.users.use_cases.users_admin.get_user_by_id import GetUserByIdUseCaseDep
+from app.domains.users.use_cases.users_admin.get_users import GetUsersUseCaseDep
+
 
 router = APIRouter(tags=["Admin: Users"], prefix="/users", dependencies=[Depends(get_admin_user)])
 
 
-class UserListResponses(InvalidRequestParamsResponses):
+class UserListResponses(InvalidRequestParamsResponses, PermissionsResponses, NotAuthorizedResponses):
     pass
 
 
 @router.get("", responses=UserListResponses.responses)
 async def get_users(
-    user_service: UserServiceDep,
+    permissions: AdminPermissionsDep,
+    use_case: GetUsersUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[UsersFilter, Depends()] = None,
-) -> PaginatedResponse[UserSchema]:
-    try:
-        users, users_count = await user_service.get_all_paginated_counted(
-            order_by=ordering,
-            filters=filters.model_dump(exclude_none=True),
-            limit=params["limit"],
-            offset=params["offset"],
-        )
-        data = [UserSchema.from_orm(user) for user in users]
-        return PaginatedResponse(
-            count=users_count,
-            data=data,
-            page=params["page"],
-            page_size=params["page_size"],
-        )
-    except InvalidOrderAttributeError:
-        raise UserListResponses.INVALID_SORTER_FIELD
+) -> PaginatedResponse[UserPrivateSchema]:
+    data, count = await use_case.execute(
+        permissions,
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True),
+        limit=params["limit"],
+        offset=params["offset"],
+    )
+    return PaginatedResponse(
+        count=count,
+        data=data,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
 
 
-class NameChangeRequestResponses(InvalidRequestParamsResponses):
-    PERMISSION_ERROR = 403, "Don't have enough permissions to view name change requests"
+class NameChangeRequestResponses(InvalidRequestParamsResponses, PermissionsResponses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
     NAME_CHANGE_REQUEST_NOT_FOUND = 404, "Name change request with provided ID not found"
     PENDING_NAME_CHANGE_REQUEST_ALREADY_EXISTS = 409, "Pending name change request already exists"
@@ -75,27 +82,30 @@ async def get_name_change_requests(
     if "name_change_requests.view" not in permissions:
         raise NameChangeRequestResponses.PERMISSION_ERROR
 
-    try:
-        name_change_requests, count = await service.get_all_paginated_counted_name_change_requests(
-            order_by=ordering,
-            filters=filters.model_dump(exclude_none=True),
-            limit=params["limit"],
-            offset=params["offset"],
-        )
-        data = [NameChangeRequestViewSchema.model_validate(request) for request in name_change_requests]
-        return PaginatedResponse(
-            count=count,
-            data=data,
-            page=params["page"],
-            page_size=params["page_size"],
-        )
-    except InvalidOrderAttributeError:
-        raise NameChangeRequestResponses.INVALID_SORTER_FIELD
+    data, count = await service.get_all_paginated_counted_name_change_requests(
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True),
+        limit=params["limit"],
+        offset=params["offset"],
+    )
+    return PaginatedResponse(
+        count=count,
+        data=data,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
 
 
-class UpdateUserByAdminResponses(Responses):
-    CANT_GRANT_ADMIN_ROLE = 403, "Don't have enough permissions to grand admin role"
-    CANT_REVOKE_ADMIN_ROLE = 403, "Don't have enough permissions to revoke admin role"
+@router.get("/{user_id}")
+async def get_user_by_admin(
+    user_id: int,
+    permissions: AdminPermissionsDep,
+    use_case: GetUserByIdUseCaseDep,
+) -> UserPrivateSchema:
+    return await use_case.execute(permissions, user_id)
+
+
+class UpdateUserByAdminResponses(PermissionsResponses):
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -106,23 +116,20 @@ class UpdateUserByAdminResponses(Responses):
 )
 async def update_user_by_admin(
     user_id: Annotated[int, Path()],
-    user_service: UserServiceDep,
     admin: AdminUserDep,
     permissions: AdminPermissionsDep,
     update_data: UpdateUserByAdminSchema,
+    use_case: UpdateUserByAdminUseCaseDep,
 ):
-    if update_data.admin is True and "admin.create" not in permissions:
-        raise UpdateUserByAdminResponses.CANT_GRANT_ADMIN_ROLE
-    if update_data.admin is not True and "admin.delete" not in permissions:
-        raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
-    if update_data.admin and admin.id == user_id:
-        raise UpdateUserByAdminResponses.CANT_REVOKE_ADMIN_ROLE
-
-    return await user_service.update_user(user_id, admin, update_data.model_dump())
+    return await use_case.execute(
+        target_user_id=user_id,
+        admin=admin,
+        permissions=permissions,
+        update_data=update_data.model_dump(exclude_unset=True),
+    )
 
 
 class GetPermissionsResponses(PermissionsResponses):
-    PERMISSION_ERROR = 403, "Don't have enough permissions to read user permissions"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -142,7 +149,6 @@ async def get_user_permissions(
 
 
 class ManagePermissionsResponses(PermissionsResponses):
-    PERMISSION_ERROR = 403, "Don't have enough permissions to manage user permissions"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -190,9 +196,49 @@ async def update_name_change_request(
     permissions: AdminPermissionsDep,
     service: NameChangeRequestServiceDep,
 ) -> None:
-    if "name_change_requests.update" not in permissions:
-        raise NameChangeRequestResponses.PERMISSION_ERROR
+    await service._update_name_change_request(  # noqa intensional direct call from service
+        permissions,
+        user_id,
+        name_change_request_id,
+        name_change_request_data.action,
+        name_change_request_data.reason_rejecting,
+    )
 
-    await service.update_name_change_request(
-        user_id, name_change_request_id, name_change_request_data.action, name_change_request_data.reason_rejecting
+
+class BanUserResponses(PermissionsResponses):
+    USER_NOT_FOUND = 404, "User with provided ID not found"
+
+
+@router.patch(
+    "/{user_id}/ban",
+    responses=BanUserResponses.responses,
+    summary="Ban a user",
+)
+async def ban_user(
+    user_id: Annotated[int, Path()],
+    ban_data: BanUserSchema,
+    admin: AdminUserDep,
+    permissions: AdminPermissionsDep,
+    use_case: BanUserUseCaseDep,
+) -> UserPrivateSchema:
+    return await use_case.execute(
+        target_user_id=user_id, admin=admin, permissions=permissions, ban_reason=ban_data.ban_reason
+    )
+
+
+@router.delete(
+    "/{user_id}/ban",
+    responses=BanUserResponses.responses,
+    summary="Unban a user",
+)
+async def unban_user(
+    user_id: Annotated[int, Path()],
+    admin: AdminUserDep,
+    permissions: AdminPermissionsDep,
+    use_case: UnbanUserUseCaseDep,
+) -> UserPrivateSchema:
+    return await use_case.execute(
+        target_user_id=user_id,
+        admin=admin,
+        permissions=permissions,
     )

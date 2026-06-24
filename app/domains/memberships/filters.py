@@ -22,3 +22,7 @@ class UserMembershipTypeChangeRequestsFilters(BaseModel):
     pending: Annotated[bool | None, Query(description="Pending status filter")] = None
     approved: Annotated[bool | None, Query(description="Approved status filter")] = None
     upgrade: Annotated[bool | None, Query(description="Upgrade or downgrade filter")] = None
+
+
+class MembersFilters(BaseModel):
+    user_id: Annotated[int | None, Query(description="Member ID filter")] = None

@@ -1,0 +1,374 @@
+from html import escape
+
+
+def build_email_verification_html(
+    full_name: str,
+    verification_link: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+    safe_verification_link = escape(verification_link, quote=True)
+
+    return (
+        "ASRP registration - email verification",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        Thank you for creating an account with the American Society of
+        Russian-Speaking Pathologists (ASRP).
+    </p>
+
+    <p>
+        To complete your registration, please verify your email address by
+        clicking the link below:
+    </p>
+
+    <p>
+        <a href="{safe_verification_link}"
+           style="
+               display: inline-block;
+               padding: 12px 20px;
+               background-color: #2563eb;
+               color: #ffffff;
+               text-decoration: none;
+               border-radius: 6px;
+               font-weight: bold;
+           ">
+            Verify Email Address
+        </a>
+    </p>
+
+    <p>
+        If you did not create an account with ASRP, you may safely ignore this email.
+    </p>
+
+    <p>
+        We look forward to welcoming you to our growing community of
+        Russian-speaking pathologists and pathology trainees.
+    </p>
+
+    <p>
+        Best regards,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )
+
+
+def build_password_reset_html(
+    reset_link: str,
+) -> tuple[str, str]:
+    safe_reset_link = escape(reset_link, quote=True)
+
+    return (
+        "ASRP password reset",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+
+    <p>
+        We received a request to reset the password for your account with the
+        American Society of Russian-Speaking Pathologists (ASRP).
+    </p>
+
+    <p>
+        To set a new password, please click the button below:
+    </p>
+
+    <p>
+        <a href="{safe_reset_link}"
+           style="
+               display: inline-block;
+               padding: 12px 20px;
+               background-color: #2563eb;
+               color: #ffffff;
+               text-decoration: none;
+               border-radius: 6px;
+               font-weight: bold;
+           ">
+            Reset Password
+        </a>
+    </p>
+
+    <p>
+        This password reset link is valid for 1 hour.
+    </p>
+
+    <p>
+        If you did not request a password reset, you may safely ignore this email.
+        Your password will remain unchanged.
+    </p>
+
+    <p>
+        Best regards,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+
+</body>
+</html>
+""",
+    )
+
+
+def build_membership_application_html(
+    full_name: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+
+    return (
+        "ASRP membership application received",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        Thank you for applying for membership in the American Society of
+        Russian-Speaking Pathologists (ASRP).
+    </p>
+
+    <p>
+        We have successfully received your application and our Membership
+        Committee is currently reviewing your submission. This process may take
+        several business days.
+    </p>
+
+    <p>
+        You will receive a separate email once a decision has been made
+        regarding your application.
+    </p>
+
+    <p>
+        We appreciate your interest in joining ASRP and contributing to our
+        professional community.
+    </p>
+
+    <p>
+        Best regards,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )
+
+
+def build_membership_application_approved_html(
+    full_name: str,
+    login_link: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+    safe_login_link = escape(login_link, quote=True)
+
+    return (
+        "Your ASRP membership application has been approved",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        Congratulations! Your membership application has been approved.
+    </p>
+
+    <p>
+        We are delighted to welcome you to the American Society of
+        Russian-Speaking Pathologists (ASRP).
+    </p>
+
+    <p>
+        As a member, you now have access to our community, educational
+        resources, networking opportunities, mentorship initiatives, and future
+        society events.
+    </p>
+
+    <p>
+        You may log in to your account here:
+        <a href="{safe_login_link}">Login Link</a>
+    </p>
+
+    <p>
+        Thank you for joining ASRP. We look forward to your participation and
+        contributions to our community.
+    </p>
+
+    <p>
+        Welcome aboard!
+    </p>
+
+    <p>
+        Best regards,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )
+
+
+def build_membership_application_rejected_html(
+    full_name: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+
+    return (
+        "Your ASRP membership application status",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        Thank you for your interest in the American Society of Russian-Speaking
+        Pathologists (ASRP).
+    </p>
+
+    <p>
+        After careful review, we are unable to approve your membership
+        application at this time.
+    </p>
+
+    <p>
+        This decision may be based on membership eligibility requirements or
+        incomplete application information.
+    </p>
+
+    <p>
+        If you believe additional information may be helpful, or if you have
+        questions regarding this decision, please contact us at
+        admin@asrpath.org.
+    </p>
+
+    <p>
+        We appreciate your interest in ASRP and wish you success in your
+        professional endeavors.
+    </p>
+
+    <p>
+        Best regards,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )
+
+
+def build_membership_suspended_html(
+    full_name: str,
+    reason: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+    safe_reason = escape(reason)
+
+    return (
+        "Your ASRP membership suspended",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        This email serves as formal notice that your ASRP membership and account
+        access have been temporarily suspended due to a violation of the ASRP
+        Code of Conduct and/or Community Guidelines.
+    </p>
+
+    <p>
+        <strong>Reason for Suspension:</strong> {safe_reason}
+    </p>
+
+    <p>
+        During the suspension period, you will not have access to member-only
+        resources, discussion forums, events, or other membership benefits. You
+        may submit an appeal by contacting admin@asrpath.org. If the suspension
+        is lifted, your membership privileges may be restored, provided no
+        additional violations occur and any applicable conditions have been
+        satisfied.
+    </p>
+
+    <p>
+        ASRP is committed to maintaining a professional, respectful, and
+        inclusive environment for all members.
+    </p>
+
+    <p>
+        Sincerely,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )
+
+
+def build_membership_terminated_html(
+    full_name: str,
+    reason: str,
+) -> tuple[str, str]:
+    safe_full_name = escape(full_name)
+    safe_reason = escape(reason)
+
+    return (
+        "Your ASRP membership terminated",
+        f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+    <p>Dear {safe_full_name},</p>
+
+    <p>
+        This email serves as formal notice that your membership in the American
+        Society of Russian-Speaking Pathologists (ASRP) has been terminated
+        following a review of conduct that was determined to violate the ASRP
+        Code of Conduct and/or Community Guidelines.
+    </p>
+
+    <p>
+        <strong>Reason for Termination:</strong> {safe_reason}
+    </p>
+
+    <p>
+        Effective immediately, your membership status has been revoked and your
+        account access has been permanently disabled. You will no longer be
+        eligible to participate in ASRP member activities, access member-only
+        resources, or represent yourself as an active member of ASRP.
+    </p>
+
+    <p>
+        If you believe this action was taken in error, you may submit an appeal
+        by contacting admin@asrpath.org within 30 days of receiving this notice.
+        Any appeal will be reviewed by the appropriate ASRP leadership body, and
+        its decision will be final.
+    </p>
+
+    <p>
+        ASRP remains committed to fostering a professional, respectful, and
+        supportive community for all members.
+    </p>
+
+    <p>
+        Sincerely,<br>
+        Board of Directors<br>
+        American Society of Russian-Speaking Pathologists
+    </p>
+</body>
+</html>
+""",
+    )

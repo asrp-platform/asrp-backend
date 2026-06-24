@@ -19,7 +19,7 @@ class LegalDocumentsService:
 
     async def upsert(self, file_data: FileData) -> None:
         if file_data.content_type != self.document.mime_type:
-            raise InvalidMimeTypeError
+            raise InvalidMimeTypeError("Invalid file type. Only PDF allowed.")
 
         await self.file_storage.upload_file(self.document.filename, file_content=file_data.content)
 
@@ -91,10 +91,9 @@ def get_bylaws_service(
 
 BylawsServiceDep = Annotated[LegalDocumentsService, Depends(get_bylaws_service)]
 
-def get_sponsors_service(
-    file_storage: FileStorageDep,
-    transaction_manager: TransactionManagerDep
-) -> SponsorsService:
+
+def get_sponsors_service(file_storage: FileStorageDep, transaction_manager: TransactionManagerDep) -> SponsorsService:
     return SponsorsService(transaction_manager, file_storage)
+
 
 SponsorsServiceDep = Annotated[SponsorsService, Depends(get_sponsors_service)]

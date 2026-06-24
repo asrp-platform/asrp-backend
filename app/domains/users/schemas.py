@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal, Optional
 
 import phonenumbers
-from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
@@ -35,7 +35,7 @@ class UserShortSchema(BaseModel):
     email: str
 
 
-class UserSchema(BaseModel):
+class UserPublicSchema(BaseModel):
     id: int
     firstname: str
     middlename: str | None
@@ -45,26 +45,41 @@ class UserSchema(BaseModel):
     credentials: str | None
     email: str
     admin: bool
+    superuser: bool
+    banned: bool
+    ban_reason: str | None
     description: str | None
     country: str
     state: str | None
     city: str
     languages_spoken: str | None
     professional_interests: str | None
+    avatar_url: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserPrivateSchema(UserPublicSchema):
+    email: str
+    admin: bool
     telegram_username: str | None
-    created_at: datetime
     avatar_path: str | None
+    avatar_url: str | None
     phone_number: str | None
     pending: bool
+    created_at: datetime
     last_password_change: datetime | None
-
-    model_config = {
-        "from_attributes": True,
-    }
+    superuser: bool
+    banned: bool
+    ban_reason: str | None
 
 
 class UpdateUserByAdminSchema(BaseModel):
     admin: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
+
+
+class BanUserSchema(BaseModel):
+    ban_reason: str = Field(..., max_length=512, description="Reason for banning the user")
 
 
 class UpdateUserSchema(BaseModel):

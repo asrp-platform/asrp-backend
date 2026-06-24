@@ -5,6 +5,7 @@ from app.domains.legal_documents.schemas import SponsorSchema, ViewLegalDocument
 from app.domains.legal_documents.services import BylawsServiceDep
 from app.domains.legal_documents.use_cases.get_sponsors import GetSponsorsUseCaseDep
 
+
 router = APIRouter(prefix="/legal-documents", tags=["Legal Documents"])
 
 

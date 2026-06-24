@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from app.domains.legal_documents.models import Sponsor
 from tests.fixtures.auth import AuthHeaders
 
+
 pytestmark = pytest.mark.anyio
 
 

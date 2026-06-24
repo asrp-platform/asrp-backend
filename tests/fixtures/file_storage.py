@@ -4,7 +4,14 @@ import pytest
 
 from app.core.storage.storage_factory import get_file_storage
 
+
 FileStorage = get_file_storage()
+
+
+@pytest.fixture()
+def file_storage():
+    return FileStorage
+
 
 @pytest.fixture()
 def spy_file_storage():

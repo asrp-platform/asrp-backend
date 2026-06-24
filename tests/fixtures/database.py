@@ -89,6 +89,10 @@ async def insert_test_data(
                 Permission(action="name_change_requests.update", name="Approve/reject name change request"),
                 Permission(action="name_change_requests.create", name="Create name change request"),
                 Permission(action="name_change_requests.delete", name="Delete name change request"),
+                Permission(action="users.create", name="Create users"),
+                Permission(action="users.view", name="View users"),
+                Permission(action="users.delete", name="Remove users"),
+                Permission(action="users.update", name="Update users"),
                 MembershipType(
                     name="Active Member",
                     type="ACTIVE",
