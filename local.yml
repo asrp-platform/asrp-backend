@@ -106,23 +106,23 @@ services:
     env_file:
       - .env
     environment:
-      - RD_PASSWORD=${RD_PASSWORD}
-      - RD_USER=${RD_USER}
+      - REDIS_USER_PASSWORD=${REDIS_USER_PASSWORD}
+      - REDIS_USER=${REDIS_USER}
     command: >
       sh -c '  
         mkdir -p /usr/local/etc/redis &&
-        echo "requirepass $RD_PASSWORD" >> /usr/local/etc/redis/redis.conf &&  
+        echo "requirepass $REDIS_USER_PASSWORD" >> /usr/local/etc/redis/redis.conf &&  
         echo "appendonly yes" >> /usr/local/etc/redis/redis.conf &&  
         echo "appendfsync everysec" >> /usr/local/etc/redis/redis.conf &&  
 
         # ACL  
         echo "user default off ~* -@all" > /usr/local/etc/redis/users.acl &&  
-        echo "user $RD_USER on >$RD_PASSWORD ~* +@all" >> /usr/local/etc/redis/users.acl &&  
+        echo "user $REDIS_USER on >$REDIS_USER_PASSWORD ~* +@all" >> /usr/local/etc/redis/users.acl &&  
 
         redis-server /usr/local/etc/redis/redis.conf --aclfile /usr/local/etc/redis/users.acl  
       '
     healthcheck:
-      test: [ "CMD", "redis-cli", "-a", "${RD_PASSWORD}", "PING" ]
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_USER_PASSWORD}", "PING" ]
       interval: 5s
       timeout: 3s
       retries: 5
