@@ -169,8 +169,10 @@ async def test_admin_without_users_view_cannot_get_users(
         "/api/admin/users",
         headers=admin_auth_headers,
     )
+    data = response.json()
 
     assert response.status_code == 403
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_with_users_view_can_get_users(
@@ -196,8 +198,10 @@ async def test_admin_without_users_update_cannot_ban_user(
         headers=admin_auth_headers,
         json={"ban_reason": "No permission"},
     )
+    data = response.json()
 
     assert response.status_code == 403
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_without_admin_update_cannot_ban_admin(
@@ -215,8 +219,10 @@ async def test_admin_without_admin_update_cannot_ban_admin(
         headers=admin_auth_headers,
         json={"ban_reason": "No admin.update"},
     )
+    data = response.json()
 
     assert response.status_code == 403
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_with_admin_update_can_ban_admin(
@@ -249,8 +255,10 @@ async def test_cannot_ban_superadmin(
         headers=admin_auth_headers,
         json={"ban_reason": "Banning superadmin"},
     )
+    data = response.json()
 
     assert response.status_code == 403
+    assert data["detail"] == "Don't have enough permissions"
 
 
 async def test_admin_can_update_user_role(

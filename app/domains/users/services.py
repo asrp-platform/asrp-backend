@@ -140,6 +140,12 @@ class UserService:
             user.id, last_password_change=datetime.now(tz=timezone.utc)
         )
 
+    async def ban_user(self, user_id: int, ban_reason: str) -> User:
+        return await self.transaction_manager.user_repository.update(user_id, banned=True, ban_reason=ban_reason)
+
+    async def unban_user(self, user_id: int) -> User:
+        return await self.transaction_manager.user_repository.update(user_id, banned=False, ban_reason=None)
+
 
 class ProfessionalInformationService:
     def __init__(self, transaction_manager: TransactionManager):

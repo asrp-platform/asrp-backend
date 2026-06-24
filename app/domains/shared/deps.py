@@ -8,7 +8,6 @@ from passlib.context import CryptContext
 from starlette import status
 from starlette.exceptions import HTTPException
 
-from app.core.common.exceptions import NotFoundError
 from app.core.config import settings
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.services import UserMembershipServiceDep
@@ -66,7 +65,7 @@ async def verify_refresh_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")
     try:
         payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user = await user_service._get_user_by_kwargs(email=payload["email"])
+        user = await user_service.get_user_by_kwargs(email=payload["email"])
         if user is None or user.banned:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid")
         return payload
@@ -79,10 +78,7 @@ async def get_current_user(
     access_token: Annotated[HTTPAuthorizationCredentials, Depends(access_token_header)],
 ) -> User:
     email = get_email_by_access_token(access_token)
-    try:
-        user = await user_service._get_user_by_kwargs(email=email)
-    except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    user = await user_service.get_user_by_kwargs(email=email)
 
     if user is None or user.banned:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
