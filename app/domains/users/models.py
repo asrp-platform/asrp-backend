@@ -9,11 +9,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
 from app.domains.memberships.models import MembershipRequest, UserMembership
+from app.domains.news.models import News
 
 
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
-    from app.domains.news.models import News
     from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 
@@ -85,6 +85,14 @@ class User(Base):
     @property
     def full_name(self) -> str:
         return f"{self.firstname} {self.lastname}"
+
+    @property
+    def avatar_url(self) -> str | None:
+        return getattr(self, "_avatar_url", None)
+
+    @avatar_url.setter
+    def avatar_url(self, value: str | None):
+        self._avatar_url = value  # noqa
 
     @property
     def password(self) -> str:

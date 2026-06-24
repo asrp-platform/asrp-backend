@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
+from app.core.utils.permissions import check_permissions
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
@@ -33,11 +34,9 @@ class UnbanUserUseCase:
                 raise PermissionDeniedError("Don't have enough permissions")
 
             if target_user.admin:
-                if "admin.update" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("admin.update", permissions)
             else:
-                if "users.update" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("users.update", permissions)
 
             return await self.__user_service.unban_user(target_user_id)
 

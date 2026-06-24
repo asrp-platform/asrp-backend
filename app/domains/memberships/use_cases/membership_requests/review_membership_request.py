@@ -261,7 +261,7 @@ class ReviewMembershipRequestUseCase:
         async with self.__transaction_manager:
             check_permissions("memberships.update", permissions)
             membership_request = await self.__check_membership_request_paid(membership_request_id)
-            user = await self.__user_service.get_user_by_kwargs(id=membership_request.user_id)
+            user = await self.__user_service._get_user_by_kwargs(id=membership_request.user_id)
             approval_status = kwargs.get("status")
 
             if approval_status == MembershipRequestStatusEnum.APPROVED:

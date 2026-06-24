@@ -5,6 +5,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.core.storage.storage_factory import FileStorageDep
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep
@@ -19,7 +20,7 @@ from app.domains.users.schemas import (
     NameChangeRequestCreateSchema,
     NameChangeRequestViewSchema,
     UpdateUserSchema,
-    UserSchema,
+    UserPrivateSchema,
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
@@ -36,7 +37,12 @@ router = APIRouter(tags=["Current User: Profile"], prefix="/users/current-user")
 
 
 @router.get("")
-async def get_current_user(current_user: CurrentUserDep) -> UserSchema:
+async def get_current_user(
+    current_user: CurrentUserDep,
+    file_storage: FileStorageDep,
+) -> UserPrivateSchema:
+    if current_user.avatar_path is not None:
+        current_user.avatar_url = await file_storage.get_file_url(current_user.avatar_path)
     return current_user
 
 
@@ -47,7 +53,7 @@ class UpdateUserDataResponses(Responses):
 @router.patch("", summary="Update current authenticated user", responses=UpdateUserDataResponses.responses)
 async def update_user(
     current_user: CurrentUserDep, update_data: UpdateUserSchema, use_case: UpdateCurrentUserUseCaseDep
-) -> UserSchema:
+) -> UserPrivateSchema:
     return await use_case.execute(current_user, **update_data.model_dump(exclude_unset=True))
 
 
@@ -59,7 +65,7 @@ async def get_user_avatar(
     user_service: UserServiceDep,
 ) -> str | None:
     # Using use case here is overhead
-    return await user_service.get_user_avatar_url(current_user.id)
+    return await user_service._get_user_by_kwargs(id=current_user.id)
 
 
 class UploadAvatarResponses(UpdateUserDataResponses):

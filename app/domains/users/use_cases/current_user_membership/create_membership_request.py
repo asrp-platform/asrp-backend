@@ -60,7 +60,7 @@ class CreateUserMembershipRequestUseCase:
                 **feedback_additional_info_data,
             )
 
-            await self.__communication_preference_service.update_or_create_preferences(
+            await self.__communication_preference_service.update_communication_preferences(
                 user_id,
                 is_agrees_communications=is_agrees_communications,
             )
