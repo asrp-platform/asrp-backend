@@ -22,6 +22,8 @@ request_logger = logger.bind(channel=REQUESTS_CHANNEL)
 
 
 class RateLimiter:
+    REQUEST_COST: int = 1
+
     def __init__(
             self,
             user_ip: str,
@@ -35,33 +37,32 @@ class RateLimiter:
         self.refill_rate = refill_rate
         self.key_ttl = key_ttl
 
-        self.request_cost = 1
-        self.now = time.time()
         self.redis_client = redis_client
 
     async def check_limit(self) -> bool:
         bucket = await self.redis_client.hgetall(self.key)
+        now = time.time()
 
         if not bucket:
             tokens = self.capacity
-            last_refill = self.now
+            last_refill = now
         else:
             tokens = float(bucket["tokens"])
             last_refill = float(bucket["last_refill"])
 
         # calculation of available tokens
-        elapsed = self.now - last_refill
+        elapsed = now - last_refill
         refill = elapsed * self.refill_rate
         tokens = min(self.capacity, tokens + refill)
 
-        if tokens >= self.request_cost:
-            tokens = tokens - self.request_cost
+        if tokens >= self.REQUEST_COST:
+            tokens = tokens - self.REQUEST_COST
 
             await self.redis_client.hset(
                 self.key,
                 mapping={
                     "tokens": tokens,
-                    "last_refill": self.now,
+                    "last_refill": now,
                 }
             )
             await self.redis_client.expire(self.key, self.key_ttl)
@@ -81,23 +82,25 @@ async def rate_limiter_dependency(
     else:
         email = get_email_by_access_token(access_token)
         user = await user_service.get_user_by_kwargs(email=email)
+
+    if user is not None:
         user_membership = await user_membership_service.get_user_membership_by_user_id(user.id)
 
-    if user is None:
-        capacity = settings.RATE_LIMITER_GUEST_LIMITS.capacity
-        refill_rate = settings.RATE_LIMITER_GUEST_LIMITS.refill_rate
+        if user.admin:
+            capacity = settings.RATE_LIMITER_ADMIN_LIMITS.capacity
+            refill_rate = settings.RATE_LIMITER_ADMIN_LIMITS.refill_rate
 
-    elif user.admin:
-        capacity = settings.RATE_LIMITER_ADMIN_LIMITS.capacity
-        refill_rate = settings.RATE_LIMITER_ADMIN_LIMITS.refill_rate
+        elif user_membership is not None:
+            capacity = settings.RATE_LIMITER_PAID_MEMBER_LIMITS.capacity
+            refill_rate = settings.RATE_LIMITER_PAID_MEMBER_LIMITS.refill_rate
 
-    elif user_membership is not None:
-        capacity = settings.RATE_LIMITER_PAID_MEMBER_LIMITS.capacity
-        refill_rate = settings.RATE_LIMITER_PAID_MEMBER_LIMITS.refill_rate
+        else:
+            capacity = settings.RATE_LIMITER_AUTHENTICATED_LIMITS.capacity
+            refill_rate = settings.RATE_LIMITER_AUTHENTICATED_LIMITS.refill_rate
 
     else:
-        capacity = settings.RATE_LIMITER_AUTHENTICATED_LIMITS.capacity
-        refill_rate = settings.RATE_LIMITER_AUTHENTICATED_LIMITS.refill_rate
+        capacity = settings.RATE_LIMITER_GUEST_LIMITS.capacity
+        refill_rate = settings.RATE_LIMITER_GUEST_LIMITS.refill_rate
 
     ip = request.client.host
 

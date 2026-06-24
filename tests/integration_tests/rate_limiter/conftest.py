@@ -9,7 +9,7 @@ from app.main import app
 
 
 @pytest.fixture(scope="function")
-async def redis_client():
+async def test_redis_client():
     test_redis_client = Redis(
         host=settings.REDIS_HOST,
         port=settings.REDIS_PORT,
@@ -34,7 +34,7 @@ async def redis_client():
 
 
 @pytest.fixture(scope="function")
-async def unavailable_redis_client():
+async def unavailable_test_redis_client():
     test_unavailable_redis_client = Redis(
         host="9999.9999.9999.9999",
         port=settings.REDIS_PORT,

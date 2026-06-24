@@ -16,7 +16,7 @@ pytestmark = pytest.mark.anyio
 
 async def test_guest_rate_limit_exceeds_capacity(
     client: AsyncClient,
-    redis_client: Redis,
+    test_redis_client: Redis,
     monkeypatch,
 ):
     monkeypatch.setattr(
@@ -37,7 +37,7 @@ async def test_guest_rate_limit_exceeds_capacity(
 
 async def test_authenticated_rate_limit_exceeds_capacity(
     client: AsyncClient,
-    redis_client: Redis,
+    test_redis_client: Redis,
     auth_headers,
     monkeypatch,
 ):
@@ -59,7 +59,7 @@ async def test_authenticated_rate_limit_exceeds_capacity(
 
 async def test_paid_member_rate_limit_exceeds_capacity(
     client: AsyncClient,
-    redis_client: Redis,
+    test_redis_client: Redis,
     admin_user: User,
     test_user: User,
     user_membership_service: UserMembershipService,
@@ -92,7 +92,7 @@ async def test_paid_member_rate_limit_exceeds_capacity(
 
 async def test_admin_rate_limit_exceeds_capacity(
     client: AsyncClient,
-    redis_client: Redis,
+    test_redis_client: Redis,
     admin_auth_headers,
     monkeypatch,
 ):
@@ -112,11 +112,11 @@ async def test_admin_rate_limit_exceeds_capacity(
     assert response.status_code == 429
 
 
-async def test_redis_client_unavailable(
+async def test_test_redis_client_unavailable(
     client: AsyncClient,
-    unavailable_redis_client: Redis,
+    unavailable_test_redis_client: Redis,
 ):
-    with patch("app.core.utils.rate_limiter.request_logger") as mock_privileges_logger:
+    with patch("app.core.common.rate_limiter.request_logger") as mock_privileges_logger:
         response = await client.get("/healthcheck")
 
         mock_privileges_logger.error.assert_called_once()
@@ -132,7 +132,7 @@ async def test_redis_client_unavailable(
 
 async def test_rate_limit_token_refill(
     client: AsyncClient,
-    redis_client: Redis,
+    test_redis_client: Redis,
     monkeypatch,
 ):
     monkeypatch.setattr(
@@ -144,15 +144,15 @@ async def test_rate_limit_token_refill(
     for _ in range(5):
         await client.get("/healthcheck")
 
-    keys = await redis_client.keys("rl:user:*")
+    keys = await test_redis_client.keys("rl:user:*")
     key = keys[0]
 
-    bucket = await redis_client.hgetall(key)
+    bucket = await test_redis_client.hgetall(key)
     assert float(bucket['tokens']) < 5.0
 
     await asyncio.sleep(5)
 
     await client.get("/healthcheck")
 
-    bucket = await redis_client.hgetall(key)
+    bucket = await test_redis_client.hgetall(key)
     assert float(bucket['tokens']) >= 4.0
