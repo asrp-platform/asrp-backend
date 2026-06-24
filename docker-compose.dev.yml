@@ -149,8 +149,8 @@ services:
   redis:
     container_name: redis
     image: redis:7.4
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"
     env_file:
       - .env
     environment:
