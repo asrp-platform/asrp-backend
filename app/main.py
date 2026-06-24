@@ -14,11 +14,11 @@ from app.core.common.exceptions import (
     PermissionDeniedError,
     ResourceAlreadyExistsError,
 )
+from app.core.common.rate_limiter import rate_limiter_dependency
 from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.logging import REQUESTS_CHANNEL, configure_logging
 from app.core.utils.open_api import get_custom_open_api
-from app.core.common.rate_limiter import rate_limiter_dependency
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router

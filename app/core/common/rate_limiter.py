@@ -17,6 +17,7 @@ from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.shared.deps import access_token_header, get_email_by_access_token
 from app.domains.users.services import UserServiceDep
 
+
 configure_logging()
 request_logger = logger.bind(channel=REQUESTS_CHANNEL)
 

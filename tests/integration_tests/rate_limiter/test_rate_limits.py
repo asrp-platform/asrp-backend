@@ -11,6 +11,7 @@ from app.domains.memberships.models import MembershipRequest
 from app.domains.memberships.services import UserMembershipService
 from app.domains.users.models import User
 
+
 pytestmark = pytest.mark.anyio
 
 
