@@ -43,7 +43,7 @@ class SuspendUserMembershipUseCase:
             if membership.is_suspended and suspended_until is not None:
                 raise MembershipAlreadySuspendedError("User membership with provided ID already suspended")
 
-            user: User = await self.__user_service.get_user_by_kwargs(id=membership.user_id)
+            user: User = await self.__user_service._get_user_by_kwargs(id=membership.user_id)
             if suspended_until is None:
                 await self.__user_membership_service.terminate_membership(
                     membership_id,

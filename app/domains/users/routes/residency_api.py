@@ -25,6 +25,7 @@ class GetUserResidenciesResponses(Responses):
 )
 async def get_user_residencies(
     user_id: int,
+    current_user: CurrentUserDep,  # noqa
     service: ResidencyServiceDep,
 ) -> list[ResidencyViewSchema]:
     return await service.list_for_user(user_id)
@@ -40,6 +41,7 @@ class GetSingleUserResidencyResponses(GetUserResidenciesResponses):
 async def get_single_user_residency(
     user_id: int,
     residency_id: int,
+    current_user: CurrentUserDep,  # noqa
     service: ResidencyServiceDep,
 ) -> ResidencyViewSchema:
     return await service.get_for_user(user_id=user_id, resource_id=residency_id)

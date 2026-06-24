@@ -20,9 +20,10 @@ class GetUserProfessionalInformationResponses(Responses):
 )
 async def get_user_professional_information(
     user_id: int,
+    current_user: CurrentUserDep,  # noqa
     professional_information_service: ProfessionalInformationServiceDep,
 ) -> ProfessionalInformationViewSchema | None:
-    return await professional_information_service.get_by_user_id(user_id)
+    return await professional_information_service._get_by_user_id(user_id)
 
 
 class CreateOrUpdateUserProfessionalInformationResponses(GetUserProfessionalInformationResponses):
@@ -36,8 +37,8 @@ class CreateOrUpdateUserProfessionalInformationResponses(GetUserProfessionalInfo
 )
 async def create_or_update_user_professional_information(
     user_id: int,
-    current_user: CurrentUserDep,  # noqa: F401, F501
+    current_user: CurrentUserDep,
     professional_information_service: ProfessionalInformationServiceDep,
     data: ProfessionalInformationCreateOrUpdateSchema,
 ) -> ProfessionalInformationViewSchema:
-    return await professional_information_service.create_or_update(user_id, current_user.id, **data.model_dump())
+    return await professional_information_service._create_or_update(user_id, current_user.id, **data.model_dump())

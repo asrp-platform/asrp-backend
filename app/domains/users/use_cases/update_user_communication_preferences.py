@@ -22,7 +22,7 @@ class UpdateCommunicationPreferencesUseCase:
                 user_id,
                 current_user_id=current_user_id,
             )
-            return await self.__communication_preferences_service.update_or_create_preferences(user_id, update_data)
+            return await self.__communication_preferences_service.update_communication_preferences(user_id, update_data)
 
 
 def get_update_user_communication_preferences_use_case(

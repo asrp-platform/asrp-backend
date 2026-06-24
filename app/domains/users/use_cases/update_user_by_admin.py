@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
+from app.core.utils.permissions import check_permissions
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
@@ -28,20 +29,16 @@ class UpdateUserByAdminUseCase:
                 raise NotFoundError()
 
             if target_user.admin:
-                if "admin.update" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("admin.update", permissions)
             else:
-                if "users.update" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("users.update", permissions)
 
             is_admin_flag = update_data.get("admin")
 
             if is_admin_flag:
-                if "admin.create" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("admin.create", permissions)
             else:
-                if "admin.delete" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("admin.delete", permissions)
 
             if is_admin_flag and admin.id == target_user_id:
                 raise PermissionDeniedError("Don't have enough permissions")

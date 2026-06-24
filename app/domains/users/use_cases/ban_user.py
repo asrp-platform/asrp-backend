@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.common.exceptions import NotFoundError, PermissionDeniedError
+from app.core.utils.permissions import check_permissions
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
@@ -28,17 +29,15 @@ class BanUserUseCase:
         async with self.__transaction_manager:
             target_user = await self.__user_service.get_user_by_kwargs(id=target_user_id)
             if target_user is None:
-                raise NotFoundError()
+                raise NotFoundError("User with provided ID not found")
 
             if target_user.superuser:
                 raise PermissionDeniedError("Don't have enough permissions")
 
             if target_user.admin:
-                if "admin.update" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("admin.update", permissions)
             else:
-                if "users.update" not in permissions:
-                    raise PermissionDeniedError("Don't have enough permissions")
+                check_permissions("users.update", permissions)
 
             return await self.__user_service.ban_user(target_user_id, ban_reason)
 

@@ -12,10 +12,11 @@ pytestmark = pytest.mark.anyio
 
 async def test_get_user_residencies_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/residencies")
+    response = await client.get(f"/api/users/{test_user.id}/residencies", headers=auth_headers)
 
     data = response.json()
 
@@ -25,18 +26,29 @@ async def test_get_user_residencies_success(
 
 async def test_get_user_residencies_user_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
 ):
-    response = await client.get("/api/users/999999/residencies")
+    response = await client.get("/api/users/999999/residencies", headers=auth_headers)
 
     assert response.status_code == 404
 
 
+async def test_get_user_residencies_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+):
+    response = await client.get(f"/api/users/{test_user.id}/residencies")
+
+    assert response.status_code == 401
+
+
 async def test_get_single_user_residency_success(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
     residency: Residency,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/residencies/{residency.id}")
+    response = await client.get(f"/api/users/{test_user.id}/residencies/{residency.id}", headers=auth_headers)
 
     data = response.json()
 
@@ -47,11 +59,22 @@ async def test_get_single_user_residency_success(
 
 async def test_get_single_user_residency_not_found(
     client: AsyncClient,
+    auth_headers: AuthHeaders,
     test_user: User,
 ):
-    response = await client.get(f"/api/users/{test_user.id}/residencies/999999")
+    response = await client.get(f"/api/users/{test_user.id}/residencies/999999", headers=auth_headers)
 
     assert response.status_code == 404
+
+
+async def test_get_single_user_residency_unauthorized(
+    client: AsyncClient,
+    test_user: User,
+    residency: Residency,
+):
+    response = await client.get(f"/api/users/{test_user.id}/residencies/{residency.id}")
+
+    assert response.status_code == 401
 
 
 async def test_create_user_residency_success(

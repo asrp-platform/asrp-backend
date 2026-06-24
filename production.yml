@@ -36,6 +36,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - internal
 
   celery_worker:
     container_name: celery_worker
@@ -127,6 +129,7 @@ services:
 volumes:
   postgres_data:
   backend_logs:
+  rabbitmq_data:
 
 networks:
   internal:
