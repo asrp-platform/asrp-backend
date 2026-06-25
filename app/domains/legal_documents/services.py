@@ -21,13 +21,22 @@ class LegalDocumentsService:
         if file_data.content_type != self.document.mime_type:
             raise InvalidMimeTypeError("Invalid file type. Only PDF allowed.")
 
-        await self.file_storage.upload_file(self.document.filename, file_content=file_data.content)
+        await self.file_storage.upload_file(
+            self.document.filename,
+            file_content=file_data.content,
+            content_type=self.document.mime_type,
+            content_disposition="inline",
+        )
 
     async def delete(self) -> None:
         await self.file_storage.delete_file(self.document.filename)
 
     async def get_url(self) -> str | None:
-        return await self.file_storage.get_file_url(self.document.filename)
+        return await self.file_storage.get_file_url(
+            self.document.filename,
+            response_content_type=self.document.mime_type,
+            response_content_disposition="inline",
+        )
 
 
 class SponsorsService:

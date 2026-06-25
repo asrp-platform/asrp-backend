@@ -18,5 +18,5 @@ async def create_contact_message(
     contact_message_service: FeedbackServiceDep,
     message_data: CreateContactMessageSchema,
 ) -> ContactMessageResponseSchema:
-    contact_message = await contact_message_service.create_contact_message(message_data.model_dump())
+    contact_message = await contact_message_service.create_contact_message(message_data.model_dump(mode="json"))
     return contact_message

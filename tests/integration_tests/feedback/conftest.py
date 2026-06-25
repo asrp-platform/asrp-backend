@@ -3,7 +3,7 @@ import random
 import pytest
 from faker import Faker
 
-from app.domains.feedback.models import ContactMessage, ContactMessageTypeEnum
+from app.domains.feedback.models import ContactMessage, ContactMessageTypeEnum, DonationTypeEnum
 from app.domains.shared.transaction_managers import TransactionManager
 
 
@@ -89,6 +89,20 @@ def get_involved_committees_message_data(faker: Faker) -> dict:
         "message_content": {
             "role_affiliation": (random.choice(ROLE_AFFILIATIONS) if random.choice([True, False]) else None),
             "get_involved_message": (faker.paragraph(nb_sentences=3) if random.choice([True, False]) else None),
+        },
+    }
+
+
+@pytest.fixture(scope="function")
+def donation_sponsorship_message_data(faker: Faker) -> dict:
+    return {
+        "name": faker.name(),
+        "email": faker.email(),
+        "type": ContactMessageTypeEnum.DONATION_SPONSORSHIP.value,
+        "message_content": {
+            "organization": faker.company(),
+            "donation_type": random.choice(list(DonationTypeEnum)).value,
+            "message": faker.paragraph(nb_sentences=3),
         },
     }
 

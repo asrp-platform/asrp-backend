@@ -64,6 +64,8 @@ class S3Storage(BaseFileStorage):
         object_key: str,
         file_content: bytes,
         bucket_name: str | None = None,
+        content_type: str | None = None,
+        content_disposition: str | None = None,
     ) -> UploadedFileData:
         """
         Uploads file to S3 storage.
@@ -74,20 +76,36 @@ class S3Storage(BaseFileStorage):
             - ``object_key``: the object key used to store the file
         """
         bucket = bucket_name or self.default_bucket_name
+
         await self.__ensure_bucket_exists(bucket)
+
+        put_object_kwargs = {
+            "Bucket": bucket,
+            "Key": object_key,
+            "Body": file_content,
+        }
+
+        if content_type:
+            put_object_kwargs["ContentType"] = content_type
+
+        if content_disposition:
+            put_object_kwargs["ContentDisposition"] = content_disposition
+
         async with self.get_client() as client:
-            await client.put_object(
-                Bucket=bucket,
-                Key=object_key,
-                Body=file_content,
-            )
-        return UploadedFileData(object_key=object_key, metadata={"bucket": bucket})
+            await client.put_object(**put_object_kwargs)
+
+        return UploadedFileData(
+            object_key=object_key,
+            metadata={"bucket": bucket},
+        )
 
     async def get_file_url(
-            self,
-            object_key: str,
-            expires_in: int | None = None,
-            bucket_name: str | None = None
+        self,
+        object_key: str,
+        expires_in: int | None = None,
+        bucket_name: str | None = None,
+        response_content_type: str | None = None,
+        response_content_disposition: str | None = None,
     ) -> str | None:
         expires_in = expires_in or self.expires_in
         bucket = bucket_name or self.default_bucket_name
@@ -95,13 +113,21 @@ class S3Storage(BaseFileStorage):
         if not await self.check_file_exists(object_key, bucket):
             return None
 
+        params = {
+            "Bucket": bucket,
+            "Key": object_key,
+        }
+
+        if response_content_type:
+            params["ResponseContentType"] = response_content_type
+
+        if response_content_disposition:
+            params["ResponseContentDisposition"] = response_content_disposition
+
         async with self.get_public_client() as client:
             url = await client.generate_presigned_url(
                 "get_object",
-                Params={
-                    "Bucket": bucket,
-                    "Key": object_key,
-                },
+                Params=params,
                 ExpiresIn=expires_in,
             )
             return url
@@ -140,11 +166,7 @@ class S3Storage(BaseFileStorage):
                     if error_code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
                         raise
 
-    def extract_object_key(
-            self,
-            url: str | None,
-            allowed_prefixes: list[str] | None = None
-    ) -> str | None:
+    def extract_object_key(self, url: str | None, allowed_prefixes: list[str] | None = None) -> str | None:
         if url is None:
             return None
 

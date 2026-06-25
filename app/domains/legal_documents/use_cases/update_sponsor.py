@@ -14,7 +14,7 @@ class UpdateSponsorUseCase:
     async def execute(self, permissions, sponsor_id: int, **kwargs) -> SponsorSchema:
         check_permissions("legal_documents.update", permissions)
         if "logo_url" in kwargs:
-            kwargs["logo_key"] = self.__service.url_to_key(kwargs.pop("logo_url"))
+            kwargs["logo_key"] = await self.__service.url_to_key(kwargs.pop("logo_url"))
         item = await self.__service.update(sponsor_id, **kwargs)
         return SponsorSchema(
             id=item.id,
