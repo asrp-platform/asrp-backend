@@ -1,8 +1,12 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from faker import Faker
 from httpx import AsyncClient
 
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.feedback.models import ContactMessage
+from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
 
@@ -80,6 +84,38 @@ async def test_retrieve_contact_message_no_permissions(
     )
 
     assert response.status_code == 403
+
+
+async def test_answer_contact_message_queues_email_and_marks_answered(
+    client: AsyncClient,
+    contact_message_db: ContactMessage,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post(
+            f"/api/admin/contact-messages/{contact_message_db.id}/answers",
+            json={
+                "subject": "Reply from ASRP",
+                "answer_message": "Thank you for contacting ASRP. We will be happy to help.",
+            },
+            headers=admin_auth_headers,
+        )
+
+    async with test_transaction_manager:
+        updated_message = await test_transaction_manager.contact_message_repository.get_first_by_kwargs(
+            id=contact_message_db.id
+        )
+
+    assert response.status_code == 201
+    assert updated_message is not None
+    assert updated_message.answered is True
+    mock_send_email.assert_awaited_once_with(
+        to=contact_message_db.email,
+        subject="Reply from ASRP",
+        body="Thank you for contacting ASRP. We will be happy to help.",
+    )
 
 
 async def test_create_contact_message_success(
