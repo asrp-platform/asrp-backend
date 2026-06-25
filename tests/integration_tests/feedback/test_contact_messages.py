@@ -15,6 +15,7 @@ pytestmark = pytest.mark.anyio
         "contact_message_data",
         "get_involved_message_data",
         "get_involved_committees_message_data",
+        "donation_sponsorship_message_data",
     ],
 )
 async def test_create_contact(
@@ -130,3 +131,20 @@ async def test_create_get_involved_committees_message_success(
     assert res_data["email"] == get_involved_committees_message_data["email"]
     assert res_data["type"] == get_involved_committees_message_data["type"]
     assert res_data["message_content"] == get_involved_committees_message_data["message_content"]
+
+
+async def test_create_donation_sponsorship_message_success(
+    client: AsyncClient,
+    donation_sponsorship_message_data: dict,
+) -> None:
+    response = await client.post(
+        "/api/contact-messages",
+        json=donation_sponsorship_message_data,
+    )
+    res_data = response.json()
+
+    assert response.status_code == 201
+    assert res_data["name"] == donation_sponsorship_message_data["name"]
+    assert res_data["email"] == donation_sponsorship_message_data["email"]
+    assert res_data["type"] == donation_sponsorship_message_data["type"]
+    assert res_data["message_content"] == donation_sponsorship_message_data["message_content"]

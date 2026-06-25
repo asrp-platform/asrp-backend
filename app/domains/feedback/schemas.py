@@ -34,6 +34,7 @@ class DonationSponsorshipMessage(BaseModel):
     organization: Annotated[str | None, Field(min_length=2)] = None
     donation_type: DonationTypeEnum
     message: Annotated[str | None, Field(min_length=10)] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class CreateContactMessageSchema(BaseModel):
@@ -48,6 +49,7 @@ class CreateContactMessageSchema(BaseModel):
             ContactMessageTypeEnum.CONTACT: ContactMessage,
             ContactMessageTypeEnum.GET_INVOLVED: GetInvolvedMessage,
             ContactMessageTypeEnum.GET_INVOLVED_COMMITTEES: CommitteesGetInvolvedMessage,
+            ContactMessageTypeEnum.DONATION_SPONSORSHIP: DonationSponsorshipMessage,
         }
         schema = mapping.get(self.type)
         if schema:
