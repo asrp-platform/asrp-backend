@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+PATH="/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export PATH
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ENV_FILE:-${SCRIPT_DIR}/.env}"
 POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-asrp_database}"
