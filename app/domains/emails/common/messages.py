@@ -195,7 +195,19 @@ def build_membership_application_approved_html(
 
     <p>
         You may log in to your account here:
-        <a href="{safe_login_link}">Login Link</a>
+        <a
+            href="{safe_login_link}"
+               style="
+               display: inline-block;
+               padding: 12px 20px;
+               background-color: #2563eb;
+               color: #ffffff;
+               text-decoration: none;
+               border-radius: 6px;
+               font-weight: bold;
+            ">
+            Login Link
+        </a>
     </p>
 
     <p>
