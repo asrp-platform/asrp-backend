@@ -6,7 +6,7 @@ authors = [
     {name = "max31ru12",email = "maxevg72@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 dependencies = [
     "fastapi (>=0.115.13,<0.116.0)",
     "uvicorn (>=0.34.3,<0.35.0)",
@@ -27,6 +27,7 @@ dependencies = [
     "aiobotocore (>=3.3.0,<4.0.0)",
     "stripe (>=15.0.1,<16.0.0)",
     "celery (>=5.6.3,<6.0.0)",
+    "redis (>=7.4.0,<8.0.0)",
 ]
 
 [tool.poetry]

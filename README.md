@@ -36,6 +36,14 @@ Necessary envs:
 - `FRONTEND_DOMAIN_HTTP=http://localhost:3000`
 - `FRONTEND_DOMAIN=http://localhost:3000`
 
+
+- `REDIS_HOST=localhost` - localhost if starting backend via IDE, container name is using Docker
+- `REDIS_PORT=6379`
+- `REDIS_DB_NUMBER=1`
+- `REDIS_TEST_DB_NUMBER=2`
+- `REDIS_USER=test_user`
+- `REDIS_USER_PASSWORD=test_password`
+
 `SECRET_KEY` and `FERNET_KEY` must be generated manually
 
 #### DB_HOST
