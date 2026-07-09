@@ -35,9 +35,13 @@ class User(Base):
     banned: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False, server_default=text("false"))
     ban_reason: Mapped[str | None] = mapped_column(String(512), nullable=True)
     description: Mapped[str] = mapped_column(String(512), nullable=True)
+
+    # Country data
     country: Mapped[str] = mapped_column(nullable=False)
     state: Mapped[str] = mapped_column(nullable=True)
     city: Mapped[str] = mapped_column(nullable=False)
+    postal_code: Mapped[str] = mapped_column(nullable=True)
+
     languages_spoken: Mapped[str] = mapped_column(nullable=True)
     professional_interests: Mapped[str] = mapped_column(nullable=True)
     telegram_username: Mapped[str] = mapped_column(nullable=True, unique=True)
