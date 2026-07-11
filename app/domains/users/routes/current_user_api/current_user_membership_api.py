@@ -23,7 +23,7 @@ from app.domains.memberships.schemas.membership_requests import (
     UpgradeMembershipSchema,
 )
 from app.domains.memberships.schemas.membership_types import UserMembershipTypeChangeRequestProfileSchema
-from app.domains.memberships.schemas.user_memberships import UserMembershipSchema
+from app.domains.memberships.schemas.user_memberships import MembershipConfirmationSchema, UserMembershipSchema
 from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.payments.schemas import PaymentCheckoutSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
@@ -38,6 +38,9 @@ from app.domains.users.use_cases.current_user_membership.get_current_user_member
 )
 from app.domains.users.use_cases.current_user_membership.get_current_user_membership_downgrade_request import (
     GetCurrentUserMembershipDowngradeRequestUseCaseDep,
+)
+from app.domains.users.use_cases.current_user_membership.get_membership_confirmation import (
+    GetMembershipConfirmationUseCaseDep,
 )
 from app.domains.users.use_cases.current_user_membership.reapply_membership_application import (
     ReapplyMembershipApplicationUseCaseDep,
@@ -280,3 +283,19 @@ async def renew_membership(
         raise RenewMembershipResponses.MEMBERSHIP_TEMPORARILY_BLOCKED
 
     return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
+
+
+class MembershipConfirmationResponses(Responses):
+    MEMBERSHIP_NOT_FOUND = 404, "Membership for the current user not found"
+
+
+@router.get(
+    "/membership/confirmation",
+    summary="Get membership confirmation for current user",
+    responses=MembershipConfirmationResponses.responses,
+)
+async def get_membership_confirmation(
+    current_user: CurrentUserDep,
+    use_case: GetMembershipConfirmationUseCaseDep,
+) -> MembershipConfirmationSchema:
+    return await use_case.execute(current_user)
