@@ -17,6 +17,7 @@ class RegisterFormData(BaseModel):
     city: str = Field(min_length=2)
     state: str | None = None
     postal_code: str | None = None
+    credentials: str | None = None
 
     @model_validator(mode="after")
     def check_passwords_match(self):
