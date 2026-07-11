@@ -32,7 +32,9 @@ jobs:
 
       - name: Write CI .env
         shell: bash
-        run: cp .env.ci .env
+        run: |
+          touch .env
+          cp .env.ci .env
 
       - name: Lint
         run: poetry run ruff check .

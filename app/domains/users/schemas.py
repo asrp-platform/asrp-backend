@@ -7,6 +7,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validat
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
+from app.domains.auth.schemas import US_COUNTRY_VALUES
 from app.domains.shared.types import Password
 from app.domains.users.models import NameChangeRequestStatusEnum
 
@@ -72,6 +73,7 @@ class UserPrivateSchema(UserPublicSchema):
     superuser: bool
     banned: bool
     ban_reason: str | None
+    postal_code: str | None = None
 
 
 class UpdateUserByAdminSchema(BaseModel):
@@ -89,11 +91,26 @@ class UpdateUserSchema(BaseModel):
     description: str | None = None
     country: str | None = Field(None, min_length=2)
     state: str | None = None
+    postal_code: str | None = None
     city: str | None = Field(None, min_length=2)
     languages_spoken: str | None = None
     professional_interests: str | None = None
     telegram_username: str | None = None
     phone_number: Annotated[str | None, Field()] = None
+
+    @model_validator(mode="after")
+    def check_us_address_fields(self):
+        if self.country is None:
+            return self
+
+        if self.country.strip().upper() in US_COUNTRY_VALUES:
+            if not self.state or not self.state.strip():
+                raise PydanticCustomError("state_required", "State is required for USA")
+
+            if not self.postal_code or not self.postal_code.strip():
+                raise PydanticCustomError("postal_code_required", "Postal code is required for USA")
+
+        return self
 
     @field_validator("country", "city")
     def forbid_null_for_required_fields(cls, value, info):

@@ -86,7 +86,7 @@ def user_registration_data(faker: Faker) -> dict[str, Any]:
         "repeat_password": password,
         "firstname": faker.first_name(),
         "lastname": faker.last_name(),
-        "country": faker.country(),
+        "country": "CA",
         "city": faker.city(),
     }
 

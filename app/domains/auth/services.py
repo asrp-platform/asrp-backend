@@ -47,8 +47,11 @@ class AuthService:
                 existing_user.lastname = user_data["lastname"]
                 existing_user.country = user_data["country"]
                 existing_user.city = user_data["city"]
+                existing_user.state = user_data["state"]
+                existing_user.postal_code = user_data["postal_code"]
                 existing_user.password = user_data["password"]
                 existing_user.pending = True
+                existing_user.credentials = user_data["credentials"]
                 user = existing_user
 
             else:
