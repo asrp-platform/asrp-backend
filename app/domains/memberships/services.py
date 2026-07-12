@@ -77,12 +77,21 @@ class MembershipTypeService:
         self.__tm = transaction_manager
 
     async def get_membership_types(
-        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+        self,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+        *,
+        open_transaction: bool = False,
     ) -> list[MembershipType]:
-        # Called at endpoint
-        async with self.__tm:
-            membership_types, _ = await self.__tm.membership_type_repository.list(limit, offset, order_by, filters)
-            return membership_types
+        if open_transaction:
+            async with self.__tm:
+                membership_types, _ = await self.__tm.membership_type_repository.list(limit, offset, order_by, filters)
+                return membership_types
+
+        membership_types, _ = await self.__tm.membership_type_repository.list(limit, offset, order_by, filters)
+        return membership_types
 
     async def get_price_difference(self, current_type_id, target_type_id) -> int:
         current = aliased(MembershipType)

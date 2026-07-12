@@ -255,3 +255,25 @@ async def test_reject_membership_downgrade_request_without_admin_comment(
     )
 
     assert response.status_code == 422
+
+
+async def test_get_membership_types(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+) -> None:
+    response = await client.get(
+        "/api/admin/memberships/types",
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 200
+
+
+async def test_get_membership_types_not_authorized(
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        "/api/admin/memberships/types",
+    )
+
+    assert response.status_code == 401
