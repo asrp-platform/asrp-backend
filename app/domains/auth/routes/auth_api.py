@@ -22,6 +22,7 @@ from app.domains.auth.schemas import (
     ResetPasswordSchema,
 )
 from app.domains.auth.services import AuthServiceDep, RegisterResponses
+from app.domains.auth.utils import get_countries
 from app.domains.shared.deps import (
     RefreshTokenDep,
     create_access_token,
@@ -221,3 +222,8 @@ async def confirm_email(token: Annotated[str, Query(...)], auth_service: AuthSer
 
     except EmailConfirmationExpiredError:
         raise CompleteRegistrationResponses.EXPIRED
+
+
+@router.get("/countries")
+async def countries_list():
+    return get_countries()

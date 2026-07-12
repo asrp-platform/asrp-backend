@@ -53,6 +53,63 @@ async def test_register_updates_existing_pending_user(
     mock_send_email.assert_awaited_once()
 
 
+@pytest.mark.parametrize(
+    ("country", "error_message", "address_data"),
+    [
+        ("US", "State is required for USA", {"postal_code": "10001"}),
+        ("US", "Postal code is required for USA", {"state": "NY"}),
+        ("USA", "State is required for USA", {"postal_code": "10001"}),
+        ("USA", "Postal code is required for USA", {"state": "NY"}),
+    ],
+)
+async def test_register_requires_state_and_postal_code_for_usa(
+    client: AsyncClient,
+    test_transaction_manager: TransactionManager,
+    user_registration_data: dict[str, Any],
+    country: str,
+    error_message: str,
+    address_data: dict[str, str],
+) -> None:
+    payload = {
+        **user_registration_data,
+        "country": country,
+        **address_data,
+    }
+
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post("api/auth/register", json=payload)
+
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=payload["email"])
+
+    assert response.status_code == 422
+    assert error_message in response.text
+    assert user is None
+    mock_send_email.assert_not_awaited()
+
+
+async def test_register_allows_missing_state_and_postal_code_for_non_usa(
+    client: AsyncClient,
+    test_transaction_manager: TransactionManager,
+    user_registration_data: dict[str, Any],
+) -> None:
+    payload = {**user_registration_data, "country": "CA"}
+    payload.pop("state", None)
+    payload.pop("postal_code", None)
+
+    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+        response = await client.post("api/auth/register", json=payload)
+
+    async with test_transaction_manager:
+        user = await test_transaction_manager.user_repository.get_first_by_kwargs(email=payload["email"])
+
+    assert response.status_code == 201
+    assert user is not None
+    assert user.state is None
+    assert user.postal_code is None
+    mock_send_email.assert_awaited_once()
+
+
 async def test_register_rejects_existing_confirmed_user(
     client: AsyncClient, test_transaction_manager: TransactionManager, user_data: dict[str, Any]
 ) -> None:

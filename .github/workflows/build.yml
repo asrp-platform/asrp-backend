@@ -32,7 +32,9 @@ jobs:
 
       - name: Write CI .env
         shell: bash
-        run: cp .env.ci .env
+        run: |
+          touch .env
+          cp .env.ci .env
 
       - name: Lint
         run: poetry run ruff check .
@@ -125,7 +127,7 @@ jobs:
         run: cp .env.ci .env
 
       - name: Start dev-server test services
-        run: docker compose -f docker-compose.dev.yml up -d asrp_database minio
+        run: docker compose -f docker-compose.dev.yml up -d asrp_database minio redis
 
       - name: Wait for Postgres
         shell: bash
@@ -181,7 +183,7 @@ jobs:
         run: cp .env.ci .env
 
       - name: Start local-dev services
-        run: docker compose -f local.yml up -d asrp_database minio rabbitmq celery_worker
+        run: docker compose -f local.yml up -d asrp_database minio rabbitmq celery_worker redis
 
       - name: Wait for Postgres
         shell: bash

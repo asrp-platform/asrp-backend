@@ -4,17 +4,16 @@ from typing import Annotated, Any, Sequence
 from fastapi import Depends
 from sqlalchemy import func, select
 
-from app.domains.emails.providers.gmail import GmailProvider
-from app.domains.emails.services import get_email_service
-from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
+from app.domains.emails.email_queue import EmailQueueDep
+from app.domains.feedback.exceptions import ContactMessageNotFoundError, FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
 
 class FeedbackService:
-    def __init__(self, transaction_manager: TransactionManager):
+    def __init__(self, transaction_manager: TransactionManager, email_queue: EmailQueueDep):
         self.transaction_manager = transaction_manager
-        self.email_provider = get_email_service(GmailProvider)
+        self.email_queue = email_queue
 
     async def create_contact_message(self, data: dict):
         async with self.transaction_manager:
@@ -33,7 +32,7 @@ class FeedbackService:
             )
 
             if contact_message is None:
-                raise ValueError("There is no contact message with provided id")
+                raise ContactMessageNotFoundError("There is no contact message with provided id")
 
             message_reply = await self.transaction_manager.contact_message_reply_repository.create(
                 contact_message_id=contact_message.id, answer=answer_message
@@ -41,7 +40,7 @@ class FeedbackService:
 
             await self.transaction_manager.contact_message_repository.update(contact_message_id, answered=True)
 
-        await self.email_provider.send_email(
+        await self.email_queue.send_email(
             to=contact_message.email,
             subject=subject,
             body=answer_message,
@@ -156,8 +155,9 @@ def get_feedback_additional_info_service(
 
 def get_feedback_service(
     transaction_manager: TransactionManagerDep,
+    email_queue: EmailQueueDep,
 ) -> FeedbackService:
-    return FeedbackService(transaction_manager)
+    return FeedbackService(transaction_manager, email_queue)
 
 
 FeedbackServiceDep = Annotated[FeedbackService, Depends(get_feedback_service)]

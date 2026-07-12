@@ -20,12 +20,7 @@ class BaseFileStorage(ABC):
         self.expires_in = expires_in
 
     @abstractmethod
-    async def get_file_url(
-            self,
-            object_key: str,
-            expires_in: int | None = None,
-            **kwargs
-    ) -> str | None:
+    async def get_file_url(self, object_key: str, expires_in: int | None = None, **kwargs) -> str | None:
         """:param expires_in: seconds until expiration"""
         pass
 
@@ -42,9 +37,9 @@ class BaseFileStorage(ABC):
         pass
 
     @abstractmethod
-    async def extract_object_key(
-            self,
-            url: str | None,
-            allowed_prefixes: list[str],
+    def extract_object_key(
+        self,
+        url: str | None,
+        allowed_prefixes: list[str],
     ) -> str | None:
         pass

@@ -13,6 +13,12 @@ from app.domains.shared.transaction_managers import TransactionManagerDep
 payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
 
 
+payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
+
+
+payments_logger = logger.bind(channel=PAYMENTS_CHANNEL)
+
+
 class ProcessCheckoutSessionCompletedUseCase:
     def __init__(
         self,
