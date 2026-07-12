@@ -1,6 +1,6 @@
 [project]
 name = "asrp-backend"
-version = "0.1.0"
+version = "1.0.1"
 description = ""
 authors = [
     {name = "max31ru12",email = "maxevg72@gmail.com"}
