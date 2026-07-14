@@ -16,8 +16,8 @@ from app.domains.memberships.exceptions import (
     NoMembershipError,
     SameMembershipTypeChangeRequestError,
 )
-from app.domains.memberships.schemas.membership_downgrade_schemas import UserMembershipTypeChangeRequestProfileSchema
 from app.domains.memberships.schemas.membership_schemas import UserMembershipSchema
+from app.domains.memberships.schemas.membership_types_schemas import UserMembershipTypeChangeRequestProfileSchema
 from app.domains.memberships.schemas.schemas import (
     MembershipDowngradeCreateCreateSchema,
     MembershipRequestCreateSchema,

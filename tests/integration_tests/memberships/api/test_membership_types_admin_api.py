@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.memberships.models import MembershipDowngradeRequest, UserMembership
+from app.domains.memberships.models import MembershipDowngradeRequest, MembershipType, UserMembership
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
@@ -35,6 +35,14 @@ async def get_updated_request_and_membership(
         )
 
     return updated_downgrade_request, updated_user_membership
+
+
+async def get_updated_membership_type(
+    transaction_manager: TransactionManager,
+    membership_type_id: int,
+) -> MembershipType:
+    async with transaction_manager:
+        return await transaction_manager.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
 
 
 def assert_downgrade_response(
@@ -262,4 +270,122 @@ async def test_membership_type_detail_not_found(
         "/api/admin/membership-types/99999",
         headers=admin_auth_headers,
     )
+    assert response.status_code == 404
+
+
+async def test_update_membership_type(
+    client: AsyncClient,
+    test_transaction_manager: TransactionManager,
+    purchasable_membership_type: MembershipType,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+):
+    request_data = {
+        "name": "Updated membership type",
+        "description": "Updated membership type description",
+    }
+
+    response = await client.patch(
+        f"/api/admin/membership-types/{purchasable_membership_type.id}",
+        headers=admin_auth_headers,
+        json=request_data,
+    )
+    updated_membership_type = await get_updated_membership_type(
+        test_transaction_manager,
+        purchasable_membership_type.id,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == request_data["name"]
+    assert response.json()["description"] == request_data["description"]
+    assert updated_membership_type.name == request_data["name"]
+    assert updated_membership_type.description == request_data["description"]
+
+
+async def test_update_membership_type_only_changes_provided_fields(
+    client: AsyncClient,
+    test_transaction_manager: TransactionManager,
+    purchasable_membership_type: MembershipType,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+):
+    original_description = purchasable_membership_type.description
+    new_name = "New membership type name"
+
+    response = await client.patch(
+        f"/api/admin/membership-types/{purchasable_membership_type.id}",
+        headers=admin_auth_headers,
+        json={"name": new_name},
+    )
+    updated_membership_type = await get_updated_membership_type(
+        test_transaction_manager,
+        purchasable_membership_type.id,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == new_name
+    assert response.json()["description"] == original_description
+    assert updated_membership_type.name == new_name
+    assert updated_membership_type.description == original_description
+
+
+async def test_update_membership_type_allows_clearing_description(
+    client: AsyncClient,
+    test_transaction_manager: TransactionManager,
+    purchasable_membership_type: MembershipType,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+):
+    response = await client.patch(
+        f"/api/admin/membership-types/{purchasable_membership_type.id}",
+        headers=admin_auth_headers,
+        json={"description": None},
+    )
+    updated_membership_type = await get_updated_membership_type(
+        test_transaction_manager,
+        purchasable_membership_type.id,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["description"] is None
+    assert updated_membership_type.description is None
+
+
+async def test_update_membership_type_not_authorized(
+    client: AsyncClient,
+    purchasable_membership_type: MembershipType,
+):
+    response = await client.patch(
+        f"/api/admin/membership-types/{purchasable_membership_type.id}",
+        json={"name": "Updated membership type"},
+    )
+
+    assert response.status_code == 401
+
+
+async def test_update_membership_type_no_permissions(
+    client: AsyncClient,
+    purchasable_membership_type: MembershipType,
+    admin_auth_headers: AuthHeaders,
+):
+    response = await client.patch(
+        f"/api/admin/membership-types/{purchasable_membership_type.id}",
+        headers=admin_auth_headers,
+        json={"name": "Updated membership type"},
+    )
+
+    assert response.status_code == 403
+
+
+async def test_update_membership_type_not_found(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+):
+    response = await client.patch(
+        "/api/admin/membership-types/99999",
+        headers=admin_auth_headers,
+        json={"name": "Updated membership type"},
+    )
+
     assert response.status_code == 404

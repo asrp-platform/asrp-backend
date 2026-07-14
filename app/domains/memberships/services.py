@@ -119,6 +119,19 @@ class MembershipTypeService:
             raise NotFoundError("Provided membership type not found")
         return membership_type
 
+    async def update_membership_type(
+        self,
+        membership_type_id: int,
+        *,
+        open_transaction: bool = False,
+        **kwargs,
+    ) -> MembershipType:
+        if open_transaction:
+            async with self.__tm:
+                return await self.__tm.membership_type_repository.update(membership_type_id, **kwargs)
+
+        return await self.__tm.membership_type_repository.update(membership_type_id, **kwargs)
+
     async def get_membership_type_by_value(self, membership_type: MembershipTypeEnum) -> MembershipType:
         membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
 

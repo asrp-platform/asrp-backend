@@ -6,12 +6,13 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import PaginatedResponse
 from app.core.utils.permissions import check_permissions
 from app.domains.memberships.filters import MembershipTypesFilters, UserMembershipTypeChangeRequestsFilters
-from app.domains.memberships.schemas.membership_downgrade_schemas import (
+from app.domains.memberships.schemas.membership_types_schemas import (
+    MembershipTypeSchema,
     ReviewedMembershipTypeChangeRequestSchema,
     ReviewMembershipTypeChangeRequest,
+    UpdateMembershipTypeSchema,
     UserMembershipTypeChangeRequestViewSchema,
 )
-from app.domains.memberships.schemas.schemas import MembershipTypeSchema
 from app.domains.memberships.services import MembershipTypeServiceDep
 from app.domains.memberships.use_cases.memberships.get_downgrade_requests import (
     GetMembershipDowngradeRequestsUseCaseDep,
@@ -79,3 +80,16 @@ async def get_membership_type_detail(
 ) -> MembershipTypeSchema:
     check_permissions("feedback.view", permissions)
     return await membership_type_service.get_membership_type_by_id(membership_type_id=type_id, open_transaction=True)
+
+
+@router.patch("/{type_id}")
+async def update_membership_type(
+    type_id: int,
+    update_membership_data: UpdateMembershipTypeSchema,
+    membership_type_service: MembershipTypeServiceDep,
+    permissions: AdminPermissionsDep,
+) -> MembershipTypeSchema:
+    check_permissions("feedback.update", permissions)
+    return await membership_type_service.update_membership_type(
+        type_id, open_transaction=True, **update_membership_data.model_dump(exclude_unset=True)
+    )
