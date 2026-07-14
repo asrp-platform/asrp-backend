@@ -32,7 +32,7 @@ async def get_membership_types(
     permissions: AdminPermissionsDep,
     filters: Annotated[MembershipTypesFilters, Depends()] = None,
 ) -> list[MembershipTypeSchema]:
-    check_permissions("feedback.view", permissions)
+    check_permissions("membership_types.view", permissions)
     return await membership_type_service.get_membership_types(
         filters=filters.model_dump(exclude_none=True),
         open_transaction=True,
@@ -78,7 +78,7 @@ async def get_membership_type_detail(
     membership_type_service: MembershipTypeServiceDep,
     permissions: AdminPermissionsDep,
 ) -> MembershipTypeSchema:
-    check_permissions("feedback.view", permissions)
+    check_permissions("membership_types.view", permissions)
     return await membership_type_service.get_membership_type_by_id(membership_type_id=type_id, open_transaction=True)
 
 
@@ -89,7 +89,7 @@ async def update_membership_type(
     membership_type_service: MembershipTypeServiceDep,
     permissions: AdminPermissionsDep,
 ) -> MembershipTypeSchema:
-    check_permissions("feedback.update", permissions)
+    check_permissions("membership_types.update", permissions)
     return await membership_type_service.update_membership_type(
         type_id, open_transaction=True, **update_membership_data.model_dump(exclude_unset=True)
     )
