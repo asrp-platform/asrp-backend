@@ -5,7 +5,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.domains.emails.email_queue import EmailQueue
-from app.domains.memberships.models import MembershipDowngradeRequest, MembershipRequest, UserMembership
+from app.domains.memberships.models import MembershipRequest, UserMembership
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
@@ -196,84 +196,3 @@ async def test_restrict_terminated_membership(
     )
 
     assert response.status_code == 409
-
-
-async def test_get_membership_downgrade_requests(
-    client: AsyncClient,
-    membership_downgrade_request,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions,
-) -> None:
-    response = await client.get(
-        "/api/admin/memberships/types/downgrade-requests",
-        headers=admin_auth_headers,
-    )
-
-    assert response.status_code == 200
-
-
-async def test_approve_membership_downgrade_request(
-    client: AsyncClient,
-    membership_downgrade_request: MembershipDowngradeRequest,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions,
-) -> None:
-    response = await client.patch(
-        f"/api/admin/memberships/types/downgrade-requests/{membership_downgrade_request.id}",
-        headers=admin_auth_headers,
-        json={"action": "approve"},
-    )
-
-    assert response.status_code == 200
-
-
-async def test_reject_membership_downgrade_request(
-    client: AsyncClient,
-    membership_downgrade_request: MembershipDowngradeRequest,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions,
-) -> None:
-    response = await client.patch(
-        f"/api/admin/memberships/types/downgrade-requests/{membership_downgrade_request.id}",
-        headers=admin_auth_headers,
-        json={"action": "reject", "admin_comment": "Current membership type is still required"},
-    )
-
-    assert response.status_code == 200
-
-
-async def test_reject_membership_downgrade_request_without_admin_comment(
-    client: AsyncClient,
-    membership_downgrade_request: MembershipDowngradeRequest,
-    admin_auth_headers: AuthHeaders,
-    admin_all_permissions,
-) -> None:
-    response = await client.patch(
-        f"/api/admin/memberships/types/downgrade-requests/{membership_downgrade_request.id}",
-        headers=admin_auth_headers,
-        json={"action": "reject"},
-    )
-
-    assert response.status_code == 422
-
-
-async def test_get_membership_types(
-    client: AsyncClient,
-    admin_auth_headers: AuthHeaders,
-) -> None:
-    response = await client.get(
-        "/api/admin/memberships/types",
-        headers=admin_auth_headers,
-    )
-
-    assert response.status_code == 200
-
-
-async def test_get_membership_types_not_authorized(
-    client: AsyncClient,
-) -> None:
-    response = await client.get(
-        "/api/admin/memberships/types",
-    )
-
-    assert response.status_code == 401

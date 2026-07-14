@@ -103,8 +103,18 @@ class MembershipTypeService:
         )
         return (await self.__tm._session.execute(stmt)).scalar_one()
 
-    async def get_membership_type_by_id(self, membership_type_id: int) -> MembershipType:
-        membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
+    async def get_membership_type_by_id(
+        self,
+        membership_type_id: int,
+        *,
+        open_transaction: bool = False,
+    ) -> MembershipType:
+        if open_transaction:
+            async with self.__tm:
+                membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
+        else:
+            membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
+
         if membership_type is None:
             raise NotFoundError("Provided membership type not found")
         return membership_type

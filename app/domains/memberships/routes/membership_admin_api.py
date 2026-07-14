@@ -5,30 +5,10 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.core.utils.permissions import check_permissions
 from app.domains.memberships.exceptions import MembershipAlreadySuspendedError, MembershipAlreadyTerminatedError
-from app.domains.memberships.filters import (
-    MembersFilters,
-    MembershipTypesFilters,
-    UserMembershipTypeChangeRequestsFilters,
-)
-from app.domains.memberships.schemas.membership_downgrade_schemas import (
-    ReviewedMembershipTypeChangeRequestSchema,
-    ReviewMembershipTypeChangeRequest,
-    UserMembershipTypeChangeRequestViewSchema,
-)
+from app.domains.memberships.filters import MembersFilters
 from app.domains.memberships.schemas.membership_schemas import SuspendMembershipSchema, UserMembershipBoundedSchema
-from app.domains.memberships.schemas.schemas import MembershipTypeSchema
-from app.domains.memberships.services import MembershipTypeServiceDep
-from app.domains.memberships.use_cases.memberships.get_downgrade_requests import (
-    GetMembershipDowngradeRequestsUseCaseDep,
-)
-from app.domains.memberships.use_cases.memberships.get_users_with_memberships import (
-    GetUsersWithMembershipsUseCaseDep,
-)
-from app.domains.memberships.use_cases.memberships.review_downgrade_request import (
-    ReviewMembershipDowngradeRequestUseCaseDep,
-)
+from app.domains.memberships.use_cases.memberships.get_users_with_memberships import GetUsersWithMembershipsUseCaseDep
 from app.domains.memberships.use_cases.memberships.suspend_user_membership import SuspendUserMembershipUseCase
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
@@ -83,49 +63,3 @@ async def get_all_members(
         page=params["page"],
         page_size=params["page_size"],
     )
-
-
-@router.get("/types")
-async def get_membership_types(
-    membership_service: MembershipTypeServiceDep,
-    permissions: AdminPermissionsDep,
-    filters: Annotated[MembershipTypesFilters, Depends()] = None,
-) -> list[MembershipTypeSchema]:
-    check_permissions("feedback.view", permissions)
-    return await membership_service.get_membership_types(
-        filters=filters.model_dump(exclude_none=True),
-        open_transaction=True,
-    )
-
-
-@router.get("/types/downgrade-requests", summary="Get all membership type change requests")
-async def get_membership_type_change_requests(
-    permissions: AdminPermissionsDep,
-    use_case: GetMembershipDowngradeRequestsUseCaseDep,
-    params: PaginationParamsDep,
-    ordering: OrderingParamsDep = None,
-    filters: Annotated[UserMembershipTypeChangeRequestsFilters, Depends()] = None,
-) -> PaginatedResponse[UserMembershipTypeChangeRequestViewSchema]:
-    data, count = await use_case.execute(
-        permissions,
-        order_by=ordering,
-        filters=filters.model_dump(exclude_none=True),
-        limit=params["limit"],
-        offset=params["offset"],
-    )
-    return PaginatedResponse(
-        count=count,
-        data=data,
-        page=params["page"],
-        page_size=params["page_size"],
-    )
-
-
-@router.patch("/types/downgrade-requests/{request_id}", summary="Review membership type change request by ID")
-async def review_membership_type_change_request(
-    request_id: int,
-    body: ReviewMembershipTypeChangeRequest,
-    permissions: AdminPermissionsDep,
-    use_case: ReviewMembershipDowngradeRequestUseCaseDep,
-) -> ReviewedMembershipTypeChangeRequestSchema:
-    return await use_case.execute(request_id, permissions, action=body.action, admin_comment=body.admin_comment)

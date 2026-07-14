@@ -65,7 +65,19 @@ def assert_updated_downgrade_request(
     assert downgrade_request.admin_comment == admin_comment
 
 
-# TODO: tests for membership downgrade request creation
+# DOWNGRADE MEMBERSHIP TYPE
+async def test_get_membership_downgrade_requests(
+    client: AsyncClient,
+    membership_downgrade_request,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+) -> None:
+    response = await client.get(
+        "/api/admin/membership-types/downgrade-requests",
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 200
 
 
 async def test_approve_membership_downgrade_request(
@@ -77,7 +89,7 @@ async def test_approve_membership_downgrade_request(
     admin_all_permissions,
 ) -> None:
     response = await client.patch(
-        f"/api/admin/memberships/types/downgrade-requests/{membership_downgrade_request.id}",
+        f"/api/admin/membership-types/downgrade-requests/{membership_downgrade_request.id}",
         headers=admin_auth_headers,
         json={"action": "approve"},
     )
@@ -117,7 +129,7 @@ async def test_reject_membership_downgrade_request(
     admin_comment = "Current membership type is still required"
 
     response = await client.patch(
-        f"/api/admin/memberships/types/downgrade-requests/{membership_downgrade_request.id}",
+        f"/api/admin/membership-types/downgrade-requests/{membership_downgrade_request.id}",
         headers=admin_auth_headers,
         json={"action": "reject", "admin_comment": admin_comment},
     )
@@ -155,7 +167,7 @@ async def test_reject_membership_downgrade_request_without_admin_comment(
     admin_all_permissions,
 ) -> None:
     response = await client.patch(
-        f"/api/admin/memberships/types/downgrade-requests/{membership_downgrade_request.id}",
+        f"/api/admin/membership-types/downgrade-requests/{membership_downgrade_request.id}",
         headers=admin_auth_headers,
         json={"action": "reject"},
     )
@@ -168,3 +180,86 @@ async def test_reject_membership_downgrade_request_without_admin_comment(
     assert response.status_code == 422
     assert updated_downgrade_request.pending is True
     assert updated_downgrade_request.admin_comment is None
+
+
+# MEMBERSHIP TYPES
+async def test_get_membership_types(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+) -> None:
+    response = await client.get(
+        "/api/admin/membership-types",
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 200
+
+
+async def test_get_membership_types_not_authorized(
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        "/api/admin/membership-types",
+    )
+
+    assert response.status_code == 401
+
+
+async def test_get_membership_types_no_permissions(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+) -> None:
+    response = await client.get(
+        "/api/admin/membership-types",
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize("type_id", [1, 2, 3, 4, 5])
+async def test_membership_type_detail(
+    type_id: int,
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+):
+    response = await client.get(
+        f"/api/admin/membership-types/{type_id}",
+        headers=admin_auth_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] is not None
+
+
+async def test_membership_type_detail_not_authorized(
+    client: AsyncClient,
+):
+    response = await client.get(
+        "/api/admin/membership-types/99999",
+    )
+    assert response.status_code == 401
+
+
+async def test_membership_type_detail_no_permissions(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+):
+    response = await client.get(
+        "/api/admin/membership-types/99999",
+        headers=admin_auth_headers,
+    )
+    assert response.status_code == 403
+
+
+async def test_membership_type_detail_not_found(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+):
+    response = await client.get(
+        "/api/admin/membership-types/99999",
+        headers=admin_auth_headers,
+    )
+    assert response.status_code == 404
