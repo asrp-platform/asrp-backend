@@ -16,8 +16,8 @@ from app.domains.memberships.exceptions import (
     NoMembershipError,
     SameMembershipTypeChangeRequestError,
 )
-from app.domains.memberships.schemas.membership_downgrade_schemas import UserMembershipTypeChangeRequestProfileSchema
 from app.domains.memberships.schemas.membership_schemas import UserMembershipSchema
+from app.domains.memberships.schemas.membership_types_schemas import UserMembershipTypeChangeRequestProfileSchema
 from app.domains.memberships.schemas.schemas import (
     MembershipDowngradeCreateCreateSchema,
     MembershipRequestCreateSchema,
@@ -80,7 +80,7 @@ async def create_membership_request(
 ) -> PaymentCheckoutSchema:
     try:
         checkout_session_url = await use_case.execute(
-            user_id=current_user.id,
+            current_user=current_user,
             is_agrees_communications=create_membership_request_data.is_agrees_communications,
             membership_type=create_membership_request_data.membership_type,
             membership_request_data=create_membership_request_data.membership.model_dump(),

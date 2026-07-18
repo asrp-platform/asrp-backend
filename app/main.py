@@ -32,7 +32,9 @@ from app.domains.legal_documents.routes.admin_api import router as legal_documen
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_admin_api import router as membership_admin_router
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
+from app.domains.memberships.routes.membership_types_admin_api import router as membership_types_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
+from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
@@ -66,7 +68,7 @@ app = FastAPI(
             rate_limiter_dependency,
             use_cache=False,
         )
-    ]
+    ],
 )
 
 
@@ -142,6 +144,7 @@ app.include_router(fellowship_router, prefix="/api")
 app.include_router(job_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 app.include_router(membership_types_router, prefix="/api")
+app.include_router(donations_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
@@ -150,6 +153,7 @@ app.include_router(legal_documents_admin_router, prefix="/api/admin")
 app.include_router(permissions_admin_router, prefix="/api/admin")
 app.include_router(contact_messages_admin_router, prefix="/api/admin")
 app.include_router(feedback_additional_info_admin_router, prefix="/api/admin")
+app.include_router(membership_types_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")

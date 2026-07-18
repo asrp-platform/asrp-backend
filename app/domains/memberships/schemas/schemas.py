@@ -4,25 +4,9 @@ from pydantic import BaseModel, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
+from app.domains.memberships.schemas.membership_types_schemas import MembershipTypeSchema
 from app.domains.shared.schemas import FeedbackAdditionalInfoCreateSchema
 from app.domains.users.schemas import UserShortSchema
-
-
-class MembershipTypeShortSchema(BaseModel):
-    id: int
-    name: str
-    type: MembershipTypeEnum
-
-
-class MembershipTypeSchema(MembershipTypeShortSchema):
-    price_usd: float
-    duration: int
-    description: str | None = None
-    is_purchasable: bool
-
-    model_config = {
-        "from_attributes": True,
-    }
 
 
 class MembershipRequestDataSchema(BaseModel):

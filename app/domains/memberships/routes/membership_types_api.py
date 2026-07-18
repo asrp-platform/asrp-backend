@@ -15,4 +15,7 @@ async def get_membership_types(
     membership_service: MembershipTypeServiceDep,
     filters: Annotated[MembershipTypesFilters, Depends()] = None,
 ) -> list[MembershipTypeSchema]:
-    return await membership_service.get_membership_types(filters=filters.model_dump(exclude_none=True))
+    return await membership_service.get_membership_types(
+        filters=filters.model_dump(exclude_none=True),
+        open_transaction=True,
+    )
