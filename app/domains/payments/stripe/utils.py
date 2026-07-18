@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import stripe
 from loguru import logger
@@ -32,6 +32,7 @@ async def create_checkout_session(
     success_url: str,
     customer_email: str | None = None,
     mode: str = "payment",
+    submit_type: Literal["auto", "book", "donate", "pay", "subscribe"] = "auto",
 ) -> Session:
     metadata = metadata or {}
     session_data = {
@@ -40,6 +41,7 @@ async def create_checkout_session(
         "line_items": line_items,
         "metadata": metadata,
         "payment_intent_data": {"metadata": metadata},
+        "submit_type": submit_type,
     }
     if customer_email is not None:
         session_data["customer_email"] = customer_email
@@ -72,6 +74,7 @@ async def create_membership_application_checkout_session(
     membership_request: "MembershipRequest",
     membership_type: "MembershipType",
     payment: Payment,
+    customer_email: str,
     success_url: str | None = None,
 ) -> CheckoutSessionData:
     amount_cents = to_stripe_amount(membership_type.price_usd)
@@ -85,6 +88,7 @@ async def create_membership_application_checkout_session(
         build_membership_application_line_items(membership_type, amount_cents),
         metadata=metadata,
         success_url=success_url or f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+        customer_email=customer_email,
     )
     return CheckoutSessionData(
         session=checkout_session,

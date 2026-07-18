@@ -7,10 +7,27 @@ from app.core.database.mixins import UCIMixinSchema
 from app.domains.memberships.models import MembershipTypeEnum
 
 
-class BoundedMembershipTypeSchema(BaseModel):
+class MembershipTypeShortSchema(BaseModel):
     id: int
     name: str
     type: MembershipTypeEnum
+
+
+class MembershipTypeSchema(MembershipTypeShortSchema):
+    price_usd: float
+    duration: int
+    description: str | None = None
+    is_purchasable: bool
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class UpdateMembershipTypeSchema(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price_usd: int | None = None
 
 
 class BoundedUserSchema(BaseModel):
@@ -25,14 +42,14 @@ class BoundedUserMembershipSchema(BaseModel):
     user: BoundedUserSchema
 
     membership_type_id: int
-    membership_type: BoundedMembershipTypeSchema
+    membership_type: MembershipTypeShortSchema
 
     model_config = {"from_attributes": True}
 
 
 class UserMembershipTypeChangeRequestProfileSchema(UCIMixinSchema):
     target_membership_type_id: int
-    target_membership_type: BoundedMembershipTypeSchema
+    target_membership_type: MembershipTypeShortSchema
     user_membership_id: int
     reason_changing: str
     approved: bool

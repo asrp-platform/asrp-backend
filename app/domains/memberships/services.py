@@ -77,12 +77,21 @@ class MembershipTypeService:
         self.__tm = transaction_manager
 
     async def get_membership_types(
-        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+        self,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+        *,
+        open_transaction: bool = False,
     ) -> list[MembershipType]:
-        # Called at endpoint
-        async with self.__tm:
-            membership_types, _ = await self.__tm.membership_type_repository.list(limit, offset, order_by, filters)
-            return membership_types
+        if open_transaction:
+            async with self.__tm:
+                membership_types, _ = await self.__tm.membership_type_repository.list(limit, offset, order_by, filters)
+                return membership_types
+
+        membership_types, _ = await self.__tm.membership_type_repository.list(limit, offset, order_by, filters)
+        return membership_types
 
     async def get_price_difference(self, current_type_id, target_type_id) -> int:
         current = aliased(MembershipType)
@@ -94,11 +103,34 @@ class MembershipTypeService:
         )
         return (await self.__tm._session.execute(stmt)).scalar_one()
 
-    async def get_membership_type_by_id(self, membership_type_id: int) -> MembershipType:
-        membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
+    async def get_membership_type_by_id(
+        self,
+        membership_type_id: int,
+        *,
+        open_transaction: bool = False,
+    ) -> MembershipType:
+        if open_transaction:
+            async with self.__tm:
+                membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
+        else:
+            membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(id=membership_type_id)
+
         if membership_type is None:
             raise NotFoundError("Provided membership type not found")
         return membership_type
+
+    async def update_membership_type(
+        self,
+        membership_type_id: int,
+        *,
+        open_transaction: bool = False,
+        **kwargs,
+    ) -> MembershipType:
+        if open_transaction:
+            async with self.__tm:
+                return await self.__tm.membership_type_repository.update(membership_type_id, **kwargs)
+
+        return await self.__tm.membership_type_repository.update(membership_type_id, **kwargs)
 
     async def get_membership_type_by_value(self, membership_type: MembershipTypeEnum) -> MembershipType:
         membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
