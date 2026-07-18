@@ -6,6 +6,7 @@ from faker import Faker
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestService
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
+from app.domains.payments.purpose_handlers.donation import DonationHandler
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandler
 from app.domains.payments.purpose_handlers.membership_renewal import MembershipRenewalHandler
 from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistry
@@ -34,9 +35,11 @@ def process_payment_use_case(
         user_membership_service=user_membership_service,
         payment_service=payment_service,
     )
+    donation_handler = DonationHandler()
     payment_purpose_handler_registry = PaymentPurposeHandlerRegistry(
         membership_application_handler=membership_application_handler,
         membership_renewal_handler=membership_renewal_handler,
+        donation_handler=donation_handler,
     )
     return ProcessPaymentUseCase(
         transaction_manager=test_transaction_manager,
