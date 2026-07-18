@@ -12,6 +12,7 @@ from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, Pay
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.payments.stripe.utils import create_membership_application_checkout_session, to_stripe_amount
 from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.users.models import User
 from app.domains.users.services import CommunicationPreferencesServiceDep
 
 
@@ -37,7 +38,7 @@ class CreateUserMembershipRequestUseCase:
 
     async def execute(
         self,
-        user_id: int,
+        current_user: User,
         is_agrees_communications: bool,
         membership_type: MembershipTypeEnum,
         membership_request_data: dict,
@@ -47,7 +48,7 @@ class CreateUserMembershipRequestUseCase:
 
         async with self.__transaction_manager:
             membership_request = await self.__membership_service.create_membership_request(
-                user_id,
+                current_user.id,
                 membership_type,
                 status=MembershipRequestStatusEnum.PAYMENT_PENDING,
                 **membership_request_data,
@@ -56,12 +57,12 @@ class CreateUserMembershipRequestUseCase:
             await self.__transaction_manager.flush()
 
             await self.__feedback_additional_info_service.create_feedback_additional_info(
-                user_id,
+                current_user.id,
                 **feedback_additional_info_data,
             )
 
             await self.__communication_preference_service.update_communication_preferences(
-                user_id,
+                current_user.id,
                 is_agrees_communications=is_agrees_communications,
             )
 
@@ -73,7 +74,7 @@ class CreateUserMembershipRequestUseCase:
                 amount=membership_type_price_cents,
                 status=PaymentStatusEnum.PENDING,
                 purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
-                user_id=user_id,
+                user_id=current_user.id,
                 provider_data=None,
                 membership_request_id=membership_request.id,
             )
@@ -84,6 +85,7 @@ class CreateUserMembershipRequestUseCase:
                     membership_request=membership_request,
                     membership_type=membership_type,
                     payment=payment,
+                    customer_email=current_user.email,
                 )
             except Exception as exc:
                 payments_logger.exception(

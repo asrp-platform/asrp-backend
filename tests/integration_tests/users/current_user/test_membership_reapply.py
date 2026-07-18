@@ -25,7 +25,7 @@ def reapply_checkout_session_mock(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         url="https://checkout.stripe.com/reapply-test",
     )
 
-    async def create_checkout_session(*, membership_request, membership_type, payment):
+    async def create_checkout_session(*, membership_request, membership_type, payment, customer_email):
         return SimpleNamespace(
             session=checkout_session,
             provider_data={

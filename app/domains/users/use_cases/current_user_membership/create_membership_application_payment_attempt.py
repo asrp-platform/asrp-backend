@@ -81,6 +81,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
                     membership_request=current_user_membership_request,
                     membership_type=membership_type,
                     payment=payment,
+                    customer_email=current_user.email,
                 )
             except Exception as exc:
                 payments_logger.exception(

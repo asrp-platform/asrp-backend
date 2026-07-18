@@ -74,6 +74,7 @@ async def create_membership_application_checkout_session(
     membership_request: "MembershipRequest",
     membership_type: "MembershipType",
     payment: Payment,
+    customer_email: str,
     success_url: str | None = None,
 ) -> CheckoutSessionData:
     amount_cents = to_stripe_amount(membership_type.price_usd)
@@ -87,6 +88,7 @@ async def create_membership_application_checkout_session(
         build_membership_application_line_items(membership_type, amount_cents),
         metadata=metadata,
         success_url=success_url or f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
+        customer_email=customer_email,
     )
     return CheckoutSessionData(
         session=checkout_session,

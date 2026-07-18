@@ -59,7 +59,7 @@ async def test_create_user_membership_request(
         new=AsyncMock(return_value=fake_checkout_session),
     ):
         result = await test_create_user_membership_use_case.execute(
-            user_id=test_user.id,
+            current_user=test_user,
             is_agrees_communications=is_agrees_communications,
             membership_type=membership_type,
             membership_request_data=membership,

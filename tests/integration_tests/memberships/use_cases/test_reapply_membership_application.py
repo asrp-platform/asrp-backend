@@ -86,7 +86,8 @@ async def test_reapply_membership_application_creates_checkout_and_logs(
         url="https://checkout.stripe.com/reapply-success",
     )
 
-    async def create_checkout_session_mock(*, membership_request, membership_type, payment):
+    async def create_checkout_session_mock(*, membership_request, membership_type, payment, customer_email):
+        assert customer_email == test_user.email
         return SimpleNamespace(
             session=checkout_session,
             provider_data={

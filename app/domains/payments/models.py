@@ -42,6 +42,7 @@ class Payment(Base):
     provider: Mapped[PaymentProvider] = mapped_column(SQLAEnum(PaymentProvider, name="payment_provider_enum"))
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    # Amount in the currency's smallest unit: cents for USD
     amount: Mapped[Decimal] = mapped_column(nullable=False)
     currency: Mapped[str] = mapped_column(nullable=False, default="USD", server_default=text("'USD'"))
 

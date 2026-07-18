@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 from loguru import logger
 
+from app.core.config import settings
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.payments.models import Payment, PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
@@ -43,7 +44,7 @@ class MakeDonationUseCase:
                 checkout_session = await create_checkout_session(
                     line_items=self._build_donation_line_items(amount_in_cents),
                     metadata=metadata,
-                    success_url="https://example.com/donation/success?session_id={CHECKOUT_SESSION_ID}",
+                    success_url=f"{settings.FRONTEND_DOMAIN}/donations-and-sponsorship/payment-success",
                     customer_email=customer_email,
                     mode="payment",
                     submit_type="donate",
