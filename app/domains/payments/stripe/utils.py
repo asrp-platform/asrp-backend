@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import stripe
 from loguru import logger
@@ -32,6 +32,7 @@ async def create_checkout_session(
     success_url: str,
     customer_email: str | None = None,
     mode: str = "payment",
+    submit_type: Literal["auto", "book", "donate", "pay", "subscribe"] = "auto",
 ) -> Session:
     metadata = metadata or {}
     session_data = {
@@ -40,6 +41,7 @@ async def create_checkout_session(
         "line_items": line_items,
         "metadata": metadata,
         "payment_intent_data": {"metadata": metadata},
+        "submit_type": submit_type,
     }
     if customer_email is not None:
         session_data["customer_email"] = customer_email
