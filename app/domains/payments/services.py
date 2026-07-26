@@ -31,10 +31,18 @@ class PaymentService:
         )
 
     async def get_payments_paginated_counted(
-        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+        self,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+        *,
+        open_transaction: bool = False,
     ) -> [list[Payment], int]:
-        async with self.__tm:
-            return await self.__tm.payment_repository.list(limit, offset, order_by, filters)
+        if open_transaction:
+            async with self.__tm:
+                return await self.__tm.payment_repository.list(limit, offset, order_by, filters)
+        return await self.__tm.payment_repository.list(limit, offset, order_by, filters)
 
     async def create_processed_webhook_event(self, **kwargs) -> ProcessedWebhookEvent:
         return await self.__tm.processed_webhook_event_repository.create(**kwargs)

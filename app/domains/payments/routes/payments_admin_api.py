@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
-from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.permissions import check_permissions
 from app.domains.payments.filters import PaymentsFilter
 from app.domains.payments.schemas import PaymentReadSchema
@@ -32,19 +31,16 @@ async def get_payments(
     filters: Annotated[PaymentsFilter, Depends()] = None,
 ) -> PaginatedResponse[PaymentReadSchema]:
     check_permissions("payments.view", permissions)
-
-    try:
-        payments, count = await service.get_payments_paginated_counted(
-            order_by=ordering,
-            filters=filters.model_dump(exclude_none=True),
-            limit=params["limit"],
-            offset=params["offset"],
-        )
-        return PaginatedResponse(
-            count=count,
-            data=payments,
-            page=params["page"],
-            page_size=params["page_size"],
-        )
-    except InvalidOrderAttributeError:
-        raise PaymentListResponses.INVALID_SORTER_FIELD
+    payments, count = await service.get_payments_paginated_counted(
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True),
+        limit=params["limit"],
+        offset=params["offset"],
+        open_transaction=True,
+    )
+    return PaginatedResponse(
+        count=count,
+        data=payments,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
