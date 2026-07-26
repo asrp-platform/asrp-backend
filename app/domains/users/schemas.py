@@ -3,11 +3,12 @@ from datetime import datetime
 from typing import Annotated, Literal, Optional
 
 import phonenumbers
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AfterValidator, AliasPath, BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.auth.schemas import US_COUNTRY_VALUES
+from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.shared.types import Password
 from app.domains.users.models import NameChangeRequestStatusEnum
 
@@ -56,6 +57,26 @@ class UserPublicSchema(BaseModel):
     languages_spoken: str | None
     professional_interests: str | None
     avatar_url: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemberDirectorySchema(BaseModel):
+    id: int
+    firstname: str
+    middlename: str | None
+    lastname: str
+    preferred_name: str | None
+    suffix: str | None
+    credentials: str | None
+    description: str | None
+    country: str
+    state: str | None
+    city: str
+    languages_spoken: str | None
+    professional_interests: str | None
+    avatar_url: str | None
+    membership_type: MembershipTypeEnum = Field(validation_alias=AliasPath("membership", "membership_type", "type"))
 
     model_config = ConfigDict(from_attributes=True)
 
