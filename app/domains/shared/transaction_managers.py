@@ -18,6 +18,7 @@ from app.domains.memberships.repositories import (
     MembershipTypeRepository,
     UserMembershipRepository,
 )
+from app.domains.news.repositories import WebinarRepository
 from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
 from app.domains.users.repositories import (
@@ -113,6 +114,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     def membership_downgrade_requests_repository(self):
         return MembershipDowngradeRequestsRepository(self._session)
 
+    @property
+    def webinar_repository(self):
+        return WebinarRepository(self._session)
+
 
 def get_transaction_manager(
     session: Annotated[AsyncSession, Depends(session_getter)],
@@ -120,4 +125,4 @@ def get_transaction_manager(
     return TransactionManager(session)
 
 
-TransactionManagerDep = Annotated[BaseTransactionManager, Depends(get_transaction_manager)]
+TransactionManagerDep = Annotated[TransactionManager, Depends(get_transaction_manager)]

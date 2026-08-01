@@ -3,16 +3,15 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 
-from app.core.common.exceptions import InvalidMimeTypeError
+from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError
 from app.core.utils.save_file import save_file
-from app.domains.news.exceptions import NewsNotFoundError
 from app.domains.news.models import News
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
 
 
 class NewsService:
-    def __init__(self, transaction_manager):
+    def __init__(self, transaction_manager: TransactionManagerDep):
         self.transaction_manager = transaction_manager
 
     async def get_all_paginated_counted(
@@ -29,21 +28,21 @@ class NewsService:
         async with self.transaction_manager:
             news = await self.transaction_manager.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
-                raise NewsNotFoundError("News with provided ID not found")
+                raise NotFoundError("News with provided ID not found")
             await self.transaction_manager.news_repository.update(news_id, **update_data)
 
     async def get_news_by_id(self, news_id: int) -> News:
         async with self.transaction_manager:
             news = await self.transaction_manager.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
-                raise NewsNotFoundError("News with provided ID not found")
+                raise NotFoundError("News with provided ID not found")
             return news
 
     async def set_news_deleted(self, news_id):
         async with self.transaction_manager:
             news = await self.transaction_manager.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
-                raise NewsNotFoundError("News with provided ID not found")
+                raise NotFoundError("News with provided ID not found")
             await self.transaction_manager.news_repository.update(news_id, is_deleted=True)
 
     async def upload_image(self, file_data: FileData) -> Path:
@@ -53,10 +52,25 @@ class NewsService:
         return await save_file(file_data, Path("path"))
 
 
-def get_news_service(
-    transaction_manager: TransactionManagerDep,
-) -> NewsService:
-    return NewsService(transaction_manager)
+class WebinarsService:
+    def __init__(self, transaction_manager: TransactionManagerDep):
+        self._tm = transaction_manager
+
+    async def get_all_paginated_counted(
+        self,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+        *,
+        open_transaction: bool = False,
+    ):
+        if open_transaction:
+            async with self._tm:
+                return await self._tm.webinar_repository.list(limit, offset, order_by, filters)
+
+        return await self._tm.webinar_repository.list(limit, offset, order_by, filters)
 
 
-NewsServiceDep = Annotated[NewsService, Depends(get_news_service)]
+NewsServiceDep = Annotated[NewsService, Depends()]
+WebinarServiceDep = Annotated[WebinarsService, Depends()]

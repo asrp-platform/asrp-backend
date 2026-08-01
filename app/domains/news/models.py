@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel
-from sqlalchemy import ForeignKey, text
+from sqlalchemy import DateTime, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,21 +26,40 @@ class News(Base, UCIMixin):
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
 
-class CreateNewsSchema(BaseModel):
-    body: dict
+class Webinar(Base, UCIMixin):
+    __tablename__ = "webinars"
 
-    model_config = {"from_attributes": True}
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[dict[str, Any]] = mapped_column(JSON(), nullable=False)
+    slug: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    speaker_name: Mapped[str] = mapped_column(nullable=False)
+    speaker_description: Mapped[str] = mapped_column(nullable=True)
+
+    # links
+    registration_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    join_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recording_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    member_only: Mapped[bool] = mapped_column(nullable=False, default=True, server_default=text("true"))
+
+    registered_users: Mapped[list["User"]] = relationship(
+        "User",
+        back_populates="webinars",
+        secondary="webinars_registered_users",
+    )
 
 
-class UpdateNewsSchema(CreateNewsSchema):
-    is_published: bool = True
-    is_deleted: bool = False
+class WebinarRegisteredUsers(Base):
+    __tablename__ = "webinars_registered_users"
 
-
-class NewsSchema(UpdateNewsSchema):
-    id: int
-    author_id: int
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = {"from_attributes": True, "protected_namespaces": ()}
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True, nullable=False)
+    webinar_id: Mapped[int] = mapped_column(ForeignKey("webinars.id"), primary_key=True, nullable=False)

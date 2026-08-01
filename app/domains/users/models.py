@@ -14,6 +14,7 @@ from app.domains.news.models import News
 
 if TYPE_CHECKING:
     from app.domains.feedback.models import FeedbackAdditionalInfo
+    from app.domains.news.models import Webinar
     from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 
@@ -82,6 +83,11 @@ class User(Base):
     )
     payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
     membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="user")
+    webinars: Mapped["Webinar"] = relationship(
+        "Webinar",
+        back_populates="registered_users",
+        secondary="webinars_registered_users",
+    )
 
     _password: Mapped[str] = mapped_column()
     avatar_path: Mapped[str] = mapped_column(nullable=True, unique=True)
