@@ -159,7 +159,7 @@ app.include_router(membership_types_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
-app.include_router(webinars_admin_router, prefix="/adpi/admin")
+app.include_router(webinars_admin_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")

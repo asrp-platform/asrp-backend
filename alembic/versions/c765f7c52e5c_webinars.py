@@ -1,8 +1,8 @@
 """webinars
 
-Revision ID: 864b0d511fc4
+Revision ID: c765f7c52e5c
 Revises: 6de1b0ef7687
-Create Date: 2026-08-01 19:09:41.953606
+Create Date: 2026-08-01 20:59:55.067015
 
 """
 
@@ -15,7 +15,7 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = "864b0d511fc4"
+revision: str = "c765f7c52e5c"
 down_revision: Union[str, None] = "6de1b0ef7687"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,7 +26,8 @@ def upgrade() -> None:
     op.create_table(
         "webinars",
         sa.Column("title", sa.String(length=255), nullable=False),
-        sa.Column("description", postgresql.JSON(astext_type=sa.Text()), nullable=False),
+        sa.Column("description", sa.Text(), nullable=False),
+        sa.Column("learning_objectives", postgresql.JSON(astext_type=sa.Text()), nullable=False),
         sa.Column("slug", sa.String(length=255), nullable=False),
         sa.Column("speaker_name", sa.String(), nullable=False),
         sa.Column("speaker_description", sa.String(), nullable=True),

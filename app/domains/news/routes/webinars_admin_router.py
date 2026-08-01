@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
 from app.domains.news.filters import WebinarFilters
-from app.domains.news.schemas import WebinarBaseSchema
+from app.domains.news.schemas import CreateWebinarSchema, WebinarBaseSchema
 from app.domains.news.services import WebinarServiceDep
 
 
@@ -24,10 +24,22 @@ async def get_webinars_paginated_counted(
         filters=filters.model_dump(exclude_none=True),
         limit=params["limit"],
         offset=params["offset"],
+        open_transaction=True,
     )
     return PaginatedResponse(
         count=count,
         data=data,
         page=params["page"],
         page_size=params["page_size"],
+    )
+
+
+@router.post("")
+async def create_webinar(
+    service: WebinarServiceDep,
+    body: CreateWebinarSchema,
+) -> WebinarBaseSchema:
+    return await service.create_webinar(
+        open_transaction=True,
+        **body.model_dump(),
     )

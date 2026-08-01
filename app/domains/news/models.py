@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, text
+from slugify import slugify
+from sqlalchemy import DateTime, ForeignKey, String, Text, event, text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,7 +31,12 @@ class Webinar(Base, UCIMixin):
     __tablename__ = "webinars"
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[dict[str, Any]] = mapped_column(JSON(), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    learning_objectives: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
     slug: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
@@ -63,3 +69,19 @@ class WebinarRegisteredUsers(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True, nullable=False)
     webinar_id: Mapped[int] = mapped_column(ForeignKey("webinars.id"), primary_key=True, nullable=False)
+
+
+@event.listens_for(Webinar, "before_insert")
+def generate_webinar_slug(mapper, connection, target: Webinar) -> None:  # noqa SQLAlchemy event function parameters
+    if not target.slug:
+        title_slug = (
+            slugify(
+                target.title,
+                max_length=246,
+                word_boundary=True,
+                save_order=True,
+            )
+            or "webinar"
+        )
+
+        target.slug = f"{title_slug}-{str(target.id)[:8]}"

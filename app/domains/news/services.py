@@ -5,7 +5,7 @@ from fastapi import Depends
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError
 from app.core.utils.save_file import save_file
-from app.domains.news.models import News
+from app.domains.news.models import News, Webinar
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
 
@@ -64,12 +64,19 @@ class WebinarsService:
         filters: dict[str, Any] = None,
         *,
         open_transaction: bool = False,
-    ):
+    ) -> [list[Webinar], int]:
         if open_transaction:
             async with self._tm:
                 return await self._tm.webinar_repository.list(limit, offset, order_by, filters)
 
         return await self._tm.webinar_repository.list(limit, offset, order_by, filters)
+
+    async def create_webinar(self, *, open_transaction=False, **kwargs) -> Webinar:
+        if open_transaction:
+            async with self._tm:
+                return await self._tm.webinar_repository.create(**kwargs)
+
+        return await self._tm.webinar_repository.create(**kwargs)
 
 
 NewsServiceDep = Annotated[NewsService, Depends()]
