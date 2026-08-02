@@ -72,3 +72,23 @@ class CreateWebinarSchema(BaseModel):
     @field_serializer("registration_link", "join_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None
+
+
+class UpdateWebinarSchema(BaseModel):
+    title: str | None = Field(default=None, min_length=2)
+    description: str | None = None
+    learning_objectives: list[str] | None = Field(default=None, max_length=10)
+
+    speaker_name: str | None = Field(default=None, min_length=2)
+    speaker_description: str | None = Field(default=None, min_length=2)
+
+    registration_link: HttpUrl | None = None
+    join_link: HttpUrl | None = None
+
+    starts_at: AwareDatetime | None = None
+    location: str | None = Field(default=None, max_length=255)
+    member_only: bool | None = None
+
+    @field_serializer("registration_link", "join_link")
+    def serialize_urls(self, value: HttpUrl | None) -> str | None:
+        return str(value) if value is not None else None

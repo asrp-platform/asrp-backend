@@ -159,6 +159,18 @@ class WebinarsService:
                 return await self._tm.webinar_repository.mark_as_deleted(webinar_id)
         return await self._tm.webinar_repository.mark_as_deleted(webinar_id)
 
+    async def update_webinar(
+        self,
+        webinar_id: int,
+        *,
+        open_transaction: bool = False,
+        **kwargs,
+    ) -> Webinar:
+        if open_transaction:
+            async with self._tm:
+                return await self._tm.webinar_repository.update(webinar_id, **kwargs)
+        return await self._tm.webinar_repository.update(webinar_id, **kwargs)
+
     async def register_for_webinar(self, webinar_slug: str, user_id: int) -> None:
         async with self._tm:
             stmt = select(Webinar).options(selectinload(Webinar.registered_users))

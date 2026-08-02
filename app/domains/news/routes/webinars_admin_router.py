@@ -6,7 +6,7 @@ from fastapi_exception_responses import Responses
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
 from app.domains.news.filters import WebinarFilters
-from app.domains.news.schemas import CreateWebinarSchema, WebinarBaseSchema
+from app.domains.news.schemas import CreateWebinarSchema, UpdateWebinarSchema, WebinarBaseSchema
 from app.domains.news.services import WebinarServiceDep
 
 
@@ -43,6 +43,19 @@ async def create_webinar(
     return await service.create_webinar(
         open_transaction=True,
         **body.model_dump(),
+    )
+
+
+@router.patch("/{webinar_id}")
+async def update_webinar(
+    webinar_id: int,
+    service: WebinarServiceDep,
+    body: UpdateWebinarSchema,
+) -> WebinarBaseSchema:
+    return await service.update_webinar(
+        webinar_id,
+        open_transaction=True,
+        **body.model_dump(exclude_unset=True),
     )
 
 
