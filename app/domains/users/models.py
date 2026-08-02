@@ -83,7 +83,7 @@ class User(Base):
     )
     payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user")
     membership: Mapped["UserMembership"] = relationship("UserMembership", back_populates="user")
-    webinars: Mapped["Webinar"] = relationship(
+    webinars: Mapped[list["Webinar"]] = relationship(
         "Webinar",
         back_populates="registered_users",
         secondary="webinars_registered_users",

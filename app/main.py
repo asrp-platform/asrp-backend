@@ -35,6 +35,7 @@ from app.domains.memberships.routes.membership_requests_admin_api import router 
 from app.domains.memberships.routes.membership_types_admin_api import router as membership_types_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
 from app.domains.news.routes.webinars_admin_router import router as webinars_admin_router
+from app.domains.news.routes.webinars_router import router as webinars_router
 from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
@@ -147,6 +148,7 @@ app.include_router(job_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 app.include_router(membership_types_router, prefix="/api")
 app.include_router(donations_router, prefix="/api")
+app.include_router(webinars_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")

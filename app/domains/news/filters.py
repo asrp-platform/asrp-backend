@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Annotated
 
 from fastapi import Query
@@ -9,5 +10,11 @@ class NewsFilter(BaseModel):
     is_deleted: Annotated[bool, Query(description="Deleted filter")] = False
 
 
+class WebinarStartFilterEnum(str, Enum):
+    UPCOMING = "UPCOMING"
+    PAST = "PAST"
+    ALL = "ALL"
+
+
 class WebinarFilters(BaseModel):
-    pass
+    status: Annotated[WebinarStartFilterEnum, Query(description="Webinar status filter")] = WebinarStartFilterEnum.ALL

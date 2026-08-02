@@ -24,6 +24,8 @@ class WebinarBaseSchema(UCIMixinSchema):
 
     member_only: bool
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class CreateWebinarSchema(BaseModel):
     model_config = ConfigDict(

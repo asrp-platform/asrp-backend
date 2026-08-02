@@ -90,6 +90,15 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    user_service: UserServiceDep,
+    access_token: Annotated[HTTPAuthorizationCredentials | None, Depends(access_token_header)],
+) -> User | None:
+    if access_token is None:
+        return None
+    return await get_current_user(user_service, access_token)
+
+
 async def get_admin_user(
     user_service: UserServiceDep,
     access_token: Annotated[HTTPAuthorizationCredentials, Depends(access_token_header)],
@@ -141,6 +150,7 @@ async def get_current_user_membership(
 
 RefreshTokenDep = Annotated[str, Depends(verify_refresh_token)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+OptionalCurrentUserDep = Annotated[User | None, Depends(get_optional_current_user)]
 CurrentUserMembershipDep = Annotated[UserMembership, Depends(get_current_user_membership)]
 AdminUserDep = Annotated[User, Depends(get_admin_user)]
 AdminPermissionsDep = Annotated[list[Permission], Depends(get_users_permissions)]

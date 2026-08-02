@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
@@ -43,3 +44,19 @@ async def create_webinar(
         open_transaction=True,
         **body.model_dump(),
     )
+
+
+class DeleteWebinarResponses(Responses):
+    WEBINAR_NOT_FOUND = 404, "Webinar with provided ID not found"
+
+
+@router.delete(
+    "/{webinar_id}",
+    responses=DeleteWebinarResponses.responses,
+    summary="Delete webinar by ID",
+)
+async def delete_webinar(
+    webinar_id: int,
+    service: WebinarServiceDep,
+) -> int:
+    return await service.delete_webinar(webinar_id, open_transaction=True)

@@ -103,7 +103,7 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
 
         return (await self.session.execute(count_stmt)).scalar_one()
 
-    async def get_first_by_kwargs(self, stmt=None, **kwargs) -> T:
+    async def get_first_by_kwargs(self, stmt=None, **kwargs) -> T | None:
         if stmt is None:
             stmt = select(self.model)
 
