@@ -27,6 +27,10 @@ class WebinarBaseSchema(UCIMixinSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserWebinarSchema(WebinarBaseSchema):
+    is_registered: bool
+
+
 class CreateWebinarSchema(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={

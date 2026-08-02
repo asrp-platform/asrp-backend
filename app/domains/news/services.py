@@ -9,10 +9,39 @@ from sqlalchemy.orm import selectinload
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError
 from app.core.utils.save_file import save_file
+from app.domains.memberships.models import UserMembership
 from app.domains.news.filters import WebinarStartFilterEnum
 from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
+from app.domains.news.schemas import UserWebinarSchema, WebinarBaseSchema
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
+
+
+def has_member_access(membership: UserMembership | None) -> bool:
+    return bool(membership and membership.is_active and not membership.terminated and not membership.is_suspended)
+
+
+def serialize_user_webinar(
+    webinar: Webinar,
+    *,
+    user_id: int | None,
+    membership: UserMembership | None,
+) -> UserWebinarSchema:
+    response = UserWebinarSchema.model_validate({
+        **WebinarBaseSchema.model_validate(webinar, from_attributes=True).model_dump(),
+        "is_registered": user_id is not None and any(user.id == user_id for user in webinar.registered_users),
+    })
+    can_view_links = user_id is not None and (not webinar.member_only or has_member_access(membership))
+    if can_view_links:
+        return response
+
+    return response.model_copy(
+        update={
+            "registration_link": None,
+            "join_link": None,
+            "recording_link": None,
+        }
+    )
 
 
 class NewsService:
@@ -70,19 +99,52 @@ class WebinarsService:
         *,
         open_transaction: bool = False,
     ) -> [list[Webinar], int]:
-        webinar_start_status = filters.pop("status")
-        now = datetime.now(timezone.utc)
-
-        if webinar_start_status == WebinarStartFilterEnum.UPCOMING:
-            filters["starts_at__gte"] = now
-        elif webinar_start_status == WebinarStartFilterEnum.PAST:
-            filters["starts_at__lte"] = now
+        filters = self._apply_start_filter(filters)
 
         if open_transaction:
             async with self._tm:
                 return await self._tm.webinar_repository.list(limit, offset, order_by, filters)
 
         return await self._tm.webinar_repository.list(limit, offset, order_by, filters)
+
+    async def get_user_webinars_paginated_counted(
+        self,
+        *,
+        user_id: int | None,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+    ) -> tuple[list[UserWebinarSchema], int]:
+        async with self._tm:
+            membership = None
+            if user_id is not None:
+                membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+
+            stmt = select(Webinar).options(selectinload(Webinar.registered_users))
+            webinars, count = await self._tm.webinar_repository.list(
+                limit,
+                offset,
+                order_by,
+                self._apply_start_filter(filters),
+                stmt=stmt if user_id is not None else None,
+            )
+
+            return [
+                serialize_user_webinar(webinar, user_id=user_id, membership=membership) for webinar in webinars
+            ], count
+
+    @staticmethod
+    def _apply_start_filter(filters: dict[str, Any]) -> dict[str, Any]:
+        filters = (filters or {}).copy()
+        webinar_start_status = filters.pop("status", WebinarStartFilterEnum.ALL)
+        now = datetime.now(timezone.utc)
+
+        if webinar_start_status == WebinarStartFilterEnum.UPCOMING:
+            filters["starts_at__gte"] = now
+        elif webinar_start_status == WebinarStartFilterEnum.PAST:
+            filters["starts_at__lte"] = now
+        return filters
 
     async def create_webinar(self, *, open_transaction=False, **kwargs) -> Webinar:
         if open_transaction:
