@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
-from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError
+from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, PermissionDeniedError
 from app.core.utils.save_file import save_file
 from app.domains.memberships.models import UserMembership
 from app.domains.news.filters import WebinarStartFilterEnum
@@ -180,6 +180,9 @@ class WebinarsService:
             user = await self._tm.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise NotFoundError("User with provided ID not found")
+            membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+            if webinar.member_only and not has_member_access(membership):
+                raise PermissionDeniedError("Active membership is required to register for this webinar")
 
             statement = (
                 insert(WebinarRegisteredUsers)

@@ -46,7 +46,14 @@ async def create_webinar(
     )
 
 
-@router.patch("/{webinar_id}")
+class UpdateWebinarResponses(Responses):
+    WEBINAR_NOT_FOUND = 404, "Webinar with provided ID not found"
+
+
+@router.patch(
+    "/{webinar_id}",
+    responses=UpdateWebinarResponses.responses,
+)
 async def update_webinar(
     webinar_id: int,
     service: WebinarServiceDep,

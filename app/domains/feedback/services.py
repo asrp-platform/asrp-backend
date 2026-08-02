@@ -4,8 +4,9 @@ from typing import Annotated, Any, Sequence
 from fastapi import Depends
 from sqlalchemy import func, select
 
+from app.core.common.exceptions import NotFoundError
 from app.domains.emails.email_queue import EmailQueueDep
-from app.domains.feedback.exceptions import ContactMessageNotFoundError, FeedbackAdditionalInfoAlreadyExistsError
+from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
 from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
@@ -32,7 +33,7 @@ class FeedbackService:
             )
 
             if contact_message is None:
-                raise ContactMessageNotFoundError("There is no contact message with provided id")
+                raise NotFoundError("There is no contact message with provided id")
 
             message_reply = await self.transaction_manager.contact_message_reply_repository.create(
                 contact_message_id=contact_message.id, answer=answer_message

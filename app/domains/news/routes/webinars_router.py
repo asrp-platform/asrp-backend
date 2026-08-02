@@ -39,6 +39,7 @@ async def get_webinars_paginated_counted(
 class RegisterForWebinarResponses(NotAuthorizedResponses):
     WEBINAR_NOT_FOUND = 404, "Webinar with provided slug not found"
     USER_NOT_FOUND = 404, "User with provided ID not found"
+    MEMBERSHIP_REQUIRED = 403, "Active membership is required to register for this webinar"
 
 
 @router.post(

@@ -1,9 +1,5 @@
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
+from app.core.common.exceptions import ResourceAlreadyExistsError
 
 
 class FeedbackAdditionalInfoAlreadyExistsError(ResourceAlreadyExistsError):
-    pass
-
-
-class ContactMessageNotFoundError(NotFoundError):
     pass

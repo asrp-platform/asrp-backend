@@ -1,95 +1,103 @@
-from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
+import pytest
+from faker import Faker
+from httpx import AsyncClient
 
-from app.domains.news.services import has_member_access, serialize_user_webinar
+from app.domains.memberships.models import UserMembership
+from app.domains.news.models import Webinar
+from tests.fixtures.auth import AuthHeaders
 
 
-def make_webinar(*, member_only: bool):
-    now = datetime.now(timezone.utc)
-    return SimpleNamespace(
-        id=1,
-        created_at=now,
-        updated_at=now,
-        title="Test webinar",
-        description="Description",
-        learning_objectives=[],
-        slug="test-webinar",
-        speaker_name="Test Speaker",
-        speaker_description=None,
-        registration_link="https://example.com/register",
-        join_link="https://example.com/join",
-        recording_link="https://example.com/recording",
-        starts_at=now,
-        location="Online",
-        member_only=member_only,
-        registered_users=[],
+pytestmark = pytest.mark.anyio
+
+
+async def test_get_webinars_as_guest(client: AsyncClient, webinar: Webinar) -> None:
+    response = await client.get("/api/webinars")
+
+    assert response.status_code == 200
+    data = response.json()
+    webinar_data = next(item for item in data["data"] if item["id"] == webinar.id)
+    assert webinar_data["is_registered"] is False
+    assert "registration_link" not in webinar_data
+    assert "join_link" not in webinar_data
+
+
+async def test_get_webinars_as_authenticated_user(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    webinar: Webinar,
+) -> None:
+    response = await client.get("/api/webinars", headers=auth_headers)
+
+    assert response.status_code == 200
+    webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
+    assert webinar_data["is_registered"] is False
+    assert webinar_data["registration_link"] == webinar.registration_link
+    assert webinar_data["join_link"] == webinar.join_link
+
+
+async def test_register_for_webinar(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    webinar: Webinar,
+) -> None:
+    response = await client.post(
+        f"/api/webinars/{webinar.slug}/registration",
+        headers=auth_headers,
     )
 
+    assert response.status_code == 201
 
-def test_guest_cannot_view_links():
-    response = serialize_user_webinar(
-        make_webinar(member_only=False),
-        user_id=None,
-        membership=None,
+    response = await client.get("/api/webinars", headers=auth_headers)
+
+    assert response.status_code == 200
+    webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
+    assert webinar_data["is_registered"] is True
+
+
+async def test_register_for_webinar_without_authentication(
+    client: AsyncClient,
+    webinar: Webinar,
+) -> None:
+    response = await client.post(f"/api/webinars/{webinar.slug}/registration")
+
+    assert response.status_code == 401
+
+
+async def test_register_for_missing_webinar_returns_404(
+    faker: Faker,
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+) -> None:
+    response = await client.post(
+        f"/api/webinars/{faker.slug()}/registration",
+        headers=auth_headers,
     )
 
-    assert response.registration_link is None
-    assert response.join_link is None
-    assert response.recording_link is None
+    assert response.status_code == 404
 
 
-def test_authenticated_non_member_can_view_public_webinar_links():
-    response = serialize_user_webinar(
-        make_webinar(member_only=False),
-        user_id=1,
-        membership=None,
+async def test_register_for_member_only_webinar_without_membership_returns_403(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    member_only_webinar: Webinar,
+) -> None:
+    response = await client.post(
+        f"/api/webinars/{member_only_webinar.slug}/registration",
+        headers=auth_headers,
     )
 
-    assert str(response.join_link) == "https://example.com/join"
+    assert response.status_code == 403
 
 
-def test_authenticated_non_member_cannot_view_member_only_links():
-    response = serialize_user_webinar(
-        make_webinar(member_only=True),
-        user_id=1,
-        membership=None,
+async def test_register_for_member_only_webinar_with_active_membership(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    member_only_webinar: Webinar,
+    user_membership: UserMembership,
+) -> None:
+    response = await client.post(
+        f"/api/webinars/{member_only_webinar.slug}/registration",
+        headers=auth_headers,
     )
 
-    assert response.registration_link is None
-    assert response.join_link is None
-    assert response.recording_link is None
-
-
-def test_active_member_can_view_member_only_links():
-    response = serialize_user_webinar(
-        make_webinar(member_only=True),
-        user_id=1,
-        membership=SimpleNamespace(is_active=True, terminated=False, is_suspended=False),
-    )
-
-    assert str(response.registration_link) == "https://example.com/register"
-    assert str(response.join_link) == "https://example.com/join"
-    assert str(response.recording_link) == "https://example.com/recording"
-
-
-def test_membership_access_requires_active_unsuspended_membership():
-    membership = SimpleNamespace(
-        is_active=True,
-        terminated=False,
-        is_suspended=False,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
-    )
-
-    assert has_member_access(membership) is True
-
-    membership.is_suspended = True
-    assert has_member_access(membership) is False
-
-
-def test_registration_indicator_matches_current_user():
-    webinar = make_webinar(member_only=False)
-    webinar.registered_users = [SimpleNamespace(id=1)]
-
-    assert serialize_user_webinar(webinar, user_id=1, membership=None).is_registered is True
-    assert serialize_user_webinar(webinar, user_id=2, membership=None).is_registered is False
-    assert serialize_user_webinar(webinar, user_id=None, membership=None).is_registered is False
+    assert response.status_code == 201
