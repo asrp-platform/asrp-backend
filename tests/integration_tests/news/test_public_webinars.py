@@ -32,7 +32,7 @@ async def test_get_webinars_as_authenticated_user(
     webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
     assert webinar_data["is_registered"] is False
     assert webinar_data["registration_link"] == webinar.registration_link
-    assert webinar_data["join_link"] == webinar.join_link
+    assert "join_link" not in webinar_data
 
 
 async def test_register_for_webinar(

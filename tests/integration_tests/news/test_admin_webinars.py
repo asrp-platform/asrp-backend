@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pytest
 from faker import Faker
 from fastapi.encoders import jsonable_encoder
@@ -51,6 +53,25 @@ async def test_update_webinar_by_admin(
 
     assert response.status_code == 200
     assert response.json()["title"] == update_data["title"]
+
+
+async def test_update_webinar_starts_at_updates_ends_at(
+    faker: Faker,
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    webinar: Webinar,
+) -> None:
+    starts_at = faker.future_datetime(tzinfo=webinar.starts_at.tzinfo)
+
+    response = await client.patch(
+        f"/api/admin/webinars/{webinar.id}",
+        headers=admin_auth_headers,
+        json=jsonable_encoder({"starts_at": starts_at}),
+    )
+
+    assert response.status_code == 200
+    ends_at = datetime.fromisoformat(response.json()["ends_at"].replace("Z", "+00:00"))
+    assert ends_at == starts_at + timedelta(hours=2)
 
 
 async def test_delete_webinar_by_admin(

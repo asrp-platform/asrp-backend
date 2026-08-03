@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from slugify import slugify
@@ -53,6 +53,7 @@ class Webinar(Base, UCIMixin):
     recording_link: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     member_only: Mapped[bool] = mapped_column(nullable=False, default=True, server_default=text("true"))
@@ -85,3 +86,10 @@ def generate_webinar_slug(mapper, connection, target: Webinar) -> None:  # noqa 
         )
 
         target.slug = f"{title_slug}-{str(target.id)[:8]}"
+
+
+@event.listens_for(Webinar, "before_insert")
+def set_ends_at(mapper, connection, target: Webinar) -> None:  # noqa SQLAlchemy event function parameters
+    if not target.ends_at:
+        ends_at = target.starts_at + timedelta(hours=2)
+        target.ends_at = ends_at

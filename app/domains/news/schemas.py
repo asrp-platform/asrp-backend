@@ -20,6 +20,7 @@ class WebinarBaseSchema(UCIMixinSchema):
     recording_link: HttpUrl | None = None
 
     starts_at: AwareDatetime
+    ends_at: AwareDatetime
     location: str | None = Field(default=None, max_length=255)
 
     member_only: bool
@@ -63,13 +64,14 @@ class CreateWebinarSchema(BaseModel):
 
     registration_link: HttpUrl | None = None
     join_link: HttpUrl | None = None
+    recording_link: HttpUrl | None = None
 
     starts_at: AwareDatetime
     location: str | None = Field(default=None, max_length=255)
 
     member_only: bool
 
-    @field_serializer("registration_link", "join_link")
+    @field_serializer("registration_link", "join_link", "recording_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None
 
@@ -84,11 +86,12 @@ class UpdateWebinarSchema(BaseModel):
 
     registration_link: HttpUrl | None = None
     join_link: HttpUrl | None = None
+    recording_link: HttpUrl | None = None
 
     starts_at: AwareDatetime | None = None
     location: str | None = Field(default=None, max_length=255)
     member_only: bool | None = None
 
-    @field_serializer("registration_link", "join_link")
+    @field_serializer("registration_link", "join_link", "recording_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None

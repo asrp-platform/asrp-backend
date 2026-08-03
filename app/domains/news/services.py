@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -27,20 +27,21 @@ def serialize_user_webinar(
     user_id: int | None,
     membership: UserMembership | None,
 ) -> UserWebinarSchema:
+    is_registered = user_id is not None and any(user.id == user_id for user in webinar.registered_users)
     response = UserWebinarSchema.model_validate({
         **WebinarBaseSchema.model_validate(webinar, from_attributes=True).model_dump(),
-        "is_registered": user_id is not None and any(user.id == user_id for user in webinar.registered_users),
+        "is_registered": is_registered,
     })
     can_view_links = user_id is not None and (not webinar.member_only or has_member_access(membership))
-    if can_view_links:
-        return response
+    now = datetime.now(timezone.utc)
+    can_join = can_view_links and is_registered and webinar.starts_at <= now <= webinar.ends_at
 
     return response.model_copy(
         update={
-            "registration_link": None,
-            "join_link": None,
-            "recording_link": None,
-        }
+            "registration_link": response.registration_link if can_view_links else None,
+            "join_link": response.join_link if can_join else None,
+            "recording_link": response.recording_link if can_view_links else None,
+        },
     )
 
 
@@ -141,9 +142,9 @@ class WebinarsService:
         now = datetime.now(timezone.utc)
 
         if webinar_start_status == WebinarStartFilterEnum.UPCOMING:
-            filters["starts_at__gte"] = now
+            filters["ends_at__gte"] = now
         elif webinar_start_status == WebinarStartFilterEnum.PAST:
-            filters["starts_at__lte"] = now
+            filters["ends_at__lte"] = now
         return filters
 
     async def create_webinar(self, *, open_transaction=False, **kwargs) -> Webinar:
@@ -166,6 +167,9 @@ class WebinarsService:
         open_transaction: bool = False,
         **kwargs,
     ) -> Webinar:
+        if starts_at := kwargs.get("starts_at"):
+            kwargs["ends_at"] = starts_at + timedelta(hours=2)
+
         if open_transaction:
             async with self._tm:
                 return await self._tm.webinar_repository.update(webinar_id, **kwargs)
