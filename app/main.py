@@ -47,6 +47,7 @@ from app.domains.users.routes.current_user_api.fellowship_api import router as f
 from app.domains.users.routes.current_user_api.job_api import router as job_router
 from app.domains.users.routes.current_user_api.professional_info_api import router as professional_info_router
 from app.domains.users.routes.current_user_api.residency_api import router as residency_router
+from app.domains.emails.routes.email_templates_api import router as email_templates_router
 from app.domains.users.routes.members_api.members_api import router as members_router
 from app.domains.users.routes.users_api import router as users_router
 
@@ -158,6 +159,7 @@ app.include_router(membership_types_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
+app.include_router(email_templates_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")

@@ -21,6 +21,7 @@ from app.domains.news.models import News  # noqa
 from app.domains.payments.models import Payment  # noqa
 from app.domains.permissions.models import Permission, UserPermission  # noqa
 from app.domains.users.models import User  # noqa
+from app.domains.emails.models import EmailTemplate  # noqa
 
 
 # this is the Alembic Config object, which provides

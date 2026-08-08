@@ -29,6 +29,7 @@ from app.domains.users.repositories import (
     ResidencyRepository,
     UserRepository,
 )
+from app.domains.emails.repositories import EmailTemplatesRepository
 
 
 class TransactionManager(SQLAlchemyTransactionManagerBase):
@@ -112,6 +113,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def membership_downgrade_requests_repository(self):
         return MembershipDowngradeRequestsRepository(self._session)
+
+    @property
+    def email_templates_repository(self):
+        return EmailTemplatesRepository(self._session)
 
 
 def get_transaction_manager(
