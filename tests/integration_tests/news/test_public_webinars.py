@@ -17,8 +17,8 @@ async def test_get_webinars_as_guest(client: AsyncClient, webinar: Webinar) -> N
     data = response.json()
     webinar_data = next(item for item in data["data"] if item["id"] == webinar.id)
     assert webinar_data["is_registered"] is False
-    assert "registration_link" not in webinar_data
     assert "join_link" not in webinar_data
+    assert webinar_data["bunny_video_id"] == webinar.bunny_video_id
 
 
 async def test_get_webinars_as_authenticated_user(
@@ -31,7 +31,6 @@ async def test_get_webinars_as_authenticated_user(
     assert response.status_code == 200
     webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
     assert webinar_data["is_registered"] is False
-    assert webinar_data["registration_link"] == webinar.registration_link
     assert "join_link" not in webinar_data
 
 
@@ -101,3 +100,51 @@ async def test_register_for_member_only_webinar_with_active_membership(
     )
 
     assert response.status_code == 201
+
+
+async def test_get_webinar_playback(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    webinar: Webinar,
+) -> None:
+    response = await client.get(
+        f"/api/webinars/{webinar.slug}/playback",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+
+
+async def test_get_webinar_playback_without_authentication(
+    client: AsyncClient,
+    webinar: Webinar,
+) -> None:
+    response = await client.get(f"/api/webinars/{webinar.slug}/playback")
+
+    assert response.status_code == 401
+
+
+async def test_get_missing_webinar_playback_returns_404(
+    faker: Faker,
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+) -> None:
+    response = await client.get(
+        f"/api/webinars/{faker.slug()}/playback",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 404
+
+
+async def test_get_member_only_webinar_playback_without_membership_returns_403(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    member_only_webinar: Webinar,
+) -> None:
+    response = await client.get(
+        f"/api/webinars/{member_only_webinar.slug}/playback",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403

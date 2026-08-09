@@ -15,7 +15,6 @@ class WebinarBaseSchema(UCIMixinSchema):
     speaker_name: str
     speaker_description: str | None
 
-    registration_link: HttpUrl | None = None
     join_link: HttpUrl | None = None
     bunny_video_id: str | None = None
 
@@ -32,6 +31,10 @@ class UserWebinarSchema(WebinarBaseSchema):
     is_registered: bool
 
 
+class WebinarPlaybackSchema(BaseModel):
+    embed_url: HttpUrl | None
+
+
 class CreateWebinarSchema(BaseModel):
     title: str = Field(min_length=2)
     description: str
@@ -40,7 +43,6 @@ class CreateWebinarSchema(BaseModel):
     speaker_name: str = Field(min_length=2)
     speaker_description: str | None = Field(default=None, min_length=2)
 
-    registration_link: HttpUrl | None = None
     join_link: HttpUrl | None = None
     bunny_video_id: str | None = None
 
@@ -61,7 +63,6 @@ class CreateWebinarSchema(BaseModel):
                     ],
                     "speaker_name": "Dr. John Smith",
                     "speaker_description": "Cardiac surgeon with 15 years of clinical experience.",
-                    "registration_link": "https://example.com/webinars/register",
                     "join_link": "https://example.com/webinars/join",
                     "starts_at": "2026-08-15T15:00:00Z",
                     "location": "Online",
@@ -71,7 +72,7 @@ class CreateWebinarSchema(BaseModel):
         }
     )
 
-    @field_serializer("registration_link", "join_link")
+    @field_serializer("join_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None
 
@@ -84,7 +85,6 @@ class UpdateWebinarSchema(BaseModel):
     speaker_name: str | None = Field(default=None, min_length=2)
     speaker_description: str | None = Field(default=None, min_length=2)
 
-    registration_link: HttpUrl | None = None
     join_link: HttpUrl | None = None
     bunny_video_id: str | None = None
 
@@ -92,6 +92,6 @@ class UpdateWebinarSchema(BaseModel):
     location: str | None = Field(default=None, max_length=255)
     member_only: bool | None = None
 
-    @field_serializer("registration_link", "join_link")
+    @field_serializer("join_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None

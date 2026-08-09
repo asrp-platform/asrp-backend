@@ -1,6 +1,5 @@
 import hashlib
 import time
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Any
@@ -14,38 +13,11 @@ from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, Perm
 from app.core.config import settings
 from app.core.utils.save_file import save_file
 from app.domains.memberships.models import UserMembership
+from app.domains.memberships.utils import has_member_access
 from app.domains.news.filters import WebinarStartFilterEnum
 from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
-from app.domains.news.schemas import UserWebinarSchema, WebinarBaseSchema
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
-
-
-def has_member_access(membership: UserMembership | None) -> bool:
-    return bool(membership and membership.is_active and not membership.terminated and not membership.is_suspended)
-
-
-def serialize_user_webinar(
-    webinar: Webinar,
-    *,
-    user_id: int | None,
-    membership: UserMembership | None,
-) -> UserWebinarSchema:
-    is_registered = user_id is not None and any(user.id == user_id for user in webinar.registered_users)
-    response = UserWebinarSchema.model_validate({
-        **WebinarBaseSchema.model_validate(webinar, from_attributes=True).model_dump(),
-        "is_registered": is_registered,
-    })
-    can_view_links = user_id is not None and (not webinar.member_only or has_member_access(membership))
-    now = datetime.now(timezone.utc)
-    can_join = can_view_links and is_registered and webinar.starts_at <= now <= webinar.ends_at
-
-    return response.model_copy(
-        update={
-            "registration_link": response.registration_link if can_view_links else None,
-            "join_link": response.join_link if can_join else None,
-        },
-    )
 
 
 class NewsService:
@@ -90,11 +62,6 @@ class NewsService:
         return await save_file(file_data, Path("path"))
 
 
-@dataclass
-class WebinarEmbedUrlDTO:
-    embed_url: str | None
-
-
 class WebinarsService:
     BUNNY_EMBED_LIFESPAN = 60 * 60
 
@@ -109,7 +76,7 @@ class WebinarsService:
         filters: dict[str, Any] = None,
         *,
         open_transaction: bool = False,
-    ) -> [list[Webinar], int]:
+    ) -> tuple[list[Webinar], int]:
         filters = self._apply_start_filter(filters)
 
         if open_transaction:
@@ -126,7 +93,7 @@ class WebinarsService:
         offset: int = None,
         order_by: str = None,
         filters: dict[str, Any] = None,
-    ) -> tuple[list[UserWebinarSchema], int]:
+    ) -> tuple[list[Webinar], int, UserMembership | None]:
         async with self._tm:
             membership = None
             if user_id is not None:
@@ -141,30 +108,28 @@ class WebinarsService:
                 stmt=stmt if user_id is not None else None,
             )
 
-            return [
-                serialize_user_webinar(webinar, user_id=user_id, membership=membership) for webinar in webinars
-            ], count
+            return webinars, count, membership
 
-    async def generate_webinar_embed_url(self, webinar_slug: str) -> WebinarEmbedUrlDTO:
+    async def generate_webinar_embed_url(self, webinar_slug: str, user_id: int) -> str | None:
         async with self._tm:
-            webinar: Webinar | None = await self._tm.webinar_repository.get_first_by_kwargs(slug=webinar_slug)
-
+            webinar = await self._tm.webinar_repository.get_first_by_kwargs(slug=webinar_slug)
             if webinar is None:
                 raise NotFoundError("Webinar with provided slug not found")
 
-            video_id: str | None = webinar.bunny_video_id
+            if webinar.member_only:
+                membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+                if not has_member_access(membership):
+                    raise PermissionDeniedError("Active membership is required to view this webinar")
 
-            if video_id is None:
-                return WebinarEmbedUrlDTO(embed_url=None)
+            if webinar.bunny_video_id is None:
+                return None
 
-            bunny_embed_url = self.generate_bunny_embed_url(
+            return self.generate_bunny_embed_url(
                 library_id=settings.BUNNY_LIBRARY_ID,
-                video_id=video_id,
+                video_id=webinar.bunny_video_id,
                 token_key=settings.BUNNY_STREAM_TOKEN_KEY,
                 expires_in=self.BUNNY_EMBED_LIFESPAN,
             )
-
-            return WebinarEmbedUrlDTO(embed_url=bunny_embed_url)
 
     @staticmethod
     def generate_bunny_embed_url(
@@ -179,7 +144,7 @@ class WebinarsService:
 
         token = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
-        return f"https://player.mediadelivery.net/embed/{library_id}/{video_id}?token={token}&expires={expires}"
+        return f"https://iframe.mediadelivery.net/embed/{library_id}/{video_id}?token={token}&expires={expires}"
 
     @staticmethod
     def _apply_start_filter(filters: dict[str, Any]) -> dict[str, Any]:
@@ -223,16 +188,16 @@ class WebinarsService:
 
     async def register_for_webinar(self, webinar_slug: str, user_id: int) -> None:
         async with self._tm:
-            stmt = select(Webinar).options(selectinload(Webinar.registered_users))
-            webinar = await self._tm.webinar_repository.get_first_by_kwargs(slug=webinar_slug, stmt=stmt)
+            webinar = await self._tm.webinar_repository.get_first_by_kwargs(slug=webinar_slug)
             if webinar is None:
                 raise NotFoundError("Webinar with provided slug not found")
             user = await self._tm.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise NotFoundError("User with provided ID not found")
-            membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
-            if webinar.member_only and not has_member_access(membership):
-                raise PermissionDeniedError("Active membership is required to register for this webinar")
+            if webinar.member_only:
+                membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+                if not has_member_access(membership):
+                    raise PermissionDeniedError("Active membership is required to register for this webinar")
 
             statement = (
                 insert(WebinarRegisteredUsers)

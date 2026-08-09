@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 from slugify import slugify
 from sqlalchemy import DateTime, ForeignKey, String, Text, event, text
@@ -48,7 +49,6 @@ class Webinar(Base, UCIMixin):
     speaker_description: Mapped[str] = mapped_column(nullable=True)
 
     # links
-    registration_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     join_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     bunny_video_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
@@ -85,7 +85,7 @@ def generate_webinar_slug(mapper, connection, target: Webinar) -> None:  # noqa 
             or "webinar"
         )
 
-        target.slug = f"{title_slug}-{str(target.id)[:8]}"
+        target.slug = f"{title_slug}-{uuid4().hex[:8]}"
 
 
 @event.listens_for(Webinar, "before_insert")

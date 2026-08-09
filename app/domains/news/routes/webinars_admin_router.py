@@ -8,12 +8,22 @@ from app.core.common.responses import PaginatedResponse
 from app.domains.news.filters import WebinarFilters
 from app.domains.news.schemas import CreateWebinarSchema, UpdateWebinarSchema, WebinarBaseSchema
 from app.domains.news.services import WebinarServiceDep
+from app.domains.shared.deps import get_admin_user
 
 
-router = APIRouter(prefix="/webinars", tags=["Admin: Webinars"])
+router = APIRouter(
+    prefix="/webinars",
+    tags=["Admin: Webinars"],
+    dependencies=[Depends(get_admin_user)],
+)
 
 
-@router.get("")
+class AdminWebinarResponses(Responses):
+    NOT_AUTHORIZED = 401, "Not authorized"
+    PERMISSION_ERROR = 403, "Not enough permissions"
+
+
+@router.get("", responses=AdminWebinarResponses.responses)
 async def get_webinars_paginated_counted(
     service: WebinarServiceDep,
     params: PaginationParamsDep,
@@ -35,7 +45,7 @@ async def get_webinars_paginated_counted(
     )
 
 
-@router.post("")
+@router.post("", responses=AdminWebinarResponses.responses)
 async def create_webinar(
     service: WebinarServiceDep,
     body: CreateWebinarSchema,
@@ -46,7 +56,7 @@ async def create_webinar(
     )
 
 
-class UpdateWebinarResponses(Responses):
+class UpdateWebinarResponses(AdminWebinarResponses):
     WEBINAR_NOT_FOUND = 404, "Webinar with provided ID not found"
 
 
@@ -66,7 +76,7 @@ async def update_webinar(
     )
 
 
-class DeleteWebinarResponses(Responses):
+class DeleteWebinarResponses(AdminWebinarResponses):
     WEBINAR_NOT_FOUND = 404, "Webinar with provided ID not found"
 
 
