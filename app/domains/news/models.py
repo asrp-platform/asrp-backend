@@ -50,7 +50,7 @@ class Webinar(Base, UCIMixin):
     # links
     registration_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     join_link: Mapped[str | None] = mapped_column(Text, nullable=True)
-    recording_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    bunny_video_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

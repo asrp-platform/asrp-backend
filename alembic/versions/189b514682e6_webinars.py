@@ -1,8 +1,8 @@
 """webinars
 
-Revision ID: cdea4d6bf483
+Revision ID: 189b514682e6
 Revises: 6de1b0ef7687
-Create Date: 2026-08-03 19:59:42.795844
+Create Date: 2026-08-09 13:16:32.758314
 
 """
 
@@ -15,7 +15,7 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = "cdea4d6bf483"
+revision: str = "189b514682e6"
 down_revision: Union[str, None] = "6de1b0ef7687"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column("speaker_description", sa.String(), nullable=True),
         sa.Column("registration_link", sa.Text(), nullable=True),
         sa.Column("join_link", sa.Text(), nullable=True),
-        sa.Column("recording_link", sa.Text(), nullable=True),
+        sa.Column("bunny_video_id", sa.String(), nullable=True),
         sa.Column("starts_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("ends_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("location", sa.String(length=255), nullable=True),

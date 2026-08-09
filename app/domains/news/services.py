@@ -1,3 +1,6 @@
+import hashlib
+import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Any
@@ -8,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, PermissionDeniedError
+from app.core.config import settings
 from app.core.utils.save_file import save_file
 from app.domains.memberships.models import UserMembership
 from app.domains.news.filters import WebinarStartFilterEnum
@@ -40,7 +44,6 @@ def serialize_user_webinar(
         update={
             "registration_link": response.registration_link if can_view_links else None,
             "join_link": response.join_link if can_join else None,
-            "recording_link": response.recording_link if can_view_links else None,
         },
     )
 
@@ -87,7 +90,14 @@ class NewsService:
         return await save_file(file_data, Path("path"))
 
 
+@dataclass
+class WebinarEmbedUrlDTO:
+    embed_url: str | None
+
+
 class WebinarsService:
+    BUNNY_EMBED_LIFESPAN = 60 * 60
+
     def __init__(self, transaction_manager: TransactionManagerDep):
         self._tm = transaction_manager
 
@@ -134,6 +144,42 @@ class WebinarsService:
             return [
                 serialize_user_webinar(webinar, user_id=user_id, membership=membership) for webinar in webinars
             ], count
+
+    async def generate_webinar_embed_url(self, webinar_slug: str) -> WebinarEmbedUrlDTO:
+        async with self._tm:
+            webinar: Webinar | None = await self._tm.webinar_repository.get_first_by_kwargs(slug=webinar_slug)
+
+            if webinar is None:
+                raise NotFoundError("Webinar with provided slug not found")
+
+            video_id: str | None = webinar.bunny_video_id
+
+            if video_id is None:
+                return WebinarEmbedUrlDTO(embed_url=None)
+
+            bunny_embed_url = self.generate_bunny_embed_url(
+                library_id=settings.BUNNY_LIBRARY_ID,
+                video_id=video_id,
+                token_key=settings.BUNNY_STREAM_TOKEN_KEY,
+                expires_in=self.BUNNY_EMBED_LIFESPAN,
+            )
+
+            return WebinarEmbedUrlDTO(embed_url=bunny_embed_url)
+
+    @staticmethod
+    def generate_bunny_embed_url(
+        library_id: int,
+        video_id: str,
+        token_key: str,
+        expires_in: int = 1800,
+    ) -> str:
+        expires = int(time.time()) + expires_in
+
+        raw_token = f"{token_key}{video_id}{expires}"
+
+        token = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+        return f"https://player.mediadelivery.net/embed/{library_id}/{video_id}?token={token}&expires={expires}"
 
     @staticmethod
     def _apply_start_filter(filters: dict[str, Any]) -> dict[str, Any]:

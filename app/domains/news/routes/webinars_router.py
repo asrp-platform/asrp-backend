@@ -54,3 +54,8 @@ async def register_for_webinar(
 ) -> dict[str, str]:
     await service.register_for_webinar(webinar_slug, current_user.id)
     return {"status": "Successfully registered for the webinar"}
+
+
+@router.get("/{webinar_slug}/playback")
+async def get_webinar_playback():
+    pass
