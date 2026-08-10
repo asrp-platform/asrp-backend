@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, model_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class EmailTemplateViewSchema(BaseModel):
@@ -20,6 +20,7 @@ class EmailTemplateCreateSchema(BaseModel):
     description: str
     editor_state: dict[str, Any]
     html: str
+
 
 class EmailTemplateUpdateSchema(BaseModel):
     name: str | None = None

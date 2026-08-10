@@ -1,21 +1,21 @@
 """add_email_templates_and_permissions
 
 Revision ID: 97201fa620b1
-Revises: c95a7690cee6
+Revises: 6de1b0ef7687
 Create Date: 2026-07-17 09:31:01.530560
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 from app.core.config import DEV_MODE
 
 
 revision: str = '97201fa620b1'
-down_revision: Union[str, None] = 'c95a7690cee6'
+down_revision: Union[str, None] = '6de1b0ef7687'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

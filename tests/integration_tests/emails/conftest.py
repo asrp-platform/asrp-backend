@@ -3,8 +3,8 @@ from typing import Any
 import pytest
 from faker import Faker
 
-from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.emails.models import EmailTemplate
+from app.domains.shared.transaction_managers import TransactionManager
 
 
 @pytest.fixture(scope="function")

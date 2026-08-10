@@ -1,4 +1,3 @@
-from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -39,7 +38,7 @@ async def test_update_email_template_not_found(
     update_data = {"name": "updated name"}
 
     response = await client.patch(
-        f"/api/admin/email-templates/999999999",
+        "/api/admin/email-templates/999999999",
         headers=admin_auth_headers,
         json=update_data,
     )

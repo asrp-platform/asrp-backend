@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.base_transaction_manager import BaseTransactionManager, SQLAlchemyTransactionManagerBase
 from app.core.database.setup_db import session_getter
 from app.domains.directors_board.repositories import DirectorBoardMemberRepository
+from app.domains.emails.repositories import EmailTemplatesRepository
 from app.domains.feedback.repositories import (
     ContactMessageReplyRepository,
     ContactMessageRepository,
@@ -29,7 +30,6 @@ from app.domains.users.repositories import (
     ResidencyRepository,
     UserRepository,
 )
-from app.domains.emails.repositories import EmailTemplatesRepository
 
 
 class TransactionManager(SQLAlchemyTransactionManagerBase):

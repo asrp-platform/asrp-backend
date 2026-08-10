@@ -22,6 +22,7 @@ from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
+from app.domains.emails.routes.email_templates_api import router as email_templates_router
 from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.feedback.routes.feedback_additional_info_admin_api import (
@@ -47,7 +48,6 @@ from app.domains.users.routes.current_user_api.fellowship_api import router as f
 from app.domains.users.routes.current_user_api.job_api import router as job_router
 from app.domains.users.routes.current_user_api.professional_info_api import router as professional_info_router
 from app.domains.users.routes.current_user_api.residency_api import router as residency_router
-from app.domains.emails.routes.email_templates_api import router as email_templates_router
 from app.domains.users.routes.members_api.members_api import router as members_router
 from app.domains.users.routes.users_api import router as users_router
 

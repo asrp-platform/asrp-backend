@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.domains.emails.services import EmailTemplateServiceDep
-from app.domains.emails.common.variables import EmailTemplateVariableDTO
 from app.core.utils.permissions import check_permissions
+from app.domains.emails.common.variables import EmailTemplateVariableDTO
+from app.domains.emails.services import EmailTemplateServiceDep
 
 
 class GetEmailTemplateVariablesUseCase:

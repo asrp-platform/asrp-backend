@@ -1,13 +1,13 @@
-from typing import Type, Annotated
+from typing import Annotated, Type
 
 from fastapi import Depends
 
 from app.core.config import DEV_MODE
 from app.domains.emails.common.abstract_provider import EmailProvider
+from app.domains.emails.common.variables import VARIABLES_LIST, EmailTemplateVariableDTO
 from app.domains.emails.exceptions import EmailTemplateNotFoundError
 from app.domains.emails.models import EmailTemplate
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
-from app.domains.emails.common.variables import EmailTemplateVariableDTO, VARIABLES_LIST
 
 
 class EmailService:
@@ -43,7 +43,6 @@ class EmailTemplateService:
     async def delete_email_template(self, email_template_id: int) -> None:
         await self.get_email_template_by_id(email_template_id)
         await self.transaction_manager.email_templates_repository.mark_as_deleted(email_template_id)
-
 
     @staticmethod
     def get_email_template_variables() -> list[EmailTemplateVariableDTO]:

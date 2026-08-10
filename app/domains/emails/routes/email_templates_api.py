@@ -2,19 +2,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path
 
-from app.core.common.responses import PermissionsResponses, NotAuthorizedResponses
+from app.core.common.responses import NotAuthorizedResponses, PermissionsResponses
 from app.domains.emails.schemas import (
-    EmailTemplateViewSchema,
     EmailTemplateCreateSchema,
     EmailTemplateUpdateSchema,
-    EmailTemplateVariablesSchema
+    EmailTemplateVariablesSchema,
+    EmailTemplateViewSchema,
 )
-from app.domains.emails.use_cases.get_email_templates import GetEmailTemplatesUseCaseDep
-from app.domains.emails.use_cases.get_email_template import GetEmailTemplateUseCaseDep
 from app.domains.emails.use_cases.create_email_template import CreateEmailTemplateUseCaseDep
-from app.domains.emails.use_cases.update_email_template import UpdateEmailTemplateUseCaseDep
 from app.domains.emails.use_cases.delete_email_template import DeleteEmailTemplateUseCaseDep
+from app.domains.emails.use_cases.get_email_template import GetEmailTemplateUseCaseDep
 from app.domains.emails.use_cases.get_email_template_variables import GetEmailTemplateVariablesUseCaseDep
+from app.domains.emails.use_cases.get_email_templates import GetEmailTemplatesUseCaseDep
+from app.domains.emails.use_cases.update_email_template import UpdateEmailTemplateUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 

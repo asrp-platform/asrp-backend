@@ -33,7 +33,7 @@ async def test_delete_email_template(
         stmt = select(EmailTemplate).filter_by(id=email_template_db.id)
         email_template = (await test_transaction_manager._session.execute(stmt)).scalars().first()
 
-    assert email_template._deleted == True
+    assert email_template._deleted
 
 
 async def test_delete_email_template_not_found(
@@ -43,7 +43,7 @@ async def test_delete_email_template_not_found(
     email_template_db: EmailTemplate,
 ) -> None:
     response = await client.delete(
-        f"/api/admin/email-templates/99999999",
+        "/api/admin/email-templates/99999999",
         headers=admin_auth_headers,
     )
     assert response.status_code == 404

@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.database.base_transaction_manager import BaseTransactionManager
+from app.core.utils.permissions import check_permissions
+from app.domains.emails.models import EmailTemplate
 from app.domains.emails.services import EmailTemplateServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
-from app.domains.emails.models import EmailTemplate
-from app.core.utils.permissions import check_permissions
 
 
 class GetEmailTemplateUseCase:
