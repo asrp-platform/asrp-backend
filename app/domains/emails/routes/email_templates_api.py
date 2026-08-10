@@ -92,7 +92,10 @@ async def update_email_template(
     data: UpdateEmailTemplateSchema,
     use_case: UpdateEmailTemplateUseCaseDep
 ) -> ViewEmailTemplateSchema:
-    return await use_case.execute(permissions, email_template_id, **data.model_dump(exclude_unset=True))
+    return await use_case.execute(permissions, email_template_id, **data.model_dump(
+        exclude_unset=True,
+        exclude_none=True
+    ))
 
 
 @router.delete(
