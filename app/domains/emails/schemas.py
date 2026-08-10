@@ -3,7 +3,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, model_validator
 
 
-class EmailTemplateViewSchema(BaseModel):
+class ViewEmailTemplateSchema(BaseModel):
     id: int
     name: str
     subject: str
@@ -14,7 +14,7 @@ class EmailTemplateViewSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class EmailTemplateCreateSchema(BaseModel):
+class CreateEmailTemplateSchema(BaseModel):
     name: str
     subject: str
     description: str
@@ -22,7 +22,7 @@ class EmailTemplateCreateSchema(BaseModel):
     html: str
 
 
-class EmailTemplateUpdateSchema(BaseModel):
+class UpdateEmailTemplateSchema(BaseModel):
     name: str | None = None
     subject: str | None = None
     description: str | None = None

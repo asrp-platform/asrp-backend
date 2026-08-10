@@ -18,7 +18,7 @@ class UpdateEmailTemplateUseCase:
         self.__transaction_manager = transaction_manager
         self.__email_service = email_service
 
-    async def execute(self, permissions: list, email_template_id: int, **kwargs) -> list[EmailTemplate]:
+    async def execute(self, permissions: list, email_template_id: int, **kwargs) -> EmailTemplate:
         check_permissions("email_templates.update", permissions)
         async with self.__transaction_manager:
             return await self.__email_service.update_email_template(email_template_id, **kwargs)

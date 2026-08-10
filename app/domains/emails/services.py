@@ -22,7 +22,7 @@ class EmailTemplateService:
     def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
 
-    async def get_email_templates(self) -> list[EmailTemplate]:
+    async def get_email_templates(self) -> tuple[list[EmailTemplate], int]:
         return await self.transaction_manager.email_templates_repository.list()
 
     async def get_email_template_by_id(self, email_template_id: int) -> EmailTemplate:

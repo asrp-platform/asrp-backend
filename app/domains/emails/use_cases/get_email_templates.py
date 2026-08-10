@@ -18,7 +18,7 @@ class GetEmailTemplatesUseCase:
         self.__transaction_manager = transaction_manager
         self.__email_service = email_service
 
-    async def execute(self, permissions: list) -> list[EmailTemplate]:
+    async def execute(self, permissions: list) -> tuple[list[EmailTemplate], int]:
         check_permissions("email_templates.view", permissions)
         async with self.__transaction_manager:
             return await self.__email_service.get_email_templates()

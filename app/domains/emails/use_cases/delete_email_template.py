@@ -4,7 +4,6 @@ from fastapi import Depends
 
 from app.core.database.base_transaction_manager import BaseTransactionManager
 from app.core.utils.permissions import check_permissions
-from app.domains.emails.models import EmailTemplate
 from app.domains.emails.services import EmailTemplateServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
@@ -18,7 +17,7 @@ class DeleteEmailTemplateUseCase:
         self.__transaction_manager = transaction_manager
         self.__email_service = email_service
 
-    async def execute(self, permissions: list, email_template_id: int) -> list[EmailTemplate]:
+    async def execute(self, permissions: list, email_template_id: int) -> None:
         check_permissions("email_templates.delete", permissions)
         async with self.__transaction_manager:
             return await self.__email_service.delete_email_template(email_template_id)

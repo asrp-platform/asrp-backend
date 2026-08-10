@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, Path
 
 from app.core.common.responses import NotAuthorizedResponses, PermissionsResponses
 from app.domains.emails.schemas import (
-    EmailTemplateCreateSchema,
-    EmailTemplateUpdateSchema,
+    CreateEmailTemplateSchema,
     EmailTemplateVariablesSchema,
-    EmailTemplateViewSchema,
+    UpdateEmailTemplateSchema,
+    ViewEmailTemplateSchema,
 )
 from app.domains.emails.use_cases.create_email_template import CreateEmailTemplateUseCaseDep
 from app.domains.emails.use_cases.delete_email_template import DeleteEmailTemplateUseCaseDep
@@ -49,7 +49,7 @@ async def get_email_template_variables(
 async def get_email_templates(
     permissions: AdminPermissionsDep,
     use_case: GetEmailTemplatesUseCaseDep
-) -> list[EmailTemplateViewSchema]:
+) -> list[ViewEmailTemplateSchema]:
     data, _ = await use_case.execute(permissions)
     return data
 
@@ -63,7 +63,7 @@ async def get_email_template(
     email_template_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
     use_case: GetEmailTemplateUseCaseDep
-) -> EmailTemplateViewSchema:
+) -> ViewEmailTemplateSchema:
     return await use_case.execute(permissions, email_template_id)
 
 
@@ -75,9 +75,9 @@ async def get_email_template(
 )
 async def create_email_template(
     permissions: AdminPermissionsDep,
-    data: EmailTemplateCreateSchema,
+    data: CreateEmailTemplateSchema,
     use_case: CreateEmailTemplateUseCaseDep
-) -> EmailTemplateViewSchema:
+) -> ViewEmailTemplateSchema:
     return await use_case.execute(permissions, **data.model_dump())
 
 
@@ -89,9 +89,9 @@ async def create_email_template(
 async def update_email_template(
     email_template_id: Annotated[int, Path(...)],
     permissions: AdminPermissionsDep,
-    data: EmailTemplateUpdateSchema,
+    data: UpdateEmailTemplateSchema,
     use_case: UpdateEmailTemplateUseCaseDep
-) -> EmailTemplateViewSchema:
+) -> ViewEmailTemplateSchema:
     return await use_case.execute(permissions, email_template_id, **data.model_dump(exclude_unset=True))
 
 
