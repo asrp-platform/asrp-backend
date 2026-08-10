@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('email_templates',
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('subject', sa.String(), nullable=False),
-    sa.Column('description', sa.String(), nullable=True),
+    sa.Column('description', sa.String(), nullable=False),
     sa.Column('editor_state', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('html', sa.String(), nullable=False),
     sa.Column('_deleted', sa.Boolean(), server_default=sa.text('false'), nullable=False),

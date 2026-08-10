@@ -10,7 +10,7 @@ class EmailTemplate(Base, UCIMixin):
 
     name: Mapped[str] = mapped_column(nullable=False)
     subject: Mapped[str] = mapped_column(nullable=False)
-    description: Mapped[str] = mapped_column(nullable=True)
+    description: Mapped[str] = mapped_column(nullable=False)
 
     editor_state: Mapped[dict] = mapped_column(JSONB, nullable=False)
     html: Mapped[str] = mapped_column(nullable=False)
