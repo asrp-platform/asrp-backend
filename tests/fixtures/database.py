@@ -96,6 +96,10 @@ async def insert_test_data(
             Permission(action="users.view", name="View users"),
             Permission(action="users.delete", name="Remove users"),
             Permission(action="users.update", name="Update users"),
+            Permission(action="email_templates.create", name="Create email templates"),
+            Permission(action="email_templates.view", name="View email templates"),
+            Permission(action="email_templates.delete", name="Remove email templates"),
+            Permission(action="email_templates.update", name="Update email templates"),
             MembershipType(
                 name="Active Member",
                 type="ACTIVE",

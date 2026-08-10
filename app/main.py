@@ -22,6 +22,7 @@ from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
+from app.domains.emails.routes.email_templates_api import router as email_templates_router
 from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
 from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
 from app.domains.feedback.routes.feedback_additional_info_admin_api import (
@@ -158,6 +159,7 @@ app.include_router(membership_types_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
+app.include_router(email_templates_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")
