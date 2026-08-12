@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from starlette import status
 from starlette.exceptions import HTTPException
+from starlette.responses import Response
 
 from app.core.common.exceptions import NotFoundError
 from app.core.config import settings
@@ -21,6 +22,24 @@ from app.domains.users.services import UserServiceDep
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 refresh_token_cookie = APIKeyCookie(name="refresh_token", auto_error=False)
 access_token_header = HTTPBearer(auto_error=False)
+
+REFRESH_COOKIE_KWARGS = {
+    "key": "refresh_token",
+    "path": "/",
+    "httponly": True,
+    "secure": True,
+    "samesite": "none",
+}
+
+
+def invalid_refresh_token_exception(detail: str) -> HTTPException:
+    response = Response()
+    response.delete_cookie(**REFRESH_COOKIE_KWARGS)
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=detail,
+        headers={"Set-Cookie": response.headers["set-cookie"]},
+    )
 
 
 def create_access_token(data: dict) -> str:
@@ -63,15 +82,15 @@ async def verify_refresh_token(
     user_service: UserServiceDep, refresh_token: Annotated[str, Depends(refresh_token_cookie)]
 ) -> dict | None:
     if refresh_token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")
+        raise invalid_refresh_token_exception("Not authorized")
     try:
         payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user = await user_service._get_user_by_kwargs(email=payload["email"])
         if user is None or user.banned:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid")
+            raise invalid_refresh_token_exception("Refresh token is invalid")
         return payload
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid")
+        raise invalid_refresh_token_exception("Refresh token is invalid")
 
 
 async def get_current_user(
