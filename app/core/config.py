@@ -109,6 +109,9 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
     RABBITMQ_HOST: str = "http://localhost"
     RABBITMQ_PORT: int = 5672
 
+    BUNNY_LIBRARY_ID: int
+    BUNNY_STREAM_TOKEN_KEY: str
+
     @property
     def refresh_token_cookie_max_age_seconds(self):
         return self.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS * 24 * 60 * 60

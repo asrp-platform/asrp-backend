@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
 from app.core.database.base_repository import InvalidOrderAttributeError
-from app.domains.feedback.exceptions import ContactMessageNotFoundError
+from app.core.utils.permissions import check_permissions
 from app.domains.feedback.filters import ContactMessagesFilter
 from app.domains.feedback.schemas import (
     ContactMessageReplyResponseSchema,
@@ -73,14 +73,7 @@ async def answer_contact_message(
     permissions: AdminPermissionsDep,
     contact_message_service: FeedbackServiceDep,
 ) -> ContactMessageReplyResponseSchema:
-    if "feedback.update" not in permissions:
-        raise PermissionsResponses.PERMISSION_ERROR
-
-    try:
-        reply = await contact_message_service.answer_contact_message(
-            contact_message_id=message_id, subject=body.subject, answer_message=body.answer_message
-        )
-    except ContactMessageNotFoundError:
-        raise AnswerContactMessageResponses.CONTACT_MESSAGE_NOT_FOUND
-
-    return ContactMessageReplyResponseSchema.from_orm(reply)
+    check_permissions("feedback.update", permissions)
+    return await contact_message_service.answer_contact_message(
+        contact_message_id=message_id, subject=body.subject, answer_message=body.answer_message
+    )
