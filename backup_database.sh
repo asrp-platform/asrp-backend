@@ -17,16 +17,27 @@ set -a
 source "$ENV_FILE"
 set +a
 
-BACKUP_DATE=$(date -u +"%Y-%m-%d_%H-%M-%S_UTC")
-
-BACKUP_BUCKET="${S3_BACKUP_BUCKET:-backups}"
-BACKUP_DIR="${S3_BACKUP_DIR:-database_backups}"
-BACKUP_FILENAME="${DB_NAME}_${BACKUP_DATE}.dump"
-
 if [[ -z "${S3_ENDPOINT:-}" ]]; then
   echo "S3_ENDPOINT is required" >&2
   exit 1
 fi
+
+BACKUP_BUCKET="${S3_BACKUP_BUCKET:-backups}"
+
+BACKUP_TYPE="${1:-}"
+
+if [[ "$BACKUP_TYPE" == "--monthly" ]]; then
+        BACKUP_DATE=$(date -u +"%Y-%m")
+        BACKUP_DIR="database_month_backups"
+else
+        BACKUP_DATE=$(date -u +"%Y-%m-%d_%H-%M-%S_UTC")
+        BACKUP_DIR="${S3_BACKUP_DIR:-database_backups}"
+fi
+
+
+
+BACKUP_FILENAME="${DB_NAME}_${BACKUP_DATE}.dump"
+
 
 export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY"
 export AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY"
