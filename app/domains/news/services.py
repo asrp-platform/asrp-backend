@@ -18,6 +18,7 @@ from app.domains.news.filters import WebinarStartFilterEnum
 from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData
+from app.domains.users.models import User
 
 
 class NewsService:
@@ -207,6 +208,26 @@ class WebinarsService:
                 )
             )
             await self._tm.execute(statement)
+
+    async def get_registered_users_paginated_counted(
+        self,
+        webinar_id: int,
+        *,
+        limit: int | None = None,
+        offset: int | None = None,
+        order_by: str | None = None,
+    ) -> tuple[list[User], int]:
+        async with self._tm:
+            webinar = await self._tm.webinar_repository.get_first_by_kwargs(id=webinar_id)
+            if webinar is None:
+                raise NotFoundError("Webinar with provided ID not found")
+
+            return await self._tm.webinar_repository.list_registered_users(
+                webinar_id,
+                limit=limit,
+                offset=offset,
+                order_by=order_by,
+            )
 
 
 NewsServiceDep = Annotated[NewsService, Depends()]

@@ -18,3 +18,5 @@ class WebinarStartFilterEnum(str, Enum):
 
 class WebinarFilters(BaseModel):
     status: Annotated[WebinarStartFilterEnum, Query(description="Webinar status filter")] = WebinarStartFilterEnum.ALL
+    archived: Annotated[bool | None, Query(description="Archived filter")] = None
+    title__startswith: Annotated[str | None, Query(description="Webinar title filter")] = None

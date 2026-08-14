@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
 
 from app.domains.news.models import Webinar
+from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
 
 
@@ -21,6 +22,41 @@ async def test_get_webinars_by_admin(
 
     assert response.status_code == 200
     assert any(item["id"] == webinar.id for item in response.json()["data"])
+
+
+async def test_get_users_registered_for_webinar(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    auth_headers: AuthHeaders,
+    test_user: User,
+    webinar: Webinar,
+) -> None:
+    registration_response = await client.post(
+        f"/api/webinars/{webinar.slug}/registrations",
+        headers=auth_headers,
+    )
+
+    response = await client.get(
+        f"/api/admin/webinars/{webinar.id}/registrations",
+        headers=admin_auth_headers,
+    )
+
+    assert registration_response.status_code == 201
+    assert response.status_code == 200
+    assert response.json()["count"] == 1
+    assert response.json()["data"][0]["id"] == test_user.id
+
+
+async def test_get_registered_users_for_missing_webinar_returns_404(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+) -> None:
+    response = await client.get(
+        "/api/admin/webinars/999999999/registrations",
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 404
 
 
 async def test_get_webinars_without_authentication_returns_401(client: AsyncClient) -> None:

@@ -9,6 +9,7 @@ from app.domains.news.filters import WebinarFilters
 from app.domains.news.schemas import CreateWebinarSchema, UpdateWebinarSchema, WebinarBaseSchema
 from app.domains.news.services import WebinarServiceDep
 from app.domains.shared.deps import get_admin_user
+from app.domains.users.schemas import UserPrivateSchema
 
 
 router = APIRouter(
@@ -90,3 +91,32 @@ async def delete_webinar(
     service: WebinarServiceDep,
 ) -> int:
     return await service.delete_webinar(webinar_id, open_transaction=True)
+
+
+class RegisteredWebinarUsersResponses(AdminWebinarResponses):
+    WEBINAR_NOT_FOUND = 404, "Webinar with provided ID not found"
+
+
+@router.get(
+    "/{webinar_id}/registrations",
+    responses=RegisteredWebinarUsersResponses.responses,
+    summary="Get users registered for a webinar",
+)
+async def get_webinar_registered_users(
+    webinar_id: int,
+    service: WebinarServiceDep,
+    params: PaginationParamsDep,
+    ordering: OrderingParamsDep = None,
+) -> PaginatedResponse[UserPrivateSchema]:
+    data, count = await service.get_registered_users_paginated_counted(
+        webinar_id,
+        limit=params["limit"],
+        offset=params["offset"],
+        order_by=ordering,
+    )
+    return PaginatedResponse(
+        count=count,
+        data=data,
+        page=params["page"],
+        page_size=params["page_size"],
+    )

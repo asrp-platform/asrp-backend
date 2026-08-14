@@ -48,15 +48,23 @@ class Webinar(Base, UCIMixin):
     speaker_name: Mapped[str] = mapped_column(nullable=False)
     speaker_description: Mapped[str] = mapped_column(nullable=True)
 
-    # links
     join_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     bunny_video_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    timezone: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="America/Chicago",
+        server_default="America/Chicago",
+    )
 
     member_only: Mapped[bool] = mapped_column(nullable=False, default=True, server_default=text("true"))
+
+    archived: Mapped[bool] = mapped_column(nullable=False, default=False, server_default=text("false"))
+    language: Mapped[str] = mapped_column(nullable=True)
 
     registered_users: Mapped[list["User"]] = relationship(
         "User",

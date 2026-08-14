@@ -76,7 +76,7 @@ class RegisterForWebinarResponses(NotAuthorizedResponses):
 
 
 @router.post(
-    "/{webinar_slug}/registration",
+    "/{webinar_slug}/registrations",
     responses=RegisterForWebinarResponses.responses,
     status_code=201,
 )

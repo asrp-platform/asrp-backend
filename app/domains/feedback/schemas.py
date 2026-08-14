@@ -20,20 +20,20 @@ class GetInvolvedMessage(BaseModel):
 
 class CommitteesGetInvolvedMessage(BaseModel):
     role_affiliation: Annotated[str | None, Field(min_length=2)] = None
-    get_involved_message: Annotated[str | None, Field(min_length=10)] = None
+    get_involved_message: str
     model_config = ConfigDict(extra="forbid")
 
 
 class ContactMessage(BaseModel):
     subject: Annotated[str | None, Field(min_length=2)] = None
-    contact_message: Annotated[str | None, Field(min_length=10)] = None
+    contact_message: str
     model_config = ConfigDict(extra="forbid")
 
 
 class DonationSponsorshipMessage(BaseModel):
     organization: Annotated[str | None, Field(min_length=2)] = None
     donation_type: DonationTypeEnum
-    message: Annotated[str | None, Field(min_length=10)] = None
+    message: str
     model_config = ConfigDict(extra="forbid")
 
 

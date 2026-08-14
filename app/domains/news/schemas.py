@@ -15,14 +15,17 @@ class WebinarBaseSchema(UCIMixinSchema):
     speaker_name: str
     speaker_description: str | None
 
-    join_link: HttpUrl | None = None
-    bunny_video_id: str | None = None
+    join_link: HttpUrl | None
+    bunny_video_id: str | None
 
     starts_at: AwareDatetime
     ends_at: AwareDatetime
     location: str | None = Field(default=None, max_length=255)
 
     member_only: bool
+    archived: bool
+    timezone: str
+    language: str | None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,6 +51,8 @@ class CreateWebinarSchema(BaseModel):
 
     starts_at: AwareDatetime
     location: str | None = Field(default=None, max_length=255)
+    timezone: str
+    language: str | None = None
 
     member_only: bool
 
@@ -91,6 +96,9 @@ class UpdateWebinarSchema(BaseModel):
     starts_at: AwareDatetime | None = None
     location: str | None = Field(default=None, max_length=255)
     member_only: bool | None = None
+    archived: bool | None = None
+    timezone: str | None = None
+    language: str | None = None
 
     @field_serializer("join_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
