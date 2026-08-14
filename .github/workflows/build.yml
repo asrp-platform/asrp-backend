@@ -210,30 +210,31 @@ jobs:
         if: always()
         run: docker compose -f local.yml down -v
 
-  deploy_dev:
-    needs:
-      - lint
-      - migrations
-      - tests
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy to dev server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEV_HOST }}
-          username: ${{ secrets.DEV_USER }}
-          key: ${{ secrets.DEV_SSH_KEY }}
-          port: ${{ secrets.DEV_PORT || 22 }}
-          script_stop: true
-          script: |
-            set -e
-
-            cd ~/asrp-backend
-
-            git fetch origin
-            git checkout develop
-            git pull --ff-only origin develop
-
-            docker compose -f docker-compose.dev.yml --profile stripe up -d --build
+# NOW WE HAVE NO DEV ENVIRONMENT
+#  deploy_dev:
+#    needs:
+#      - lint
+#      - migrations
+#      - tests
+#    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Deploy to dev server
+#        uses: appleboy/ssh-action@v1.2.0
+#        with:
+#          host: ${{ secrets.DEV_HOST }}
+#          username: ${{ secrets.DEV_USER }}
+#          key: ${{ secrets.DEV_SSH_KEY }}
+#          port: ${{ secrets.DEV_PORT || 22 }}
+#          script_stop: true
+#          script: |
+#            set -e
+#
+#            cd ~/asrp-backend
+#
+#            git fetch origin
+#            git checkout develop
+#            git pull --ff-only origin develop
+#
+#            docker compose -f docker-compose.dev.yml --profile stripe up -d --build
