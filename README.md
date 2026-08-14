@@ -182,7 +182,7 @@ http://localhost:8000/api/users/1
 Healthcheck endpoint:
 
 ```shell
-http://localhost:8000/healthcheck
+http://localhost:8000/health/ready
 ```
 
 ### Database
