@@ -24,6 +24,14 @@ def webinar_data(faker: Faker) -> dict:
 
 
 @pytest.fixture()
+def webinar_create_data(webinar_data: dict) -> dict:
+    create_data = webinar_data.copy()
+    create_data.pop("bunny_video_id")
+    create_data.update(timezone="America/Chicago")
+    return create_data
+
+
+@pytest.fixture()
 async def webinar(
     faker: Faker,
     webinar_data: dict,

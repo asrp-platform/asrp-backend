@@ -1,10 +1,49 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
+from app.domains.feedback.constants import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
+
+
+class FeedbackAdditionalInfoCreateSchema(BaseModel):
+    hear_about_asrp: str
+    tg_username: str | None = None
+    interest_description: str | None = None
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("hear_about_asrp")
+    def hear_about_asrp_validator(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized not in HEAR_ABOUT_ASRP_OPTIONS:
+            raise PydanticCustomError("invalid_hear_about_asrp", "Invalid value for hear_about_asrp")
+        return normalized
+
+    @field_validator("tg_username")
+    def tg_username_validator(cls, value):
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            return None
+        if not value.startswith("@"):
+            raise PydanticCustomError("invalid_telegram_username", "Telegram username must start with '@'")
+        username = value[1:]
+        if len(username) < 5 or len(username) > 32:
+            raise PydanticCustomError(
+                "invalid_telegram_username",
+                "Telegram username must be at least 5 and less than 32 characters",
+            )
+        return username
+
+
+class AnswerContactMessageSchema(BaseModel):
+    subject: str
+    answer_message: str
 
 
 class GetInvolvedMessage(BaseModel):
@@ -20,13 +59,13 @@ class GetInvolvedMessage(BaseModel):
 
 class CommitteesGetInvolvedMessage(BaseModel):
     role_affiliation: Annotated[str | None, Field(min_length=2)] = None
-    get_involved_message: str
+    get_involved_message: str | None = None
     model_config = ConfigDict(extra="forbid")
 
 
 class ContactMessage(BaseModel):
     subject: Annotated[str | None, Field(min_length=2)] = None
-    contact_message: str
+    contact_message: str | None = None
     model_config = ConfigDict(extra="forbid")
 
 

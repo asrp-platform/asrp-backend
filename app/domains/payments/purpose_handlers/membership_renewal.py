@@ -8,7 +8,7 @@ from stripe import Event
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.services import UserMembershipServiceDep
-from app.domains.payments.models import Payment, PaymentStatusEnum
+from app.domains.payments.models import Payment, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 
 
@@ -31,8 +31,9 @@ class MembershipRenewalHandler:
         self.__payment_service = payment_service
 
     async def on_succeeded(self, payment: Payment, event: Event) -> None:
-        pending_renewal_payments = await self.__payment_service.get_pending_membership_renewal_user_payment(
-            user_id=payment.user_id
+        pending_renewal_payments = await self.__payment_service.get_all_user_pending_payments_by_kwargs(
+            user_id=payment.user_id,
+            purpose=PaymentPurposeEnum.MEMBERSHIP_RENEWAL,
         )
         expired_payment_ids = [payment.id for payment in pending_renewal_payments]
         await self.__payment_service.update_payments_by_ids(

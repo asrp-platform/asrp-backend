@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.domains.memberships.filters import MembershipTypesFilters
-from app.domains.memberships.schemas.schemas import MembershipTypeSchema
+from app.domains.memberships.schemas.membership_types import MembershipTypeSchema
 from app.domains.memberships.services import MembershipTypeServiceDep
 
 

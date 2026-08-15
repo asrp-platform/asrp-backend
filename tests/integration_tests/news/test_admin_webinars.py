@@ -77,32 +77,32 @@ async def test_get_webinars_by_user_returns_403(
 async def test_create_webinar_by_admin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    webinar_data: dict,
+    webinar_create_data: dict,
 ) -> None:
     response = await client.post(
         "/api/admin/webinars",
         headers=admin_auth_headers,
-        json=jsonable_encoder(webinar_data),
+        json=jsonable_encoder(webinar_create_data),
     )
 
     assert response.status_code == 200
-    assert response.json()["title"] == webinar_data["title"]
+    assert response.json()["title"] == webinar_create_data["title"]
 
 
 async def test_create_webinars_with_same_title(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
-    webinar_data: dict,
+    webinar_create_data: dict,
 ) -> None:
     first_response = await client.post(
         "/api/admin/webinars",
         headers=admin_auth_headers,
-        json=jsonable_encoder(webinar_data),
+        json=jsonable_encoder(webinar_create_data),
     )
     second_response = await client.post(
         "/api/admin/webinars",
         headers=admin_auth_headers,
-        json=jsonable_encoder(webinar_data),
+        json=jsonable_encoder(webinar_create_data),
     )
 
     assert first_response.status_code == 200

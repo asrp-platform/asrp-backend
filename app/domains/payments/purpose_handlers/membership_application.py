@@ -9,7 +9,7 @@ from app.domains.emails.common.messages import build_membership_application_html
 from app.domains.emails.email_queue import EmailQueueDep
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestServiceDep
-from app.domains.payments.models import Payment, PaymentStatusEnum
+from app.domains.payments.models import Payment, PaymentPurposeEnum, PaymentStatusEnum
 from app.domains.payments.services import PaymentServiceDep
 from app.domains.users.models import User
 from app.domains.users.services import UserServiceDep
@@ -32,8 +32,9 @@ class MembershipApplicationHandler:
         self.__user_service = user_service
 
     async def on_succeeded(self, payment: Payment, event: Event) -> None:
-        pending_application_payments = await self.__payment_service.get_pending_membership_application_user_payment(
-            user_id=payment.user_id
+        pending_application_payments = await self.__payment_service.get_all_user_pending_payments_by_kwargs(
+            user_id=payment.user_id,
+            purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
         )
         expired_payment_ids = [payment.id for payment in pending_application_payments]
         await self.__payment_service.update_payments_by_ids(
