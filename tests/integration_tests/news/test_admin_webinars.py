@@ -16,6 +16,7 @@ pytestmark = pytest.mark.anyio
 async def test_get_webinars_by_admin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     webinar: Webinar,
 ) -> None:
     response = await client.get("/api/admin/webinars", headers=admin_auth_headers)
@@ -27,6 +28,7 @@ async def test_get_webinars_by_admin(
 async def test_get_users_registered_for_webinar(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     auth_headers: AuthHeaders,
     test_user: User,
     webinar: Webinar,
@@ -50,6 +52,7 @@ async def test_get_users_registered_for_webinar(
 async def test_get_registered_users_for_missing_webinar_returns_404(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
 ) -> None:
     response = await client.get(
         "/api/admin/webinars/999999999/registrations",
@@ -74,9 +77,19 @@ async def test_get_webinars_by_user_returns_403(
     assert response.status_code == 403
 
 
+async def test_get_webinars_by_admin_without_permission_returns_403(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+) -> None:
+    response = await client.get("/api/admin/webinars", headers=admin_auth_headers)
+
+    assert response.status_code == 403
+
+
 async def test_create_webinar_by_admin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     webinar_create_data: dict,
 ) -> None:
     response = await client.post(
@@ -92,6 +105,7 @@ async def test_create_webinar_by_admin(
 async def test_create_webinars_with_same_title(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     webinar_create_data: dict,
 ) -> None:
     first_response = await client.post(
@@ -114,6 +128,7 @@ async def test_update_webinar_by_admin(
     faker: Faker,
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     webinar: Webinar,
 ) -> None:
     update_data = {"title": faker.sentence(nb_words=4)}
@@ -131,6 +146,7 @@ async def test_update_webinar_starts_at_updates_ends_at(
     faker: Faker,
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     webinar: Webinar,
 ) -> None:
     starts_at = faker.future_datetime(tzinfo=webinar.starts_at.tzinfo)
@@ -149,6 +165,7 @@ async def test_update_webinar_starts_at_updates_ends_at(
 async def test_delete_webinar_by_admin(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
     webinar: Webinar,
 ) -> None:
     response = await client.delete(
@@ -165,6 +182,7 @@ async def test_change_missing_webinar_returns_404(
     faker: Faker,
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
 ) -> None:
     request = getattr(client, method)
     kwargs = {"json": {"title": faker.sentence(nb_words=4)}} if method == "patch" else {}

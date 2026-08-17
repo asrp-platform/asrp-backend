@@ -3,8 +3,9 @@ from datetime import timezone
 import pytest
 from faker import Faker
 
-from app.domains.news.models import Webinar
+from app.domains.news.models import News, Webinar
 from app.domains.shared.transaction_managers import TransactionManager
+from app.domains.users.models import User
 
 
 @pytest.fixture()
@@ -53,4 +54,31 @@ async def member_only_webinar(
         return await test_transaction_manager.webinar_repository.update(
             webinar.id,
             member_only=True,
+        )
+
+
+@pytest.fixture()
+def news_create_data(faker: Faker) -> dict:
+    return {
+        "title": faker.sentence(nb_words=4),
+        "cover_key": None,
+        "body": {"content": faker.paragraph()},
+        "when": None,
+        "where": None,
+        "is_published": True,
+    }
+
+
+@pytest.fixture()
+async def news(
+    faker: Faker,
+    news_create_data: dict,
+    admin_user: User,
+    test_transaction_manager: TransactionManager,
+) -> News:
+    async with test_transaction_manager:
+        return await test_transaction_manager.news_repository.create(
+            **news_create_data,
+            author_id=admin_user.id,
+            slug=faker.unique.slug(),
         )

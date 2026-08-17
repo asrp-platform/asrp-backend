@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
@@ -6,8 +7,16 @@ from pydantic import BaseModel
 
 
 class NewsFilter(BaseModel):
-    is_published: Annotated[bool, Query(description="Published filter")] = True
-    is_deleted: Annotated[bool, Query(description="Deleted filter")] = False
+    title__startswith: Annotated[str | None, Query(description="Title filter")] = None
+    is_published: Annotated[bool | None, Query(description="Published filter")] = None
+    created_at__gte: Annotated[datetime | None, Query(description="Created_at greater filter")] = None
+    created_at__lte: Annotated[datetime | None, Query(description="Created_at less filter")] = None
+
+
+class PublicNewsFilter(BaseModel):
+    title__startswith: Annotated[str | None, Query(description="Title filter")] = None
+    created_at__gte: Annotated[datetime | None, Query(description="Created_at greater filter")] = None
+    created_at__lte: Annotated[datetime | None, Query(description="Created_at less filter")] = None
 
 
 class WebinarStartFilterEnum(str, Enum):

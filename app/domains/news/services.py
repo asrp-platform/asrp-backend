@@ -11,7 +11,8 @@ from sqlalchemy.orm import selectinload
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, PermissionDeniedError
 from app.core.config import settings
-from app.core.utils.save_file import save_file
+from app.core.storage.storage_factory import FileStorageDep
+from app.core.utils.save_file import generate_filename
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.utils import has_member_access
 from app.domains.news.filters import WebinarStartFilterEnum
@@ -22,45 +23,54 @@ from app.domains.users.models import User
 
 
 class NewsService:
-    def __init__(self, transaction_manager: TransactionManagerDep):
-        self.transaction_manager = transaction_manager
-
-    async def get_all_paginated_counted(
-        self, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
+    def __init__(
+        self,
+        transaction_manager: TransactionManagerDep,
+        file_storage: FileStorageDep,
     ):
-        async with self.transaction_manager:
-            return await self.transaction_manager.news_repository.list(limit, offset, order_by, filters)
+        self._tm = transaction_manager
+        self._file_storage = file_storage
+
+    async def get_news_paginated_counted(
+        self,
+        limit: int = None,
+        offset: int = None,
+        order_by: str = None,
+        filters: dict[str, Any] = None,
+        *,
+        open_transaction: bool = False,
+    ):
+        if open_transaction:
+            async with self._tm:
+                return await self._tm.news_repository.list(limit, offset, order_by, filters)
+        return await self._tm.news_repository.list(limit, offset, order_by, filters)
 
     async def create_news(self, **kwargs) -> News:
-        async with self.transaction_manager:
-            return await self.transaction_manager.news_repository.create(**kwargs)
+        async with self._tm:
+            return await self._tm.news_repository.create(**kwargs)
 
-    async def update_news(self, news_id: int, update_data: dict[str | Any]) -> None:
-        async with self.transaction_manager:
-            news = await self.transaction_manager.news_repository.get_first_by_kwargs(id=news_id)
-            if news is None:
-                raise NotFoundError("News with provided ID not found")
-            await self.transaction_manager.news_repository.update(news_id, **update_data)
+    async def update_news(self, news_id: int, update_data: dict[str, Any]) -> News:
+        async with self._tm:
+            return await self._tm.news_repository.update(news_id, **update_data)
 
     async def get_news_by_id(self, news_id: int) -> News:
-        async with self.transaction_manager:
-            news = await self.transaction_manager.news_repository.get_first_by_kwargs(id=news_id)
+        async with self._tm:
+            news = await self._tm.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
                 raise NotFoundError("News with provided ID not found")
             return news
 
-    async def set_news_deleted(self, news_id):
-        async with self.transaction_manager:
-            news = await self.transaction_manager.news_repository.get_first_by_kwargs(id=news_id)
-            if news is None:
-                raise NotFoundError("News with provided ID not found")
-            await self.transaction_manager.news_repository.update(news_id, is_deleted=True)
+    async def delete_news_by_id(self, news_id: int) -> int:
+        async with self._tm:
+            return await self._tm.news_repository.mark_as_deleted(row_id=news_id)
 
     async def upload_image(self, file_data: FileData) -> Path:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
-        return await save_file(file_data, Path("path"))
+        filename = generate_filename(file_data.filename, prefix="news")
+        file_data = await self._file_storage.upload_file(object_key=filename, file_content=file_data.content)
+        return await self._file_storage.get_file_url(file_data.object_key)
 
 
 class WebinarsService:

@@ -18,14 +18,18 @@ if TYPE_CHECKING:
 class News(Base, UCIMixin):
     __tablename__ = "news"
 
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    cover_key: Mapped[str] = mapped_column(nullable=True)
     body: Mapped[str] = mapped_column(JSON(), nullable=False)
+
+    when: Mapped[str] = mapped_column(nullable=True)
+    where: Mapped[str] = mapped_column(nullable=True)
 
     is_published: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped["User"] = relationship("User", back_populates="news")
-
-    is_deleted: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
 
 class Webinar(Base, UCIMixin):
@@ -101,3 +105,19 @@ def set_ends_at(mapper, connection, target: Webinar) -> None:  # noqa SQLAlchemy
     if not target.ends_at:
         ends_at = target.starts_at + timedelta(hours=2)
         target.ends_at = ends_at
+
+
+@event.listens_for(News, "before_insert")
+def generate_news_slug(mapper, connection, target: Webinar) -> None:  # noqa SQLAlchemy event function parameters
+    if not target.slug:
+        title_slug = (
+            slugify(
+                target.title,
+                max_length=246,
+                word_boundary=True,
+                save_order=True,
+            )
+            or "webinar"
+        )
+
+        target.slug = f"{title_slug}-{uuid4().hex[:8]}"
