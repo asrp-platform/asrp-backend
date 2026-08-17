@@ -2,4 +2,5 @@ from pydantic import BaseModel
 
 
 class UploadedImageSchema(BaseModel):
-    path: str
+    file_url: str
+    object_key: str

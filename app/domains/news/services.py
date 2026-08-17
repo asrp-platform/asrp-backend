@@ -1,7 +1,7 @@
 import hashlib
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Depends
@@ -18,8 +18,24 @@ from app.domains.memberships.utils import has_member_access
 from app.domains.news.filters import WebinarStartFilterEnum
 from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
 from app.domains.shared.transaction_managers import TransactionManagerDep
-from app.domains.shared.types import FileData
+from app.domains.shared.types import FileData, StoredFile
 from app.domains.users.models import User
+
+
+@dataclass
+class NewsDTO:
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    title: str
+    slug: str
+    cover_key: str | None
+    cover_url: str | None
+    body: dict
+    when: str | None
+    where: str | None
+    is_published: bool
+    author_id: int
 
 
 class NewsService:
@@ -39,38 +55,79 @@ class NewsService:
         filters: dict[str, Any] = None,
         *,
         open_transaction: bool = False,
-    ):
+    ) -> tuple[list[NewsDTO], int]:
         if open_transaction:
             async with self._tm:
-                return await self._tm.news_repository.list(limit, offset, order_by, filters)
-        return await self._tm.news_repository.list(limit, offset, order_by, filters)
+                news, count = await self._tm.news_repository.list(limit, offset, order_by, filters)
+                return await self._to_dtos(news), count
 
-    async def create_news(self, **kwargs) -> News:
+        news, count = await self._tm.news_repository.list(limit, offset, order_by, filters)
+        return await self._to_dtos(news), count
+
+    async def create_news(self, **kwargs) -> NewsDTO:
         async with self._tm:
-            return await self._tm.news_repository.create(**kwargs)
+            news = await self._tm.news_repository.create(**kwargs)
+            await self._tm.flush()
+            return await self._to_dto(news)
 
-    async def update_news(self, news_id: int, update_data: dict[str, Any]) -> News:
+    async def update_news(self, news_id: int, update_data: dict[str, Any]) -> NewsDTO:
         async with self._tm:
-            return await self._tm.news_repository.update(news_id, **update_data)
+            news = await self._tm.news_repository.update(news_id, **update_data)
+            return await self._to_dto(news)
 
-    async def get_news_by_id(self, news_id: int) -> News:
+    async def get_news_by_id(self, news_id: int) -> NewsDTO:
         async with self._tm:
             news = await self._tm.news_repository.get_first_by_kwargs(id=news_id)
             if news is None:
                 raise NotFoundError("News with provided ID not found")
-            return news
+            return await self._to_dto(news)
+
+    async def get_published_news_by_slug(self, slug: str) -> NewsDTO:
+        async with self._tm:
+            news = await self._tm.news_repository.get_first_by_kwargs(
+                slug=slug,
+                is_published=True,
+            )
+            if news is None:
+                raise NotFoundError("News with provided slug not found")
+            return await self._to_dto(news)
 
     async def delete_news_by_id(self, news_id: int) -> int:
         async with self._tm:
             return await self._tm.news_repository.mark_as_deleted(row_id=news_id)
 
-    async def upload_image(self, file_data: FileData) -> Path:
+    async def upload_image(self, file_data: FileData) -> StoredFile:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
         filename = generate_filename(file_data.filename, prefix="news")
         file_data = await self._file_storage.upload_file(object_key=filename, file_content=file_data.content)
-        return await self._file_storage.get_file_url(file_data.object_key)
+        file_url = await self._file_storage.get_file_url(file_data.object_key)
+
+        return StoredFile(file_url=file_url, object_key=file_data.object_key)
+
+    async def _to_dtos(self, news: list[News]) -> list[NewsDTO]:
+        return [await self._to_dto(item) for item in news]
+
+    async def _to_dto(self, news: News) -> NewsDTO:
+        cover_url = None
+        if news.cover_key:
+            cover_url = await self._file_storage.get_file_url(news.cover_key)
+
+        return NewsDTO(
+            id=news.id,
+            created_at=news.created_at,
+            updated_at=news.updated_at,
+            title=news.title,
+            slug=news.slug,
+            cover_key=news.cover_key,
+            cover_url=cover_url,
+            body=news.body,
+            when=news.when,
+            where=news.where,
+            is_published=news.is_published,
+            author_id=news.author_id,
+        )
 
 
 class WebinarsService:

@@ -18,6 +18,10 @@ class PublicNewsResponses(Responses):
     INVALID_SORTER_FIELD = 400, "Invalid sorter field"
 
 
+class PublicNewsDetailResponses(Responses):
+    NEWS_NOT_FOUND = 404, "News with provided slug not found"
+
+
 @router.get(
     "",
     summary="Get a paginated list of published news",
@@ -44,3 +48,15 @@ async def get_published_news_paginated_counted(
         page=params["page"],
         page_size=params["page_size"],
     )
+
+
+@router.get(
+    "/{slug}",
+    summary="Get published news by slug",
+    responses=PublicNewsDetailResponses.responses,
+)
+async def get_published_news_detail(
+    slug: str,
+    service: NewsServiceDep,
+) -> NewsSchema:
+    return await service.get_published_news_by_slug(slug)

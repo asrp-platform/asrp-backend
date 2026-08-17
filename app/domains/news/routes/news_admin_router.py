@@ -100,8 +100,11 @@ async def upload_image(
         content_type=file.content_type,
         filename=file.filename,
     )
-    file_path = await service.upload_image(file_data)
-    return UploadedImageSchema(path=file_path)
+    stored_file = await service.upload_image(file_data)
+    return UploadedImageSchema(
+        file_url=stored_file.file_url,
+        object_key=stored_file.object_key,
+    )
 
 
 @router.get(

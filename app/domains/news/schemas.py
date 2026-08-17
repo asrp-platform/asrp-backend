@@ -25,6 +25,7 @@ class UpdateNewsSchema(BaseModel):
 class NewsSchema(CreateNewsSchema, UCIMixinSchema):
     slug: str
     author_id: int
+    cover_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
