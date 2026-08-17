@@ -6,6 +6,7 @@ from fastapi_exception_responses import Responses
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
 from app.core.utils.permissions import check_any_permission, check_permissions
+from app.domains.news.cache import NewsCacheDep
 from app.domains.news.filters import NewsFilter
 from app.domains.news.schemas import CreateNewsSchema, NewsSchema, UpdateNewsSchema
 from app.domains.news.services import NewsServiceDep
@@ -79,9 +80,12 @@ async def create_news(
     current_user: AdminUserDep,
     service: NewsServiceDep,
     body: CreateNewsSchema,
+    cache: NewsCacheDep,
 ) -> NewsSchema:
     check_permissions("news.create", permissions)
-    return await service.create_news(**body.model_dump(), author_id=current_user.id)
+    response = await service.create_news(**body.model_dump(), author_id=current_user.id)
+    await cache.invalidate_first_page()
+    return response
 
 
 @router.post(
@@ -131,10 +135,13 @@ async def update_news(
     news_id: int,
     permissions: AdminPermissionsDep,
     service: NewsServiceDep,
+    cache: NewsCacheDep,
     body: UpdateNewsSchema,
 ) -> NewsSchema:
     check_permissions("news.update", permissions)
-    return await service.update_news(news_id, body.model_dump(exclude_unset=True))
+    response = await service.update_news(news_id, body.model_dump(exclude_unset=True))
+    await cache.invalidate_first_page()
+    return response
 
 
 @router.delete(
@@ -147,6 +154,8 @@ async def delete_news(
     news_id: int,
     permissions: AdminPermissionsDep,
     service: NewsServiceDep,
+    cache: NewsCacheDep,
 ) -> None:
     check_permissions("news.delete", permissions)
     await service.delete_news_by_id(news_id)
+    await cache.invalidate_first_page()

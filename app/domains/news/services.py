@@ -1,5 +1,4 @@
 import hashlib
-import logging
 import time
 from copy import deepcopy
 from dataclasses import dataclass
@@ -7,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
 from fastapi import Depends
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
@@ -22,9 +22,6 @@ from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData, StoredFile
 from app.domains.users.models import User
-
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -64,6 +61,13 @@ class NewsService:
         *,
         open_transaction: bool = False,
     ) -> tuple[list[NewsDTO], int]:
+        if order_by == "-created_at":
+            pass
+
+        # первая страница - когда offset == 0 и order_by == -created_at
+        if offset == 0:
+            pass
+
         if open_transaction:
             async with self._tm:
                 news, count = await self._tm.news_repository.list(limit, offset, order_by, filters)

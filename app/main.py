@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
-from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.cors import CORSMiddleware
@@ -17,11 +16,11 @@ from app.core.common.exceptions import (
     PermissionDeniedError,
     ResourceAlreadyExistsError,
 )
-from app.core.common.rate_limiter import rate_limiter_dependency
 from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.database.setup_db import session_getter
-from app.core.logging import REQUESTS_CHANNEL, configure_logging
+from app.core.logging import configure_logging
+from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
@@ -62,7 +61,6 @@ from app.domains.users.routes.users_api import router as users_router
 
 
 configure_logging()
-request_logger = logger.bind(channel=REQUESTS_CHANNEL)
 
 
 @asynccontextmanager
@@ -133,14 +131,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={"detail": {"errors": custom_errors}},
     )
-
-
-@app.middleware("http")
-async def log_request(request: Request, call_next):
-    message = f"{request.method} {request.url.path}"
-    request_logger.info(message)
-    response = await call_next(request)
-    return response
 
 
 app.openapi = get_custom_open_api(app)

@@ -5,6 +5,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.domains.news.cache import NewsCacheDep, is_first_page
 from app.domains.news.filters import PublicNewsFilter
 from app.domains.news.schemas import NewsSchema
 from app.domains.news.services import NewsServiceDep
@@ -30,11 +31,20 @@ class PublicNewsDetailResponses(Responses):
 async def get_published_news_paginated_counted(
     service: NewsServiceDep,
     params: PaginationParamsDep,
+    cache: NewsCacheDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[PublicNewsFilter, Depends()] = None,
 ) -> PaginatedResponse[NewsSchema]:
     news_filters = filters.model_dump(exclude_none=True)
+    use_cache = is_first_page(params=params, ordering=ordering, filters=news_filters)
+
+    if use_cache:
+        cached_data = await cache.get_first_page_from_cache()
+        if cached_data is not None:
+            return cached_data
+
     news_filters["is_published"] = True
+
     data, count = await service.get_news_paginated_counted(
         order_by=ordering,
         filters=news_filters,
@@ -42,12 +52,15 @@ async def get_published_news_paginated_counted(
         offset=params["offset"],
         open_transaction=True,
     )
-    return PaginatedResponse(
+    response = PaginatedResponse(
         count=count,
         data=data,
         page=params["page"],
         page_size=params["page_size"],
     )
+    if use_cache:
+        await cache.cache_first_page(response)
+    return response
 
 
 @router.get(

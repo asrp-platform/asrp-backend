@@ -3,8 +3,8 @@ from redis.asyncio import Redis
 from redis.backoff import NoBackoff
 from redis.client import Retry
 
+from app.core.common.redis_client import get_redis_client
 from app.core.config import settings
-from app.core.utils.redis_client import get_redis_client
 from app.main import app
 
 

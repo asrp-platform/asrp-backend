@@ -10,29 +10,21 @@ from starlette import status
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 
+from app.core.common.redis_client import RedisClientDep
 from app.core.config import settings
-from app.core.logging import REQUESTS_CHANNEL, configure_logging
-from app.core.utils.redis_client import RedisClientDep
+from app.core.logging import configure_logging
 from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.shared.deps import access_token_header, get_email_by_access_token
 from app.domains.users.services import UserServiceDep
 
 
 configure_logging()
-request_logger = logger.bind(channel=REQUESTS_CHANNEL)
 
 
 class RateLimiter:
     REQUEST_COST: int = 1
 
-    def __init__(
-            self,
-            user_ip: str,
-            capacity: float,
-            refill_rate: float,
-            key_ttl: int,
-            redis_client: Redis
-    ):
+    def __init__(self, user_ip: str, capacity: float, refill_rate: float, key_ttl: int, redis_client: Redis):
         self.key = f"rl:user:{user_ip}"
         self.capacity = capacity
         self.refill_rate = refill_rate
@@ -64,7 +56,7 @@ class RateLimiter:
                 mapping={
                     "tokens": tokens,
                     "last_refill": now,
-                }
+                },
             )
             await self.redis_client.expire(self.key, self.key_ttl)
             return True
@@ -117,6 +109,4 @@ async def rate_limiter_dependency(
         if not await rate_limiter.check_limit():
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests")
     except (ConnectionError, TimeoutError) as error:
-        request_logger.error(
-            f"Rate limiter failed while checking request limit due to Redis connection issue. Error: {error}"
-        )
+        logger.error(f"Rate limiter failed while checking request limit due to Redis connection issue. Error: {error}")
