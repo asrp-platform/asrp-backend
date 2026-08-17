@@ -13,6 +13,7 @@ from app.core.common.exceptions import (
     InvalidMimeTypeError,
     NotFoundError,
     NotResourceOwnerError,
+    PayloadTooLargeError,
     PermissionDeniedError,
     ResourceAlreadyExistsError,
 )
@@ -115,6 +116,11 @@ async def invalid_filter_error_handler(request: Request, exc: InvalidFilterError
 @app.exception_handler(InvalidMimeTypeError)
 async def invalid_mime_type_error_handler(request: Request, exc: InvalidMimeTypeError) -> JSONResponse:
     return JSONResponse(status_code=415, content={"detail": str(exc) or "Unsupported Media Type"})
+
+
+@app.exception_handler(PayloadTooLargeError)
+async def payload_too_large_error_handler(request: Request, exc: PayloadTooLargeError) -> JSONResponse:
+    return JSONResponse(status_code=413, content={"detail": str(exc) or "Payload Too Large"})
 
 
 # --- Обработчик ошибок 422 ---

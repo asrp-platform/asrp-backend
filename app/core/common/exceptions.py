@@ -24,6 +24,10 @@ class InvalidMimeTypeError(Exception):
     pass
 
 
+class PayloadTooLargeError(Exception):
+    pass
+
+
 class PermissionDeniedError(Exception):
     pass
 

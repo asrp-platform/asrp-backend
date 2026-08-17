@@ -5,7 +5,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.core.utils.permissions import check_permissions
+from app.core.utils.permissions import check_any_permission, check_permissions
 from app.domains.news.filters import NewsFilter
 from app.domains.news.schemas import CreateNewsSchema, NewsSchema, UpdateNewsSchema
 from app.domains.news.services import NewsServiceDep
@@ -36,6 +36,7 @@ class NewsDetailResponses(AdminNewsResponses):
 
 
 class UploadNewsImageResponses(AdminNewsResponses):
+    FILE_TOO_LARGE = 413, "Image must be smaller than 5 MB"
     INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
 
@@ -94,7 +95,7 @@ async def upload_image(
     permissions: AdminPermissionsDep,
     service: NewsServiceDep,
 ) -> UploadedImageSchema:
-    check_permissions("news.create", permissions)
+    check_any_permission({"news.create", "news.update"}, permissions)
     file_data = FileData(
         content=await file.read(),
         content_type=file.content_type,
