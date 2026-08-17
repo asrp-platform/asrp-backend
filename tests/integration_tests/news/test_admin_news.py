@@ -25,6 +25,49 @@ async def test_admin_get_news_list(
     assert response.json()["data"][0]["id"] == news.id
 
 
+async def test_admin_news_list_supports_filters_sorting_and_pagination(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+    news: News,
+    news_create_data: dict,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    async with test_transaction_manager:
+        matching_news = await test_transaction_manager.news_repository.create(
+            **(
+                news_create_data
+                | {
+                    "title": "Administration release update",
+                    "where": "Chicago",
+                    "is_published": False,
+                    "author_id": news.author_id,
+                }
+            )
+        )
+        await test_transaction_manager.flush()
+        matching_news_id = matching_news.id
+
+    response = await client.get(
+        "/api/admin/news",
+        headers=admin_auth_headers,
+        params={
+            "title__startswith": "Administration",
+            "where__startswith": "Chic",
+            "is_published": False,
+            "ordering": "-id",
+            "page": 1,
+            "page_size": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["count"] == 1
+    assert response.json()["page"] == 1
+    assert response.json()["page_size"] == 1
+    assert response.json()["data"][0]["id"] == matching_news_id
+
+
 async def test_admin_create_news(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
