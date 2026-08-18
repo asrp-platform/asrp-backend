@@ -5,7 +5,13 @@ from redis.client import Retry
 
 from app.core.common.redis_client import get_redis_client
 from app.core.config import settings
+from app.core.rate_limiter import rate_limiter_dependency
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def enable_rate_limiter_for_rate_limiter_tests(_disable_rate_limiter_for_unrelated_tests):
+    app.dependency_overrides.pop(rate_limiter_dependency, None)
 
 
 @pytest.fixture(scope="function")
