@@ -1,11 +1,24 @@
 from datetime import timezone
+from unittest.mock import AsyncMock
 
 import pytest
 from faker import Faker
 
+from app.domains.news.cache import NewsCache
 from app.domains.news.models import News, Webinar
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
+
+
+@pytest.fixture(autouse=True)
+def news_cache(client):
+    from app.main import app
+
+    cache = AsyncMock(spec=NewsCache)
+    cache.get_first_page_from_cache.return_value = None
+    app.dependency_overrides[NewsCache] = lambda: cache
+    yield cache
+    app.dependency_overrides.pop(NewsCache, None)
 
 
 @pytest.fixture()

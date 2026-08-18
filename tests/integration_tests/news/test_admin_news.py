@@ -73,11 +73,13 @@ async def test_admin_create_news(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     news_create_data: dict,
+    news_cache: AsyncMock,
 ) -> None:
     response = await client.post("/api/admin/news", headers=admin_auth_headers, json=news_create_data)
 
     assert response.status_code == 201
     assert response.json()["title"] == news_create_data["title"]
+    news_cache.invalidate_first_page.assert_awaited_once_with()
 
 
 async def test_admin_create_news_stores_content_image_key_and_returns_fresh_url(
@@ -129,6 +131,7 @@ async def test_admin_get_update_and_delete_news(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     news: News,
+    news_cache: AsyncMock,
 ) -> None:
     detail_response = await client.get(f"/api/admin/news/{news.id}", headers=admin_auth_headers)
     assert detail_response.status_code == 200
@@ -144,6 +147,7 @@ async def test_admin_get_update_and_delete_news(
 
     delete_response = await client.delete(f"/api/admin/news/{news.id}", headers=admin_auth_headers)
     assert delete_response.status_code == 204
+    assert news_cache.invalidate_first_page.await_count == 2
 
 
 @pytest.mark.parametrize("method", ["get", "patch", "delete"])

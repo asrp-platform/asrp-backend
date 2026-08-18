@@ -61,13 +61,6 @@ class NewsService:
         *,
         open_transaction: bool = False,
     ) -> tuple[list[NewsDTO], int]:
-        if order_by == "-created_at":
-            pass
-
-        # первая страница - когда offset == 0 и order_by == -created_at
-        if offset == 0:
-            pass
-
         if open_transaction:
             async with self._tm:
                 news, count = await self._tm.news_repository.list(limit, offset, order_by, filters)

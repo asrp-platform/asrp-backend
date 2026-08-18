@@ -52,7 +52,7 @@ async def get_published_news_paginated_counted(
         offset=params["offset"],
         open_transaction=True,
     )
-    response = PaginatedResponse(
+    response = PaginatedResponse[NewsSchema](
         count=count,
         data=data,
         page=params["page"],

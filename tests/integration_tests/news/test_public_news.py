@@ -3,13 +3,58 @@ from unittest.mock import AsyncMock
 import pytest
 from faker import Faker
 from httpx import AsyncClient
+from redis.exceptions import ConnectionError as RedisConnectionError
 
+from app.core.common.responses import PaginatedResponse
+from app.domains.news.cache import NewsCache
 from app.domains.news.models import News
+from app.domains.news.schemas import NewsSchema
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 
 
 pytestmark = pytest.mark.anyio
+
+
+async def test_public_first_news_page_uses_cache(
+    client: AsyncClient,
+    news_cache: AsyncMock,
+) -> None:
+    params = {"page": 1, "page_size": 8, "ordering": "-created_at"}
+    database_response = await client.get("/api/news", params=params)
+    news_cache.cache_first_page.assert_awaited_once()
+    cached_response = PaginatedResponse[NewsSchema].model_validate(database_response.json())
+    news_cache.reset_mock()
+    news_cache.get_first_page_from_cache.return_value = cached_response
+
+    response = await client.get("/api/news", params=params)
+
+    assert response.status_code == 200
+    assert response.json() == database_response.json()
+    news_cache.get_first_page_from_cache.assert_awaited_once_with()
+    news_cache.cache_first_page.assert_not_awaited()
+
+
+async def test_public_news_page_with_different_size_does_not_use_first_page_cache(
+    client: AsyncClient,
+    news_cache: AsyncMock,
+) -> None:
+    response = await client.get(
+        "/api/news",
+        params={"page": 1, "page_size": 25, "ordering": "-created_at"},
+    )
+
+    assert response.status_code == 200
+    news_cache.get_first_page_from_cache.assert_not_awaited()
+    news_cache.cache_first_page.assert_not_awaited()
+
+
+async def test_news_cache_fails_open_when_redis_is_unavailable() -> None:
+    redis_client = AsyncMock()
+    redis_client.get.side_effect = RedisConnectionError("Redis is unavailable")
+    cache = NewsCache(redis_client)
+
+    assert await cache.get_first_page_from_cache() is None
 
 
 async def test_public_news_detail_contains_presigned_cover_url(

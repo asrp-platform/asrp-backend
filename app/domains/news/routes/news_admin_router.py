@@ -83,9 +83,9 @@ async def create_news(
     cache: NewsCacheDep,
 ) -> NewsSchema:
     check_permissions("news.create", permissions)
-    response = await service.create_news(**body.model_dump(), author_id=current_user.id)
+    news = await service.create_news(**body.model_dump(), author_id=current_user.id)
     await cache.invalidate_first_page()
-    return response
+    return news
 
 
 @router.post(
@@ -139,9 +139,9 @@ async def update_news(
     body: UpdateNewsSchema,
 ) -> NewsSchema:
     check_permissions("news.update", permissions)
-    response = await service.update_news(news_id, body.model_dump(exclude_unset=True))
+    news = await service.update_news(news_id, body.model_dump(exclude_unset=True))
     await cache.invalidate_first_page()
-    return response
+    return news
 
 
 @router.delete(
