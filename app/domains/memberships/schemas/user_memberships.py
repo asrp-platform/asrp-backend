@@ -4,8 +4,8 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
-from app.domains.memberships.schemas.schemas import MembershipTypeSchema
-from app.domains.users.schemas import UserShortSchema
+from app.domains.memberships.schemas.membership_types import MembershipTypeSchema
+from app.domains.users.schemas.profiles import UserShortSchema
 
 
 class UserMembershipBoundedSchema(UCIMixinSchema):

@@ -7,7 +7,7 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import PaginatedResponse
 from app.domains.memberships.exceptions import MembershipAlreadySuspendedError, MembershipAlreadyTerminatedError
 from app.domains.memberships.filters import MembersFilters
-from app.domains.memberships.schemas.membership_schemas import SuspendMembershipSchema, UserMembershipBoundedSchema
+from app.domains.memberships.schemas.user_memberships import SuspendMembershipSchema, UserMembershipBoundedSchema
 from app.domains.memberships.use_cases.memberships.get_users_with_memberships import GetUsersWithMembershipsUseCaseDep
 from app.domains.memberships.use_cases.memberships.suspend_user_membership import SuspendUserMembershipUseCase
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user

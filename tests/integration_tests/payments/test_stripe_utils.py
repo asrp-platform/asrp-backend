@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.payments.models import PaymentPurposeEnum
 from app.domains.payments.stripe import utils as stripe_utils
 
@@ -62,3 +63,36 @@ async def test_membership_renewal_checkout_session_passes_user_email(
     assert result.session == checkout_session
     create_checkout_session.assert_awaited_once()
     assert create_checkout_session.await_args.kwargs["customer_email"] == "member@example.com"
+
+
+async def test_membership_upgrade_checkout_session_formats_product_description(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checkout_session = SimpleNamespace(
+        id="cs_upgrade",
+        status="open",
+        payment_status="unpaid",
+        url="https://checkout.stripe.com/upgrade",
+    )
+    create_checkout_session = AsyncMock(return_value=checkout_session)
+    monkeypatch.setattr(stripe_utils, "create_checkout_session", create_checkout_session)
+
+    await stripe_utils.create_membership_upgrade_checkout_session(
+        payment=SimpleNamespace(id=123),
+        amount_cents=5000,
+        current_membership_type=SimpleNamespace(
+            id=1,
+            name="Pathway Membership",
+            type=MembershipTypeEnum.PATHWAY,
+        ),
+        target_membership_type=SimpleNamespace(
+            id=2,
+            name="Active Membership",
+            type=MembershipTypeEnum.ACTIVE,
+        ),
+        user_membership=SimpleNamespace(id=456),
+        user_email="member@example.com",
+    )
+
+    line_items = create_checkout_session.await_args.kwargs["line_items"]
+    assert line_items[0]["price_data"]["product_data"]["description"] == ("Upgrade membership from Pathway to Active")

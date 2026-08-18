@@ -9,24 +9,24 @@ from app.domains.shared.transaction_managers import TransactionManagerDep
 
 class PaymentService:
     def __init__(self, transaction_manager: TransactionManagerDep):
-        self.__tm = transaction_manager
+        self._tm = transaction_manager
 
     async def create_payment(self, **kwargs) -> Payment:
-        return await self.__tm.payment_repository.create(**kwargs)
+        return await self._tm.payment_repository.create(**kwargs)
 
     async def update_payment(self, payment_id: int, **kwargs) -> Payment:
-        return await self.__tm.payment_repository.update(payment_id, **kwargs)
+        return await self._tm.payment_repository.update(payment_id, **kwargs)
 
     async def update_payments_by_ids(self, payment_ids: list[uuid.UUID | str], **kwargs) -> list[Payment]:
-        return await self.__tm.payment_repository.update_by_ids(payment_ids, **kwargs)
+        return await self._tm.payment_repository.update_by_ids(payment_ids, **kwargs)
 
     async def get_payment_by_id(self, payment_uuid: str):
-        return await self.__tm.payment_repository.get_first_by_kwargs(id=payment_uuid)
+        return await self._tm.payment_repository.get_first_by_kwargs(id=payment_uuid)
 
     async def get_user_payments(
         self, user_id: int, limit: int = None, offset: int = None, order_by: str = None, filters: dict[str, Any] = None
     ) -> list[Payment]:
-        return await self.__tm.payment_repository.list(
+        return await self._tm.payment_repository.list(
             limit=limit, offset=offset, order_by=order_by, filters={**filters, "user_id": user_id}
         )
 
@@ -40,35 +40,35 @@ class PaymentService:
         open_transaction: bool = False,
     ) -> [list[Payment], int]:
         if open_transaction:
-            async with self.__tm:
-                return await self.__tm.payment_repository.list(limit, offset, order_by, filters)
-        return await self.__tm.payment_repository.list(limit, offset, order_by, filters)
+            async with self._tm:
+                return await self._tm.payment_repository.list(limit, offset, order_by, filters)
+        return await self._tm.payment_repository.list(limit, offset, order_by, filters)
 
     async def create_processed_webhook_event(self, **kwargs) -> ProcessedWebhookEvent:
-        return await self.__tm.processed_webhook_event_repository.create(**kwargs)
+        return await self._tm.processed_webhook_event_repository.create(**kwargs)
 
     async def get_processed_webhook_event_by_kwargs(self, **kwargs) -> ProcessedWebhookEvent:
-        return await self.__tm.processed_webhook_event_repository.get_first_by_kwargs(**kwargs)
+        return await self._tm.processed_webhook_event_repository.get_first_by_kwargs(**kwargs)
 
     async def get_succeeded_application_payment_for_request(self, membership_request_id: int) -> Payment | None:
-        return await self.__tm.payment_repository.get_first_by_kwargs(
+        return await self._tm.payment_repository.get_first_by_kwargs(
             membership_request_id=membership_request_id,
             status=PaymentStatusEnum.SUCCEEDED,
             purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
         )
 
-    async def get_pending_membership_application_user_payment(self, user_id: int):
-        return await self.__tm.payment_repository.get_all_by_kwargs(
+    async def get_all_user_pending_payments_by_kwargs(self, user_id: int, **kwargs) -> list[Payment]:
+        return await self._tm.payment_repository.get_all_by_kwargs(
             user_id=user_id,
             status=PaymentStatusEnum.PENDING,
-            purpose=PaymentPurposeEnum.MEMBERSHIP_APPLICATION,
+            **kwargs,
         )
 
-    async def get_pending_membership_renewal_user_payment(self, user_id: int):
-        return await self.__tm.payment_repository.get_all_by_kwargs(
+    async def get_user_pending_payment_by_kwargs(self, user_id: int, **kwargs) -> Payment:
+        return await self._tm.payment_repository.get_first_by_kwargs(
             user_id=user_id,
             status=PaymentStatusEnum.PENDING,
-            purpose=PaymentPurposeEnum.MEMBERSHIP_RENEWAL,
+            **kwargs,
         )
 
 

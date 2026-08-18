@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
-from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.cors import CORSMiddleware
@@ -13,14 +12,15 @@ from app.core.common.exceptions import (
     InvalidMimeTypeError,
     NotFoundError,
     NotResourceOwnerError,
+    PayloadTooLargeError,
     PermissionDeniedError,
     ResourceAlreadyExistsError,
 )
-from app.core.common.rate_limiter import rate_limiter_dependency
 from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.database.setup_db import session_getter
-from app.core.logging import REQUESTS_CHANNEL, configure_logging
+from app.core.logging import configure_logging
+from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
@@ -37,8 +37,12 @@ from app.domains.memberships.routes.membership_admin_api import router as member
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.memberships.routes.membership_types_admin_api import router as membership_types_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
-from app.domains.news.routes.webinars_admin_router import router as webinars_admin_router
-from app.domains.news.routes.webinars_router import router as webinars_router
+from app.domains.news.routes import (
+    news_admin_router,
+    news_router,
+    webinars_admin_router,
+    webinars_router,
+)
 from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
@@ -57,7 +61,6 @@ from app.domains.users.routes.users_api import router as users_router
 
 
 configure_logging()
-request_logger = logger.bind(channel=REQUESTS_CHANNEL)
 
 
 @asynccontextmanager
@@ -113,6 +116,11 @@ async def invalid_mime_type_error_handler(request: Request, exc: InvalidMimeType
     return JSONResponse(status_code=415, content={"detail": str(exc) or "Unsupported Media Type"})
 
 
+@app.exception_handler(PayloadTooLargeError)
+async def payload_too_large_error_handler(request: Request, exc: PayloadTooLargeError) -> JSONResponse:
+    return JSONResponse(status_code=413, content={"detail": str(exc) or "Payload Too Large"})
+
+
 # --- Обработчик ошибок 422 ---
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -123,14 +131,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={"detail": {"errors": custom_errors}},
     )
-
-
-@app.middleware("http")
-async def log_request(request: Request, call_next):
-    message = f"{request.method} {request.url.path}"
-    request_logger.info(message)
-    response = await call_next(request)
-    return response
 
 
 app.openapi = get_custom_open_api(app)
@@ -152,6 +152,7 @@ app.include_router(webhooks_router, prefix="/api")
 app.include_router(membership_types_router, prefix="/api")
 app.include_router(donations_router, prefix="/api")
 app.include_router(webinars_router, prefix="/api")
+app.include_router(news_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
@@ -165,6 +166,7 @@ app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
 app.include_router(webinars_admin_router, prefix="/api/admin")
+app.include_router(news_admin_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")

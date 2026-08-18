@@ -8,6 +8,7 @@ from app.domains.payments.models import PaymentPurposeEnum
 from app.domains.payments.purpose_handlers.donation import DonationHandlerDep
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandlerDep
 from app.domains.payments.purpose_handlers.membership_renewal import MembershipRenewalHandlerDep
+from app.domains.payments.purpose_handlers.membership_upgrade import MembershipUpgradeHandlerDep
 
 
 class PaymentPurposeHandlerRegistry:
@@ -15,11 +16,13 @@ class PaymentPurposeHandlerRegistry:
         self,
         membership_application_handler: MembershipApplicationHandlerDep,
         membership_renewal_handler: MembershipRenewalHandlerDep,
+        membership_upgrade_handler: MembershipUpgradeHandlerDep,
         donation_handler: DonationHandlerDep,
     ):
         self.__handlers = {
             PaymentPurposeEnum.MEMBERSHIP_APPLICATION: membership_application_handler,
             PaymentPurposeEnum.MEMBERSHIP_RENEWAL: membership_renewal_handler,
+            PaymentPurposeEnum.MEMBERSHIP_TYPE_UPGRADE: membership_upgrade_handler,
             PaymentPurposeEnum.DONATION: donation_handler,
         }
 

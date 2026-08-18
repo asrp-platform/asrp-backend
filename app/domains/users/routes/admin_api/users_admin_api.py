@@ -10,7 +10,7 @@ from app.core.common.responses import (
     PaginatedResponse,
     PermissionsResponses,
 )
-from app.domains.permissions.models import PermissionSchema
+from app.domains.permissions.schemas import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.users.filters import NameChangeRequestsFilters, UsersFilter

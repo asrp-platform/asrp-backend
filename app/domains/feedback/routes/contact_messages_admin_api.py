@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi_exception_responses import Responses
-from pydantic import BaseModel
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
@@ -10,6 +9,7 @@ from app.core.database.base_repository import InvalidOrderAttributeError
 from app.core.utils.permissions import check_permissions
 from app.domains.feedback.filters import ContactMessagesFilter
 from app.domains.feedback.schemas import (
+    AnswerContactMessageSchema,
     ContactMessageReplyResponseSchema,
     ContactMessageResponseSchema,
 )
@@ -56,11 +56,6 @@ class AnswerContactMessageResponses(Responses):
     CONTACT_MESSAGE_NOT_FOUND = 404, "Contact message with provided id not found"
 
 
-class AnswerContactMessageBody(BaseModel):
-    subject: str
-    answer_message: str
-
-
 @router.post(
     "/{message_id}/answers",
     responses=AnswerContactMessageResponses.responses,
@@ -69,7 +64,7 @@ class AnswerContactMessageBody(BaseModel):
 )
 async def answer_contact_message(
     message_id: int,
-    body: AnswerContactMessageBody,
+    body: AnswerContactMessageSchema,
     permissions: AdminPermissionsDep,
     contact_message_service: FeedbackServiceDep,
 ) -> ContactMessageReplyResponseSchema:

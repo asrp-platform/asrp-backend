@@ -107,8 +107,11 @@ async def upload_directors_board_member_photo(
         filename=file.filename,
     )
 
-    file_path = await use_case.execute(permissions, file_data)
-    return UploadedImageSchema(path=file_path)
+    stored_file = await use_case.execute(permissions, file_data)
+    return UploadedImageSchema(
+        file_url=stored_file.file_url,
+        object_key=stored_file.object_key,
+    )
 
 
 class ReorderCardResponses(PermissionsResponses):

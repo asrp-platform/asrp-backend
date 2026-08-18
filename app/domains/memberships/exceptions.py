@@ -10,11 +10,7 @@ class MembershipRequestCannotBeReappliedError(Exception):
     pass
 
 
-class MembershipApplicationCheckoutError(Exception):
-    pass
-
-
-class MembershipRenewalCheckoutError(Exception):
+class CheckoutSessionCreationError(Exception):
     pass
 
 

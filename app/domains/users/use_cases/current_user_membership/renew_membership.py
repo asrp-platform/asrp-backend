@@ -5,7 +5,7 @@ from loguru import logger
 
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import (
-    MembershipRenewalCheckoutError,
+    CheckoutSessionCreationError,
     MembershipSuspendedError,
     MembershipTerminatedError,
     NoMembershipError,
@@ -81,7 +81,7 @@ class RenewMembershipUseCase:
                     },
                 )
                 await self.__tm.commit()
-                raise MembershipRenewalCheckoutError("Failed to create checkout session") from exc
+                raise CheckoutSessionCreationError("Failed to create checkout session") from exc
 
             await self.__payment_service.update_payment(payment.id, provider_data=checkout.provider_data)
 

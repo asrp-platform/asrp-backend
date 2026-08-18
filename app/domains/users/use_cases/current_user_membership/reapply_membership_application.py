@@ -9,8 +9,8 @@ from app.core.common.exceptions import NotFoundError
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,
+    CheckoutSessionCreationError,
     MembershipAlreadyPaidError,
-    MembershipApplicationCheckoutError,
     MembershipRequestCannotBeReappliedError,
 )
 from app.domains.memberships.models import (
@@ -141,7 +141,7 @@ class ReapplyMembershipApplicationUseCase:
                     },
                 )
                 await self.__transaction_manager.commit()
-                raise MembershipApplicationCheckoutError("Failed to create checkout session") from exc
+                raise CheckoutSessionCreationError("Failed to create checkout session") from exc
 
             await self.__payment_service.update_payment(payment.id, provider_data=checkout.provider_data)
 

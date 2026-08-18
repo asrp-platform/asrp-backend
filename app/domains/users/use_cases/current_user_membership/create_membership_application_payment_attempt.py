@@ -5,7 +5,7 @@ from loguru import logger
 
 from app.core.common.exceptions import NotFoundError
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.memberships.exceptions import MembershipAlreadyPaidError, MembershipApplicationCheckoutError
+from app.domains.memberships.exceptions import CheckoutSessionCreationError, MembershipAlreadyPaidError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestServiceDep, MembershipTypeServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
@@ -99,7 +99,7 @@ class CreateMembershipApplicationPaymentAttemptUseCase:
                     },
                 )
                 await self.__transaction_manager.commit()
-                raise MembershipApplicationCheckoutError("Failed to create checkout session") from exc
+                raise CheckoutSessionCreationError("Failed to create checkout session") from exc
 
             await self.__payment_service.update_payment(payment.id, provider_data=checkout.provider_data)
 
