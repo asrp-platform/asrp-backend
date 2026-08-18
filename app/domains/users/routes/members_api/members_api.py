@@ -10,7 +10,7 @@ from app.domains.users.schemas import MemberDirectorySchema
 from app.domains.users.use_cases.member_directory.get_members import GetMembersUseCaseDep
 
 
-router = APIRouter(prefix="/members", tags=["Member: Members"])
+router = APIRouter(prefix="/members", tags=["Membership: Members"])
 
 
 class GetMembersResponses(InvalidRequestParamsResponses, NotAuthorizedResponses):

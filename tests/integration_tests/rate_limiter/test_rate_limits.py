@@ -117,16 +117,15 @@ async def test_test_redis_client_unavailable(
     client: AsyncClient,
     unavailable_test_redis_client: Redis,
 ):
-    with patch("app.core.common.rate_limiter.request_logger") as mock_privileges_logger:
+    with patch("app.core.rate_limiter.logger") as mock_logger:
         response = await client.get("/health/ready")
 
-        mock_privileges_logger.error.assert_called_once()
+        mock_logger.error.assert_called_once()
 
-        args, _ = mock_privileges_logger.error.call_args
+        args, _ = mock_logger.error.call_args
         log_msg = args[0]
 
         assert "Rate limiter failed" in log_msg
-        assert "9999.9999.9999.9999" in log_msg
 
         assert response.status_code == 200
 

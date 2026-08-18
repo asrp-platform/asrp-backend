@@ -40,7 +40,7 @@ async def test_register_for_webinar(
     webinar: Webinar,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{webinar.slug}/registration",
+        f"/api/webinars/{webinar.slug}/registrations",
         headers=auth_headers,
     )
 
@@ -57,7 +57,7 @@ async def test_register_for_webinar_without_authentication(
     client: AsyncClient,
     webinar: Webinar,
 ) -> None:
-    response = await client.post(f"/api/webinars/{webinar.slug}/registration")
+    response = await client.post(f"/api/webinars/{webinar.slug}/registrations")
 
     assert response.status_code == 401
 
@@ -68,7 +68,7 @@ async def test_register_for_missing_webinar_returns_404(
     auth_headers: AuthHeaders,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{faker.slug()}/registration",
+        f"/api/webinars/{faker.slug()}/registrations",
         headers=auth_headers,
     )
 
@@ -81,7 +81,7 @@ async def test_register_for_member_only_webinar_without_membership_returns_403(
     member_only_webinar: Webinar,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{member_only_webinar.slug}/registration",
+        f"/api/webinars/{member_only_webinar.slug}/registrations",
         headers=auth_headers,
     )
 
@@ -95,7 +95,7 @@ async def test_register_for_member_only_webinar_with_active_membership(
     user_membership: UserMembership,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{member_only_webinar.slug}/registration",
+        f"/api/webinars/{member_only_webinar.slug}/registrations",
         headers=auth_headers,
     )
 

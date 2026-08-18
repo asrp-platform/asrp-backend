@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.domains.permissions.models import PermissionSchema
+from app.domains.permissions.schemas import PermissionSchema
 from app.domains.permissions.services import PermissionServiceDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 

@@ -5,7 +5,6 @@ from app.core.config import BASE_DIR, DEV_MODE
 
 LOG_DIR = BASE_DIR / "logs"
 
-REQUEST_LOG_DIR = LOG_DIR / "requests"
 AUDIT_LOG_DIR = LOG_DIR / "audit"
 ERROR_LOG_DIR = LOG_DIR / "errors"
 PAYMENTS_LOG_DIR = LOG_DIR / "payments"
@@ -20,23 +19,10 @@ STRIPE_CHANNEL = "stripe"
 def configure_logging() -> None:
     logger.remove()
 
-    REQUEST_LOG_DIR.mkdir(parents=True, exist_ok=True)
     AUDIT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     ERROR_LOG_DIR.mkdir(parents=True, exist_ok=True)
     PAYMENTS_LOG_DIR.mkdir(parents=True, exist_ok=True)
     STRIPE_LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-    logger.add(
-        REQUEST_LOG_DIR / "requests.log",
-        level="INFO",
-        rotation="1 day",
-        retention="30 days",
-        compression="zip",
-        encoding="utf-8",
-        enqueue=True,
-        filter=lambda record: record["extra"].get("channel") == REQUESTS_CHANNEL,
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {message}",
-    )
 
     logger.add(
         AUDIT_LOG_DIR / "privileges.log",

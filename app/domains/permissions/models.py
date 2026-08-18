@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,11 +29,3 @@ class UserPermission(Base):
 
     permission_id: Mapped[int] = mapped_column(ForeignKey("permissions.id"), primary_key=True)
     user_id: Mapped[id] = mapped_column(ForeignKey("users.id"), primary_key=True)
-
-
-class PermissionSchema(BaseModel):
-    id: int
-    action: str
-    name: str
-
-    model_config = {"from_attributes": True}

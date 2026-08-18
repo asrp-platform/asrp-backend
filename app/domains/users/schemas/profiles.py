@@ -1,9 +1,8 @@
-import re
 from datetime import datetime
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 import phonenumbers
-from pydantic import AfterValidator, AliasPath, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AliasPath, BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
@@ -11,25 +10,6 @@ from app.domains.auth.schemas import US_COUNTRY_VALUES
 from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.shared.types import Password
 from app.domains.users.models import NameChangeRequestStatusEnum
-
-
-def validate_year_range(value: str) -> str:
-    YEAR_RANGE_REGEX = re.compile(r"^\d{4}-\d{4}$")
-    if not YEAR_RANGE_REGEX.match(value):
-        raise PydanticCustomError("year_range_error", "Format must be YYYY-YYYY")
-
-    start, end = map(int, value.split("-"))
-
-    if start > end:
-        raise PydanticCustomError("year_range_error", "Start year cannot be greater than end year")
-
-    if start < 1900 or end > 2100:
-        raise PydanticCustomError("year_range_error", "Year out of valid range")
-
-    return value
-
-
-YearRange = Annotated[str, AfterValidator(validate_year_range)]
 
 
 class UserShortSchema(BaseModel):
@@ -82,23 +62,17 @@ class MemberDirectorySchema(BaseModel):
 
 
 class UserPrivateSchema(UserPublicSchema):
-    email: str
-    admin: bool
     telegram_username: str | None
     avatar_path: str | None
-    avatar_url: str | None
     phone_number: str | None
     pending: bool
     created_at: datetime
     last_password_change: datetime | None
-    superuser: bool
-    banned: bool
-    ban_reason: str | None
     postal_code: str | None = None
 
 
 class UpdateUserByAdminSchema(BaseModel):
-    admin: Optional[bool] = Field(None, description="Grant or revoke admin role for user")
+    admin: bool | None = Field(None, description="Grant or revoke admin role for user")
 
 
 class BanUserSchema(BaseModel):
@@ -123,14 +97,11 @@ class UpdateUserSchema(BaseModel):
     def check_us_address_fields(self):
         if self.country is None:
             return self
-
         if self.country.strip().upper() in US_COUNTRY_VALUES:
             if not self.state or not self.state.strip():
                 raise PydanticCustomError("state_required", "State is required for USA")
-
             if not self.postal_code or not self.postal_code.strip():
                 raise PydanticCustomError("postal_code_required", "Postal code is required for USA")
-
         return self
 
     @field_validator("country", "city")
@@ -141,9 +112,7 @@ class UpdateUserSchema(BaseModel):
 
     @field_validator("preferred_name", mode="before")
     def normalize_preferred_name(cls, value):
-        if value == "":
-            return None
-        return value
+        return None if value == "" else value
 
     @field_validator("phone_number")
     def validate_phone_number(cls, value):
@@ -168,87 +137,14 @@ class ChangePasswordSchema(BaseModel):
     @model_validator(mode="after")
     def check_passwords_match(self):
         if self.new_password != self.confirm_new_password:
-            raise PydanticCustomError(
-                "password_mismatch",  # internal code
-                "Passwords do not match",  # user-facing message
-            )
+            raise PydanticCustomError("password_mismatch", "Passwords do not match")
         return self
 
     @field_validator("new_password", "confirm_new_password")
-    def validate_password(cls, v):
-        if len(v) < 4:
+    def validate_password(cls, value):
+        if len(value) < 4:
             raise PydanticCustomError("password_too_short", "Password should have at least 4 characters")
-        return v
-
-
-class ProfessionalExperienceMixin(BaseModel):
-    current_position: bool
-    institution: str = Field(min_length=2)
-    speciality: str = Field(min_length=2)
-    city: str = Field(min_length=2)
-    state: str = Field(min_length=2)
-    country: str = Field(min_length=2)
-    years_from_to: YearRange = Field(default="2000-2006")
-
-    model_config = {
-        "from_attributes": True,
-    }
-
-
-class ViewMixin(UCIMixinSchema):
-    user_id: int
-
-
-class ProfessionalInformationCreateOrUpdateSchema(BaseModel):
-    medical_school: str
-    medical_school_country: str
-    years_from_to: YearRange
-
-    is_board_certified_pathologist: bool = False
-    is_us_pathology_trainee: bool = False
-    is_us_lab_professional: bool = False
-
-
-class ProfessionalInformationViewSchema(ViewMixin, ProfessionalInformationCreateOrUpdateSchema):
-    model_config = {
-        "from_attributes": True,
-    }
-
-
-class ResidencyCreateSchema(ProfessionalExperienceMixin):
-    pass
-
-
-class ResidencyUpdateSchema(ResidencyCreateSchema):
-    pass
-
-
-class ResidencyViewSchema(ViewMixin, ResidencyCreateSchema):
-    pass
-
-
-class FellowshipCreateSchema(ProfessionalExperienceMixin):
-    pass
-
-
-class FellowshipUpdateSchema(FellowshipCreateSchema):
-    pass
-
-
-class FellowshipViewSchema(ViewMixin, FellowshipCreateSchema):
-    pass
-
-
-class JobCreateSchema(ProfessionalExperienceMixin):
-    pass
-
-
-class JobUpdateSchema(JobCreateSchema):
-    pass
-
-
-class JobViewSchema(ViewMixin, JobCreateSchema):
-    pass
+        return value
 
 
 class NameChangeRequestCreateSchema(BaseModel):
@@ -258,12 +154,12 @@ class NameChangeRequestCreateSchema(BaseModel):
     reason_change: str
 
 
-class NameChangeRequestViewSchema(ViewMixin, NameChangeRequestCreateSchema):
+class NameChangeRequestViewSchema(UCIMixinSchema, NameChangeRequestCreateSchema):
+    user_id: int
     status: NameChangeRequestStatusEnum
     reason_rejecting: str | None
-    model_config = {
-        "from_attributes": True,
-    }
+
+    model_config = {"from_attributes": True}
 
 
 class NameChangeRequestUpdateByAdminSchema(BaseModel):
@@ -278,26 +174,3 @@ class NameChangeRequestUpdateByAdminSchema(BaseModel):
                 "reason rejecting when the request is rejected is required to be filled in",
             )
         return self
-
-
-class CommunicationPreferencesViewSchema(BaseModel):
-    membership_account_notifications: bool
-    newsletters: bool
-    events_meetings: bool
-    committees_leadership: bool
-    volunteer_opportunities: bool
-
-    model_config = {
-        "from_attributes": True,
-    }
-
-
-class CommunicationPreferencesUpdateSchema(BaseModel):
-    newsletters: Optional[bool] = None
-    events_meetings: Optional[bool] = None
-    committees_leadership: Optional[bool] = None
-    volunteer_opportunities: Optional[bool] = None
-
-    model_config = {
-        "extra": "forbid",
-    }

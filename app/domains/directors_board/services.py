@@ -13,7 +13,7 @@ from app.core.utils.save_file import generate_filename
 from app.domains.directors_board.exceptions import DirectionBoardMemberNotFoundError
 from app.domains.directors_board.models import DirectorBoardMember
 from app.domains.shared.transaction_managers import TransactionManagerDep
-from app.domains.shared.types import FileData
+from app.domains.shared.types import FileData, StoredFile
 
 
 class DirectorsBoardService:
@@ -50,7 +50,9 @@ class DirectorsBoardService:
                 raise DirectionBoardMemberNotFoundError("DirectionBoardMember with provided id not found")
             old_photo_url = director_member.photo_url
 
-        director_member = await self.transaction_manager.directors_board_member_repository.update(director_member_id, **kwargs)
+        director_member = await self.transaction_manager.directors_board_member_repository.update(
+            director_member_id, **kwargs
+        )
 
         try:
             if old_photo_url:
@@ -75,16 +77,14 @@ class DirectorsBoardService:
             )
             await self.transaction_manager._session.commit()
 
-    async def upload_photo(self, file_data: FileData) -> str:
+    async def upload_photo(self, file_data: FileData) -> StoredFile:
         if not file_data.content_type.startswith("image/"):
             raise InvalidMimeTypeError("Invalid image content type")
 
         filename = generate_filename(file_data.filename, prefix="directors_board")
-        file_data = await self.file_storage.upload_file(
-            object_key=filename,
-            file_content=file_data.content
-        )
-        return await self.file_storage.get_file_url(file_data.object_key)
+        file_data = await self.file_storage.upload_file(object_key=filename, file_content=file_data.content)
+        file_url = await self.file_storage.get_file_url(file_data.object_key)
+        return StoredFile(file_url=file_url, object_key=file_data.object_key)
 
     async def get_photo_url_by_object_key(self, object_key: str) -> str:
         normalized_object_key = self._extract_object_key(object_key)

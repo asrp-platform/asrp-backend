@@ -4,17 +4,17 @@ from fastapi import Depends
 
 from app.core.utils.permissions import check_permissions
 from app.domains.directors_board.services import DirectorBoardMemberServiceDep, DirectorsBoardService
-from app.domains.shared.types import FileData
+from app.domains.shared.types import FileData, StoredFile
 
 
 class UploadDirectorsBoardMemberPhotoUseCase:
     def __init__(
-            self,
-            directors_board_service: DirectorsBoardService,
+        self,
+        directors_board_service: DirectorsBoardService,
     ):
         self.__directors_board_service = directors_board_service
 
-    async def execute(self, permissions, file_data: FileData) -> str:
+    async def execute(self, permissions, file_data: FileData) -> StoredFile:
         """Returns presigned URL for uploaded image."""
         check_permissions("directors_board.update", permissions)
 

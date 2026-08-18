@@ -9,6 +9,7 @@ from app.domains.payments.models import Payment, PaymentProvider, PaymentPurpose
 from app.domains.payments.purpose_handlers.donation import DonationHandler
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandler
 from app.domains.payments.purpose_handlers.membership_renewal import MembershipRenewalHandler
+from app.domains.payments.purpose_handlers.membership_upgrade import MembershipUpgradeHandler
 from app.domains.payments.purpose_handlers.registry import PaymentPurposeHandlerRegistry
 from app.domains.payments.services import PaymentService
 from app.domains.payments.use_cases.process_payment_event import ProcessPaymentUseCase
@@ -21,6 +22,7 @@ def process_payment_use_case(
     test_transaction_manager: TransactionManager,
     payment_service,
     membership_service,
+    membership_type_service,
     user_membership_service,
     user_service,
     email_queue,
@@ -35,10 +37,16 @@ def process_payment_use_case(
         user_membership_service=user_membership_service,
         payment_service=payment_service,
     )
+    membership_upgrade_handler = MembershipUpgradeHandler(
+        user_membership_service=user_membership_service,
+        membership_type_service=membership_type_service,
+        payment_service=payment_service,
+    )
     donation_handler = DonationHandler()
     payment_purpose_handler_registry = PaymentPurposeHandlerRegistry(
         membership_application_handler=membership_application_handler,
         membership_renewal_handler=membership_renewal_handler,
+        membership_upgrade_handler=membership_upgrade_handler,
         donation_handler=donation_handler,
     )
     return ProcessPaymentUseCase(
