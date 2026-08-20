@@ -25,21 +25,38 @@ async def test_get_webinars_by_admin(
     assert any(item["id"] == webinar.id for item in response.json()["data"])
 
 
+async def test_get_webinar_by_admin_returns_unredacted_links(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+    webinar: Webinar,
+) -> None:
+    response = await client.get(
+        f"/api/admin/webinars/{webinar.id}",
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["join_link"] == webinar.join_link
+    assert response.json()["registration_link"] == webinar.registration_link
+
+
 async def test_get_users_registered_for_webinar(
     client: AsyncClient,
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
     auth_headers: AuthHeaders,
     test_user: User,
-    webinar: Webinar,
+    member_only_webinar: Webinar,
+    user_membership,
 ) -> None:
     registration_response = await client.post(
-        f"/api/webinars/{webinar.slug}/registrations",
+        f"/api/webinars/{member_only_webinar.slug}/registrations",
         headers=auth_headers,
     )
 
     response = await client.get(
-        f"/api/admin/webinars/{webinar.id}/registrations",
+        f"/api/admin/webinars/{member_only_webinar.id}/registrations",
         headers=admin_auth_headers,
     )
 
@@ -140,6 +157,30 @@ async def test_update_webinar_by_admin(
 
     assert response.status_code == 200
     assert response.json()["title"] == update_data["title"]
+
+
+async def test_update_webinar_join_link_by_admin(
+    faker: Faker,
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+    webinar: Webinar,
+) -> None:
+    join_link = faker.url()
+
+    update_response = await client.patch(
+        f"/api/admin/webinars/{webinar.id}",
+        headers=admin_auth_headers,
+        json={"join_link": join_link},
+    )
+    get_response = await client.get(
+        f"/api/admin/webinars/{webinar.id}",
+        headers=admin_auth_headers,
+    )
+
+    assert update_response.status_code == 200
+    assert get_response.status_code == 200
+    assert get_response.json()["join_link"] == join_link
 
 
 async def test_update_webinar_starts_at_updates_ends_at(

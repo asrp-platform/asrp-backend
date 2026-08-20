@@ -297,10 +297,9 @@ class WebinarsService:
             if webinar is None:
                 raise NotFoundError("Webinar with provided slug not found")
 
-            if webinar.member_only:
-                membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
-                if not has_member_access(membership):
-                    raise PermissionDeniedError("Active membership is required to view this webinar")
+            membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+            if not has_member_access(membership):
+                raise PermissionDeniedError("Active membership is required to view this webinar")
 
             if webinar.bunny_video_id is None:
                 return None
@@ -346,6 +345,13 @@ class WebinarsService:
 
         return await self._tm.webinar_repository.create(**kwargs)
 
+    async def get_webinar_by_id(self, webinar_id: int) -> Webinar:
+        async with self._tm:
+            webinar = await self._tm.webinar_repository.get_first_by_kwargs(id=webinar_id)
+            if webinar is None:
+                raise NotFoundError("Webinar with provided ID not found")
+            return webinar
+
     async def delete_webinar(self, webinar_id: int, *, open_transaction: bool = False):
         if open_transaction:
             async with self._tm:
@@ -375,10 +381,12 @@ class WebinarsService:
             user = await self._tm.user_repository.get_first_by_kwargs(id=user_id)
             if user is None:
                 raise NotFoundError("User with provided ID not found")
-            if webinar.member_only:
-                membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
-                if not has_member_access(membership):
-                    raise PermissionDeniedError("Active membership is required to register for this webinar")
+            if not webinar.member_only:
+                raise PermissionDeniedError("Public webinars use external registration")
+
+            membership = await self._tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
+            if not has_member_access(membership):
+                raise PermissionDeniedError("Active membership is required to register for this webinar")
 
             statement = (
                 insert(WebinarRegisteredUsers)

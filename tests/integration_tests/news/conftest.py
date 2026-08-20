@@ -30,6 +30,7 @@ def webinar_data(faker: Faker) -> dict:
         "speaker_name": faker.name(),
         "speaker_description": faker.sentence(),
         "join_link": faker.url(),
+        "registration_link": faker.url(),
         "bunny_video_id": faker.uuid4(),
         "starts_at": faker.future_datetime(tzinfo=timezone.utc),
         "location": faker.city(),
