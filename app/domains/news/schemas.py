@@ -47,6 +47,7 @@ class WebinarBaseSchema(UCIMixinSchema):
     speaker_description: str | None
 
     join_link: HttpUrl | None
+    registration_link: HttpUrl | None
     bunny_video_id: str | None
 
     starts_at: AwareDatetime
@@ -78,6 +79,7 @@ class CreateWebinarSchema(BaseModel):
     speaker_description: str | None = Field(default=None, min_length=2)
 
     join_link: HttpUrl | None = None
+    registration_link: HttpUrl | None = None
     bunny_video_id: str | None = None
 
     starts_at: AwareDatetime
@@ -108,7 +110,7 @@ class CreateWebinarSchema(BaseModel):
         }
     )
 
-    @field_serializer("join_link")
+    @field_serializer("join_link", "registration_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None
 
@@ -122,6 +124,7 @@ class UpdateWebinarSchema(BaseModel):
     speaker_description: str | None = Field(default=None, min_length=2)
 
     join_link: HttpUrl | None = None
+    registration_link: HttpUrl | None = None
     bunny_video_id: str | None = None
 
     starts_at: AwareDatetime | None = None
@@ -131,6 +134,6 @@ class UpdateWebinarSchema(BaseModel):
     timezone: str | None = None
     language: str | None = None
 
-    @field_serializer("join_link")
+    @field_serializer("join_link", "registration_link")
     def serialize_urls(self, value: HttpUrl | None) -> str | None:
         return str(value) if value is not None else None

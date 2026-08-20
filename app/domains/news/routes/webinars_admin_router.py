@@ -66,6 +66,19 @@ class UpdateWebinarResponses(AdminWebinarResponses):
     WEBINAR_NOT_FOUND = 404, "Webinar with provided ID not found"
 
 
+@router.get(
+    "/{webinar_id}",
+    responses=UpdateWebinarResponses.responses,
+)
+async def get_webinar(
+    webinar_id: int,
+    permissions: AdminPermissionsDep,
+    service: WebinarServiceDep,
+) -> WebinarBaseSchema:
+    check_permissions("webinars.view", permissions)
+    return await service.get_webinar_by_id(webinar_id)
+
+
 @router.patch(
     "/{webinar_id}",
     responses=UpdateWebinarResponses.responses,
