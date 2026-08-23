@@ -100,6 +100,16 @@ docker compose -f ./local.yml up --build -d
 poetry install
 ```
 
+### PDF system dependencies
+
+PDF documents are rendered from HTML templates with WeasyPrint. Docker images install the required system packages automatically.
+
+If you run the backend directly on a host machine, install WeasyPrint runtime dependencies first:
+
+```shell
+apt-get install -y fontconfig fonts-dejavu-core libffi-dev libjpeg62-turbo libopenjp2-7 libpango-1.0-0 libpangoft2-1.0-0
+```
+
 ### Install pre-commit
 
 ```bash

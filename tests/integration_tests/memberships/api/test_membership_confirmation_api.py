@@ -69,3 +69,56 @@ async def test_get_membership_confirmation_returns_only_modal_fields(
         "membership_id",
         "valid_through",
     }
+
+
+async def test_get_membership_confirmation_pdf(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    user_membership: UserMembership,
+) -> None:
+    membership_id = f"ASRP-{user_membership.created_at.year}-{user_membership.id:05d}"
+
+    response = await client.get(
+        "/api/users/current-user/membership/confirmation/pdf",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"] == (
+        f'attachment; filename="membership-confirmation-{membership_id}.pdf"'
+    )
+    assert response.content.startswith(b"%PDF")
+
+
+async def test_membership_confirmation_pdf_openapi_contract(client: AsyncClient) -> None:
+    response = await client.get("/openapi.json")
+
+    assert response.status_code == 200
+    operation = response.json()["paths"]["/api/users/current-user/membership/confirmation/pdf"]["get"]
+    success_response = operation["responses"]["200"]
+
+    assert success_response["content"] == {
+        "application/pdf": {
+            "schema": {
+                "type": "string",
+                "format": "binary",
+            }
+        }
+    }
+    assert "Content-Disposition" in success_response["headers"]
+    assert "responseType" in operation["description"]
+
+
+async def test_membership_confirmation_pdf_exposes_filename_header(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    user_membership: UserMembership,
+) -> None:
+    response = await client.get(
+        "/api/users/current-user/membership/confirmation/pdf",
+        headers={**auth_headers, "Origin": "http://localhost:3000"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-expose-headers"] == "Content-Disposition"

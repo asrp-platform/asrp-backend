@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from fastapi_exception_responses import Responses
 
 from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsError
@@ -41,6 +41,9 @@ from app.domains.users.use_cases.current_user_membership.get_current_user_member
 )
 from app.domains.users.use_cases.current_user_membership.get_membership_confirmation import (
     GetMembershipConfirmationUseCaseDep,
+)
+from app.domains.users.use_cases.current_user_membership.get_membership_confirmation_pdf import (
+    GetMembershipConfirmationPdfUseCaseDep,
 )
 from app.domains.users.use_cases.current_user_membership.reapply_membership_application import (
     ReapplyMembershipApplicationUseCaseDep,
@@ -289,6 +292,33 @@ class MembershipConfirmationResponses(Responses):
     MEMBERSHIP_NOT_FOUND = 404, "Membership for the current user not found"
 
 
+MEMBERSHIP_CONFIRMATION_PDF_RESPONSES = {
+    **MembershipConfirmationResponses.responses,
+    200: {
+        "description": "Membership confirmation PDF generated for the current user",
+        "content": {
+            "application/pdf": {
+                "schema": {
+                    "type": "string",
+                    "format": "binary",
+                }
+            }
+        },
+        "headers": {
+            "Content-Disposition": {
+                "description": "Attachment filename generated from the membership ID",
+                "schema": {
+                    "type": "string",
+                    "example": (
+                        'attachment; filename="membership-confirmation-ASRP-2024-00123.pdf"'
+                    ),
+                },
+            }
+        },
+    },
+}
+
+
 @router.get(
     "/membership/confirmation",
     summary="Get membership confirmation for current user",
@@ -299,3 +329,45 @@ async def get_membership_confirmation(
     use_case: GetMembershipConfirmationUseCaseDep,
 ) -> MembershipConfirmationSchema:
     return await use_case.execute(current_user)
+
+
+@router.get(
+    "/membership/confirmation/pdf",
+    summary="Download membership confirmation PDF for current user",
+    description="""
+Generates the PDF on demand and returns it directly in the response body.
+
+The response is binary data, not JSON. With the frontend Axios client, request it as a `Blob`:
+
+```ts
+const response = await api.get(
+    "/users/current-user/membership/confirmation/pdf",
+    { responseType: "blob" },
+)
+
+const disposition = response.headers["content-disposition"]
+const filename = disposition?.match(/filename="([^"]+)"/)?.[1]
+    ?? "membership-confirmation.pdf"
+const fileUrl = URL.createObjectURL(response.data)
+const link = document.createElement("a")
+link.href = fileUrl
+link.download = filename
+link.click()
+URL.revokeObjectURL(fileUrl)
+```
+
+The generated filename is also returned in the exposed `Content-Disposition` response header.
+""",
+    response_class=Response,
+    responses=MEMBERSHIP_CONFIRMATION_PDF_RESPONSES,
+)
+async def get_membership_confirmation_pdf(
+    current_user: CurrentUserDep,
+    use_case: GetMembershipConfirmationPdfUseCaseDep,
+) -> Response:
+    pdf = await use_case.execute(current_user)
+    return Response(
+        content=pdf.content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{pdf.filename}"'},
+    )

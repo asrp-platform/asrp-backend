@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Membership confirmation</title>
+  <style>
+    @page {
+      size: Letter;
+      margin: 56px;
+    }
+
+    body {
+      color: #172033;
+      font-family: "DejaVu Sans", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 28px;
+    }
+
+    .card {
+      border: 1px solid #d8dee8;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .organization {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #647086;
+      margin-bottom: 24px;
+    }
+
+    .row {
+      margin: 8px 0;
+    }
+
+    .label {
+      color: #647086;
+    }
+
+    .statement {
+      color: #647086;
+      margin-top: 32px;
+      max-width: 620px;
+    }
+
+    .issued {
+      color: #647086;
+      font-size: 12px;
+      margin-top: 28px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Membership confirmation</h1>
+
+  <section class="card">
+    <div class="organization">American Society of Russian-Speaking Pathologists</div>
+    <div class="subtitle">Official proof of membership</div>
+
+    <div class="row"><span class="label">Member name:</span> {{ member_name }}</div>
+    <div class="row"><span class="label">Membership type:</span> {{ membership_type }}</div>
+    <div class="row"><span class="label">Membership ID:</span> {{ membership_id }}</div>
+    <div class="row"><span class="label">Valid through:</span> {{ valid_through }}</div>
+  </section>
+
+  <p class="statement">
+    This document certifies that the individual named above is a member of the
+    American Society of Russian-Speaking Pathologists as of the date of issuance.
+  </p>
+
+  <p class="issued">Issued on: {{ issued_on }}</p>
+</body>
+</html>
