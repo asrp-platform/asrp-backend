@@ -33,6 +33,12 @@ Necessary envs:
 - `STRIPE_WEBHOOK_SECRET` - can be gotten from stripe-cli
 
 
+- `BUNNY_LIBRARY_ID` - ask the team lead for a real Bunny Stream library ID if webinar video playback is needed
+- `BUNNY_STREAM_TOKEN_KEY` - ask the team lead for a real Bunny Stream token key if webinar video playback is needed
+
+For local development without webinar video playback, non-empty placeholders are sufficient. The application validates these settings at startup, but only the webinar embed URL flow uses them.
+
+
 - `FRONTEND_DOMAIN_HTTP=http://localhost:3000`
 - `FRONTEND_DOMAIN=http://localhost:3000`
 
@@ -98,6 +104,16 @@ docker compose -f ./local.yml up --build -d
 
 ```shell
 poetry install
+```
+
+### PDF system dependencies
+
+PDF documents are rendered from HTML templates with WeasyPrint. Docker images install the required system packages automatically.
+
+If you run the backend directly on a host machine, install WeasyPrint runtime dependencies first:
+
+```shell
+apt-get install -y fontconfig fonts-dejavu-core libffi-dev libjpeg62-turbo libopenjp2-7 libpango-1.0-0 libpangoft2-1.0-0
 ```
 
 ### Install pre-commit
