@@ -33,6 +33,12 @@ Necessary envs:
 - `STRIPE_WEBHOOK_SECRET` - can be gotten from stripe-cli
 
 
+- `BUNNY_LIBRARY_ID` - ask the team lead for a real Bunny Stream library ID if webinar video playback is needed
+- `BUNNY_STREAM_TOKEN_KEY` - ask the team lead for a real Bunny Stream token key if webinar video playback is needed
+
+For local development without webinar video playback, non-empty placeholders are sufficient. The application validates these settings at startup, but only the webinar embed URL flow uses them.
+
+
 - `FRONTEND_DOMAIN_HTTP=http://localhost:3000`
 - `FRONTEND_DOMAIN=http://localhost:3000`
 

@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
-from app.domains.memberships.models import MembershipTypeEnum
 from app.domains.memberships.schemas.membership_types import MembershipTypeSchema
 from app.domains.users.schemas.profiles import UserShortSchema
 
@@ -71,6 +71,43 @@ class SuspendMembershipSchema(BaseModel):
 
 class MembershipConfirmationSchema(BaseModel):
     member_name: str
-    membership_type: MembershipTypeEnum
+    membership_type: str
     membership_id: str
     valid_through: datetime
+
+
+class MembershipStatusEnum(str, Enum):
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    SUSPENDED = "SUSPENDED"
+    TERMINATED = "TERMINATED"
+
+
+class MembershipHistoryEventTypeEnum(str, Enum):
+    ACTIVATED = "ACTIVATED"
+    RENEWED = "RENEWED"
+    TYPE_CHANGED = "TYPE_CHANGED"
+    SUSPENDED = "SUSPENDED"
+    TERMINATED = "TERMINATED"
+
+
+class MembershipHistoryEventSchema(BaseModel):
+    event_type: MembershipHistoryEventTypeEnum
+    occurred_at: datetime
+    membership_type: str | None = None
+    previous_membership_type: str | None = None
+    previous_valid_through: datetime | None = None
+    valid_through: datetime | None = None
+    suspended_until: datetime | None = None
+    reason: str | None = None
+
+
+class MembershipConfirmationReportSchema(BaseModel):
+    member_name: str
+    membership_type: str
+    membership_id: str
+    status: MembershipStatusEnum
+    member_since: datetime
+    valid_through: datetime
+    issued_at: datetime
+    history: list[MembershipHistoryEventSchema]

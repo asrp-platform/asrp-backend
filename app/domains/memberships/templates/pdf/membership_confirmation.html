@@ -53,6 +53,31 @@
       max-width: 620px;
     }
 
+    h2 {
+      font-size: 18px;
+      margin: 32px 0 14px;
+    }
+
+    .status {
+      font-weight: 700;
+    }
+
+    .history-item {
+      border-top: 1px solid #d8dee8;
+      padding: 14px 0;
+    }
+
+    .history-title {
+      font-weight: 700;
+    }
+
+    .history-date,
+    .history-detail {
+      color: #647086;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
     .issued {
       color: #647086;
       font-size: 12px;
@@ -70,13 +95,23 @@
     <div class="row"><span class="label">Member name:</span> {{ member_name }}</div>
     <div class="row"><span class="label">Membership type:</span> {{ membership_type }}</div>
     <div class="row"><span class="label">Membership ID:</span> {{ membership_id }}</div>
+    <div class="row"><span class="label">Status:</span> <span class="status">{{ status }}</span></div>
+    <div class="row"><span class="label">Member since:</span> {{ member_since }}</div>
     <div class="row"><span class="label">Valid through:</span> {{ valid_through }}</div>
   </section>
 
-  <p class="statement">
-    This document certifies that the individual named above is a member of the
-    American Society of Russian-Speaking Pathologists as of the date of issuance.
-  </p>
+  <p class="statement">{{ statement }}</p>
+
+  <h2>Available membership history</h2>
+  {% for event in history %}
+    <section class="history-item">
+      <div class="history-title">{{ event.title }}</div>
+      <div class="history-date">{{ event.occurred_on }}</div>
+      {% for label, value in event.details %}
+        <div class="history-detail">{{ label }}: {{ value }}</div>
+      {% endfor %}
+    </section>
+  {% endfor %}
 
   <p class="issued">Issued on: {{ issued_on }}</p>
 </body>

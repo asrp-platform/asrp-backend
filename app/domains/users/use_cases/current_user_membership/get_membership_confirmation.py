@@ -24,13 +24,14 @@ class GetMembershipConfirmationUseCase:
 
             return MembershipConfirmationSchema(
                 member_name=current_user.full_name,
-                membership_type=membership.membership_type.type,
-                membership_id=self.__format_membership_id(membership),
+                membership_type=membership.membership_type.name or membership.membership_type.type.value,
+                membership_id=format_membership_id(membership),
                 valid_through=membership.expires_at,
             )
 
-    def __format_membership_id(self, membership: UserMembership) -> str:
-        return f"ASRP-{membership.created_at.year}-{membership.id:05d}"
+
+def format_membership_id(membership: UserMembership) -> str:
+    return f"ASRP-{membership.created_at.year}-{membership.id:05d}"
 
 
 GetMembershipConfirmationUseCaseDep = Annotated[

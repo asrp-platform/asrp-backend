@@ -32,7 +32,7 @@ async def test_get_membership_confirmation(
 
     assert data == {
         "member_name": test_user.full_name,
-        "membership_type": purchasable_membership_type.type.value,
+        "membership_type": purchasable_membership_type.name,
         "membership_id": f"ASRP-{user_membership.created_at.year}-{user_membership.id:05d}",
         "valid_through": data["valid_through"],
     }
