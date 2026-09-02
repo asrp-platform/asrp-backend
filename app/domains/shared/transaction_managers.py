@@ -19,7 +19,7 @@ from app.domains.memberships.repositories import (
     MembershipTypeRepository,
     UserMembershipRepository,
 )
-from app.domains.news.repositories import WebinarRepository
+from app.domains.news.repositories import NewsRepository, WebinarRepository
 from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
 from app.domains.users.repositories import (
@@ -118,6 +118,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def webinar_repository(self):
         return WebinarRepository(self._session)
+
+    @property
+    def news_repository(self):
+        return NewsRepository(self._session)
 
     @property
     def email_templates_repository(self):

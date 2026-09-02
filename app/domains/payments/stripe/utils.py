@@ -50,7 +50,7 @@ async def create_checkout_session(
     return session
 
 
-def build_membership_application_line_items(
+def build_base_line_items(
     membership_type: "MembershipType",
     amount_cents: int,
 ) -> list[dict]:
@@ -85,7 +85,7 @@ async def create_membership_application_checkout_session(
     }
 
     checkout_session = await create_checkout_session(
-        build_membership_application_line_items(membership_type, amount_cents),
+        build_base_line_items(membership_type, amount_cents),
         metadata=metadata,
         success_url=success_url or f"{settings.FRONTEND_DOMAIN}/membership/payment-success",
         customer_email=customer_email,
@@ -156,7 +156,7 @@ async def create_membership_renewal_checkout_session(
     }
 
     checkout_session = await create_checkout_session(
-        build_membership_application_line_items(membership_type, amount_cents),
+        build_base_line_items(membership_type, amount_cents),
         metadata=metadata,
         success_url=f"{settings.FRONTEND_DOMAIN}/membership/renewal-success",
         customer_email=user_email,
@@ -171,6 +171,62 @@ async def create_membership_renewal_checkout_session(
             "checkout_session_status": checkout_session.status,
             "payment_intent_status": checkout_session.payment_status,
             "url": checkout_session.url,
+        },
+    )
+
+
+async def create_membership_upgrade_checkout_session(
+    *,
+    payment: Payment,
+    amount_cents: int,
+    current_membership_type: "MembershipType",
+    target_membership_type: "MembershipType",
+    user_membership: "UserMembership",
+    user_email: str,
+) -> CheckoutSessionData:
+    metadata = {
+        "user_membership_id": str(user_membership.id),
+        "payment_id": str(payment.id),
+        "payment_purpose": PaymentPurposeEnum.MEMBERSHIP_TYPE_UPGRADE.value,
+        "current_membership_type_id": current_membership_type.id,
+        "target_membership_type_id": target_membership_type.id,
+    }
+
+    line_items = [
+        {
+            "price_data": {
+                "currency": "usd",
+                "unit_amount": amount_cents,
+                "product_data": {
+                    "name": target_membership_type.name,
+                    "description": (
+                        f"Upgrade membership from {current_membership_type.type.value.capitalize()} "
+                        f"to {target_membership_type.type.value.capitalize()}"
+                    ),
+                },
+            },
+            "quantity": 1,
+        }
+    ]
+
+    checkout_session = await create_checkout_session(
+        line_items=line_items,
+        metadata=metadata,
+        success_url=f"{settings.FRONTEND_DOMAIN}/membership/upgrade-success",
+        customer_email=user_email,
+    )
+
+    return CheckoutSessionData(
+        session=checkout_session,
+        provider_data={
+            "user_membership_id": user_membership.id,
+            "payment_id": str(payment.id),
+            "checkout_session_id": checkout_session.id,
+            "checkout_session_status": checkout_session.status,
+            "payment_intent_status": checkout_session.payment_status,
+            "url": checkout_session.url,
+            "current_membership_type": current_membership_type.type.value,
+            "target_membership_type": target_membership_type.type.value,
         },
     )
 

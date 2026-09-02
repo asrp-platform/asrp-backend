@@ -1,9 +1,12 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from faker import Faker
 from httpx import AsyncClient
 
 from app.domains.memberships.models import UserMembership
 from app.domains.news.models import Webinar
+from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 
 
@@ -17,8 +20,68 @@ async def test_get_webinars_as_guest(client: AsyncClient, webinar: Webinar) -> N
     data = response.json()
     webinar_data = next(item for item in data["data"] if item["id"] == webinar.id)
     assert webinar_data["is_registered"] is False
-    assert "join_link" not in webinar_data
+    assert webinar_data["registration_link"] == webinar.registration_link
     assert webinar_data["bunny_video_id"] == webinar.bunny_video_id
+
+
+async def test_live_public_webinar_join_link_is_available_to_guest(
+    client: AsyncClient,
+    webinar: Webinar,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    now = datetime.now(timezone.utc)
+    async with test_transaction_manager:
+        await test_transaction_manager.webinar_repository.update(
+            webinar.id,
+            starts_at=now - timedelta(minutes=5),
+            ends_at=now + timedelta(hours=1),
+        )
+
+    response = await client.get("/api/webinars")
+
+    assert response.status_code == 200
+    webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
+    assert webinar_data["join_link"] == webinar.join_link
+
+
+async def test_public_webinar_join_link_is_available_ten_minutes_before_start(
+    client: AsyncClient,
+    webinar: Webinar,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    now = datetime.now(timezone.utc)
+    async with test_transaction_manager:
+        await test_transaction_manager.webinar_repository.update(
+            webinar.id,
+            starts_at=now + timedelta(minutes=9),
+            ends_at=now + timedelta(hours=2),
+        )
+
+    response = await client.get("/api/webinars")
+
+    assert response.status_code == 200
+    webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
+    assert webinar_data["join_link"] == webinar.join_link
+
+
+async def test_public_webinar_join_link_is_hidden_before_join_window(
+    client: AsyncClient,
+    webinar: Webinar,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    now = datetime.now(timezone.utc)
+    async with test_transaction_manager:
+        await test_transaction_manager.webinar_repository.update(
+            webinar.id,
+            starts_at=now + timedelta(minutes=11),
+            ends_at=now + timedelta(hours=2),
+        )
+
+    response = await client.get("/api/webinars")
+
+    assert response.status_code == 200
+    webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
+    assert "join_link" not in webinar_data
 
 
 async def test_get_webinars_as_authenticated_user(
@@ -31,33 +94,27 @@ async def test_get_webinars_as_authenticated_user(
     assert response.status_code == 200
     webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
     assert webinar_data["is_registered"] is False
-    assert "join_link" not in webinar_data
 
 
-async def test_register_for_webinar(
+async def test_public_webinar_uses_external_registration(
     client: AsyncClient,
     auth_headers: AuthHeaders,
     webinar: Webinar,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{webinar.slug}/registration",
+        f"/api/webinars/{webinar.slug}/registrations",
         headers=auth_headers,
     )
 
-    assert response.status_code == 201
-
-    response = await client.get("/api/webinars", headers=auth_headers)
-
-    assert response.status_code == 200
-    webinar_data = next(item for item in response.json()["data"] if item["id"] == webinar.id)
-    assert webinar_data["is_registered"] is True
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Public webinars use external registration"
 
 
 async def test_register_for_webinar_without_authentication(
     client: AsyncClient,
     webinar: Webinar,
 ) -> None:
-    response = await client.post(f"/api/webinars/{webinar.slug}/registration")
+    response = await client.post(f"/api/webinars/{webinar.slug}/registrations")
 
     assert response.status_code == 401
 
@@ -68,7 +125,7 @@ async def test_register_for_missing_webinar_returns_404(
     auth_headers: AuthHeaders,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{faker.slug()}/registration",
+        f"/api/webinars/{faker.slug()}/registrations",
         headers=auth_headers,
     )
 
@@ -81,7 +138,7 @@ async def test_register_for_member_only_webinar_without_membership_returns_403(
     member_only_webinar: Webinar,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{member_only_webinar.slug}/registration",
+        f"/api/webinars/{member_only_webinar.slug}/registrations",
         headers=auth_headers,
     )
 
@@ -95,17 +152,31 @@ async def test_register_for_member_only_webinar_with_active_membership(
     user_membership: UserMembership,
 ) -> None:
     response = await client.post(
-        f"/api/webinars/{member_only_webinar.slug}/registration",
+        f"/api/webinars/{member_only_webinar.slug}/registrations",
         headers=auth_headers,
     )
 
     assert response.status_code == 201
 
 
-async def test_get_webinar_playback(
+async def test_get_public_webinar_playback_requires_membership(
     client: AsyncClient,
     auth_headers: AuthHeaders,
     webinar: Webinar,
+) -> None:
+    response = await client.get(
+        f"/api/webinars/{webinar.slug}/playback",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+
+
+async def test_get_public_webinar_playback_with_active_membership(
+    client: AsyncClient,
+    auth_headers: AuthHeaders,
+    webinar: Webinar,
+    user_membership: UserMembership,
 ) -> None:
     response = await client.get(
         f"/api/webinars/{webinar.slug}/playback",

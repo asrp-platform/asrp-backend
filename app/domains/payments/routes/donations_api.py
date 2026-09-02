@@ -1,21 +1,10 @@
-from decimal import Decimal
-
 from fastapi import APIRouter
-from pydantic import BaseModel, EmailStr, Field
 
+from app.domains.payments.schemas import CreateDonationCheckoutSchema, PaymentCheckoutSchema
 from app.domains.payments.use_cases.make_donation import MakeDonationUseCaseDep
-from app.domains.shared.schemas import PaymentCheckoutSchema
 
 
 router = APIRouter(prefix="/payments/donations", tags=["Payments"])
-
-
-class CreateDonationCheckoutSchema(BaseModel):
-    amount_usd: Decimal = Field(
-        ge=Decimal("1.00"),
-        decimal_places=2,
-    )
-    customer_email: EmailStr
 
 
 @router.post("", status_code=201, summary="Creates checkout session for a one-time donation")

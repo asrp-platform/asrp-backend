@@ -5,7 +5,7 @@ from loguru import logger
 
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.feedback.services import FeedbackAdditionalInfoServiceDep
-from app.domains.memberships.exceptions import CantBuyHonoraryMembership, MembershipApplicationCheckoutError
+from app.domains.memberships.exceptions import CantBuyHonoraryMembership, CheckoutSessionCreationError
 from app.domains.memberships.models import MembershipRequestStatusEnum, MembershipTypeEnum
 from app.domains.memberships.services import MembershipRequestServiceDep, MembershipTypeServiceDep
 from app.domains.payments.models import PaymentProvider, PaymentPurposeEnum, PaymentStatusEnum
@@ -103,7 +103,7 @@ class CreateUserMembershipRequestUseCase:
                     },
                 )
                 await self.__transaction_manager.commit()
-                raise MembershipApplicationCheckoutError("Failed to create checkout session") from exc
+                raise CheckoutSessionCreationError("Failed to create checkout session") from exc
 
             await self.__payment_service.update_payment(payment.id, provider_data=checkout.provider_data)
 

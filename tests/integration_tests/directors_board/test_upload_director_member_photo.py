@@ -34,10 +34,11 @@ async def test_upload_director_member_photo(
     data = response.json()
 
     assert response.status_code == 200
-    assert "path" in data
-    assert "directors_board" in data["path"].split("/")
+    assert data["file_url"]
+    assert data["object_key"].startswith("directors_board/")
 
     object_key = spy_file_storage["upload_file"].call_args.kwargs["object_key"]
+    assert data["object_key"] == object_key
     prefix, stored_name = object_key.split("/", 1)
     file_uuid, original_ext = stored_name.split(".", 1)
 

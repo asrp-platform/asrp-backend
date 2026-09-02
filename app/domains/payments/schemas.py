@@ -3,13 +3,22 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 from app.domains.payments.models import (
     PaymentProvider,
     PaymentPurposeEnum,
     PaymentStatusEnum,
 )
+
+
+class PaymentCheckoutSchema(BaseModel):
+    checkout_session_url: str
+
+
+class CreateDonationCheckoutSchema(BaseModel):
+    amount_usd: Decimal = Field(ge=Decimal("1.00"), decimal_places=2)
+    customer_email: EmailStr
 
 
 class PaymentBaseSchema(BaseModel):

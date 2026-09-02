@@ -6,7 +6,7 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import PaginatedResponse
 from app.core.utils.permissions import check_permissions
 from app.domains.memberships.filters import MembershipTypesFilters, UserMembershipTypeChangeRequestsFilters
-from app.domains.memberships.schemas.membership_types_schemas import (
+from app.domains.memberships.schemas.membership_types import (
     MembershipTypeSchema,
     ReviewedMembershipTypeChangeRequestSchema,
     ReviewMembershipTypeChangeRequest,

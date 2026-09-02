@@ -7,8 +7,8 @@ from faker import Faker
 import app.domains.users.use_cases.current_user_membership.reapply_membership_application as reapply_module
 from app.core.common.exceptions import NotFoundError
 from app.domains.memberships.exceptions import (
+    CheckoutSessionCreationError,
     MembershipAlreadyPaidError,
-    MembershipApplicationCheckoutError,
     MembershipRequestCannotBeReappliedError,
 )
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
@@ -237,7 +237,7 @@ async def test_reapply_membership_application_marks_payment_failed_when_checkout
         create_checkout_session,
     )
 
-    with pytest.raises(MembershipApplicationCheckoutError):
+    with pytest.raises(CheckoutSessionCreationError):
         await reapply_use_case.execute(
             test_user,
             membership_type_id=purchasable_membership_type_id,

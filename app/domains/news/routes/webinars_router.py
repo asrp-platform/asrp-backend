@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -28,8 +28,10 @@ def serialize_user_webinar(
         **WebinarBaseSchema.model_validate(webinar, from_attributes=True).model_dump(),
         "is_registered": is_registered,
     })
-    can_view_links = user_id is not None and (not webinar.member_only or has_member_access(membership))
-    can_join = can_view_links and is_registered and webinar.starts_at <= datetime.now(timezone.utc) <= webinar.ends_at
+    can_join_now = webinar.starts_at - timedelta(minutes=10) <= datetime.now(timezone.utc) <= webinar.ends_at
+    can_join = can_join_now and (
+        not webinar.member_only or (user_id is not None and has_member_access(membership) and is_registered)
+    )
 
     return response.model_copy(
         update={
@@ -73,10 +75,11 @@ class RegisterForWebinarResponses(NotAuthorizedResponses):
     WEBINAR_NOT_FOUND = 404, "Webinar with provided slug not found"
     USER_NOT_FOUND = 404, "User with provided ID not found"
     MEMBERSHIP_REQUIRED = 403, "Active membership is required to register for this webinar"
+    EXTERNAL_REGISTRATION_REQUIRED = 403, "Public webinars use external registration"
 
 
 @router.post(
-    "/{webinar_slug}/registration",
+    "/{webinar_slug}/registrations",
     responses=RegisterForWebinarResponses.responses,
     status_code=201,
 )

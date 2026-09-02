@@ -21,6 +21,16 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
+@pytest.fixture(autouse=True)
+def _disable_rate_limiter_for_unrelated_tests():
+    from app.core.rate_limiter import rate_limiter_dependency
+    from app.main import app
+
+    app.dependency_overrides[rate_limiter_dependency] = lambda: None
+    yield
+    app.dependency_overrides.pop(rate_limiter_dependency, None)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _cleanup_log_files():
     """Remove test-created log files after the test session to avoid leaving artifacts."""

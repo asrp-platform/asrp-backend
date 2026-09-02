@@ -5,28 +5,28 @@ from app.domains.feedback.exceptions import FeedbackAdditionalInfoAlreadyExistsE
 from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,
     CantChangeToHonoraryMembershipError,
+    CheckoutSessionCreationError,
     InvalidMembershipTypeDowngradeError,
     InvalidMembershipTypeUpgradeError,
     MembershipAlreadyPaidError,
-    MembershipApplicationCheckoutError,
-    MembershipRenewalCheckoutError,
     MembershipRequestCannotBeReappliedError,
     MembershipSuspendedError,
     MembershipTerminatedError,
     NoMembershipError,
     SameMembershipTypeChangeRequestError,
 )
-from app.domains.memberships.schemas.membership_schemas import UserMembershipSchema
-from app.domains.memberships.schemas.membership_types_schemas import UserMembershipTypeChangeRequestProfileSchema
-from app.domains.memberships.schemas.schemas import (
+from app.domains.memberships.schemas.membership_requests import (
     MembershipDowngradeCreateCreateSchema,
     MembershipRequestCreateSchema,
     MembershipRequestReapplySchema,
     MembershipRequestViewSchema,
+    UpgradeMembershipSchema,
 )
+from app.domains.memberships.schemas.membership_types import UserMembershipTypeChangeRequestProfileSchema
+from app.domains.memberships.schemas.user_memberships import UserMembershipSchema
 from app.domains.memberships.services import UserMembershipServiceDep
+from app.domains.payments.schemas import PaymentCheckoutSchema
 from app.domains.shared.deps import CurrentUserDep, CurrentUserMembershipDep
-from app.domains.shared.schemas import PaymentCheckoutSchema
 from app.domains.users.use_cases.current_user_membership.create_membership_application_payment_attempt import (
     CreateMembershipApplicationPaymentAttemptUseCaseDep,
 )
@@ -46,6 +46,7 @@ from app.domains.users.use_cases.current_user_membership.renew_membership import
 from app.domains.users.use_cases.current_user_membership.request_membership_downgrade import (
     RequestMembershipDowngradeUseCaseDep,
 )
+from app.domains.users.use_cases.current_user_membership.upgrade_membership import UpgradeMembershipUseCaseDep
 
 
 router = APIRouter(tags=["Current User: Membership"], prefix="/users/current-user")
@@ -91,7 +92,7 @@ async def create_membership_request(
         raise MembershipCreateResponses.CANT_BUY_HONORARY_MEMBERSHIP
     except FeedbackAdditionalInfoAlreadyExistsError:
         raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
-    except MembershipApplicationCheckoutError:
+    except CheckoutSessionCreationError:
         raise MembershipCreateResponses.CHECKOUT_SESSION_CREATION_FAILED
 
 
@@ -116,7 +117,7 @@ async def create_new_payment_attempt(
         return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except MembershipAlreadyPaidError:
         raise CreateNewPaymentAttemptResponses.MEMBERSHIP_REQUEST_ALREADY_PAID
-    except MembershipApplicationCheckoutError:
+    except CheckoutSessionCreationError:
         raise CreateNewPaymentAttemptResponses.CHECKOUT_SESSION_CREATION_FAILED
 
 
@@ -148,7 +149,7 @@ async def create_membership_request_reapply(
         raise ReapplyMembershipRequestResponses.MEMBERSHIP_REQUEST_CANNOT_BE_REAPPLIED
     except CantBuyHonoraryMembership:
         raise ReapplyMembershipRequestResponses.CANT_BUY_HONORARY_MEMBERSHIP
-    except MembershipApplicationCheckoutError:
+    except CheckoutSessionCreationError:
         raise ReapplyMembershipRequestResponses.CHECKOUT_SESSION_CREATION_FAILED
 
 
@@ -165,7 +166,6 @@ class MembershipTypeChangeRequestResponses(Responses):
     PENDING_REQUEST_ALREADY_EXISTS = 409, "Pending user membership type change request already exists"
     SAME_MEMBERSHIP_TYPE = 422, "Can't change membership type for the same type"
     CANT_CHANGE_TO_HONORARY_MEMBERSHIP = 422, "Can't change membership type to HONORARY"
-    INVALID_UPGRADE = 422, "Target membership type is not more expensive than current membership type"
     INVALID_DOWNGRADE = 422, "Target membership type is not cheaper than current membership type"
 
 
@@ -186,8 +186,6 @@ async def request_membership_type_change(
         raise MembershipTypeChangeRequestResponses.SAME_MEMBERSHIP_TYPE
     except CantChangeToHonoraryMembershipError:
         raise MembershipTypeChangeRequestResponses.CANT_CHANGE_TO_HONORARY_MEMBERSHIP
-    except InvalidMembershipTypeUpgradeError:
-        raise MembershipTypeChangeRequestResponses.INVALID_UPGRADE
     except InvalidMembershipTypeDowngradeError:
         raise MembershipTypeChangeRequestResponses.INVALID_DOWNGRADE
 
@@ -210,15 +208,46 @@ async def cancel_membership_downgrade_request(
     pass
 
 
+class UpgradeMembershipResponses(Responses):
+    INVALID_TOKEN = 401, "Invalid token"
+    NO_ACTIVE_MEMBERSHIP = 403, "No active membership"
+    MEMBERSHIP_PERMANENTLY_BLOCKED = 403, "Membership is permanently blocked"
+    MEMBERSHIP_TEMPORARILY_BLOCKED = 403, "Membership is temporarily blocked"
+    MEMBERSHIP_TYPE_NOT_FOUND = 404, "Provided membership type not found"
+    SAME_MEMBERSHIP_TYPE = 422, "Can't change membership type for the same type"
+    CANT_CHANGE_TO_HONORARY_MEMBERSHIP = 422, "Can't change membership type to HONORARY"
+    INVALID_UPGRADE = 422, "Invalid membership type upgrade"
+    CHECKOUT_SESSION_CREATION_FAILED = 502, "Failed to create checkout session"
+
+
 @router.post(
-    "/membership/upgrade-checkouts",
+    "/membership/upgrade",
     summary="Create a checkout for membership type upgrade",
     status_code=201,
+    responses=UpgradeMembershipResponses.responses,
 )
 async def create_membership_upgrade_checkout(
+    current_user: CurrentUserDep,
     current_user_membership: CurrentUserMembershipDep,
-):
-    pass
+    use_case: UpgradeMembershipUseCaseDep,
+    body: UpgradeMembershipSchema,
+) -> PaymentCheckoutSchema:
+    try:
+        checkout_session_url = await use_case.execute(
+            current_user_membership,
+            current_user,
+            body.target_membership_type_id,
+        )
+    except SameMembershipTypeChangeRequestError:
+        raise UpgradeMembershipResponses.SAME_MEMBERSHIP_TYPE
+    except CantChangeToHonoraryMembershipError:
+        raise UpgradeMembershipResponses.CANT_CHANGE_TO_HONORARY_MEMBERSHIP
+    except InvalidMembershipTypeUpgradeError:
+        raise UpgradeMembershipResponses.INVALID_UPGRADE
+    except CheckoutSessionCreationError:
+        raise UpgradeMembershipResponses.CHECKOUT_SESSION_CREATION_FAILED
+
+    return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
 
 
 class RenewMembershipResponses(Responses):
@@ -243,7 +272,7 @@ async def renew_membership(
         checkout_session_url = await use_case.execute(current_user)
     except NoMembershipError:
         raise RenewMembershipResponses.NO_MEMBERSHIP
-    except MembershipRenewalCheckoutError:
+    except CheckoutSessionCreationError:
         raise RenewMembershipResponses.CHECKOUT_SESSION_CREATION_FAILED
     except MembershipTerminatedError:
         raise RenewMembershipResponses.MEMBERSHIP_PERMANENTLY_BLOCKED

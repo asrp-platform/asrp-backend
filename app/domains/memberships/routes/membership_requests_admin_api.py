@@ -7,7 +7,10 @@ from app.core.common.request_params import OrderingParamsDep, PaginationParamsDe
 from app.core.common.responses import PaginatedResponse
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.filters import MembershipRequestsFilters
-from app.domains.memberships.schemas.schemas import MembershipRequestUpdateAdminSchema, MembershipRequestViewSchema
+from app.domains.memberships.schemas.membership_requests import (
+    MembershipRequestUpdateAdminSchema,
+    MembershipRequestViewSchema,
+)
 from app.domains.memberships.use_cases.membership_requests.get_membership_request_by_id import (
     GetMembershipRequestByIdUseCaseDep,
 )
