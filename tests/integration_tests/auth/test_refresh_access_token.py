@@ -34,6 +34,9 @@ async def test_refresh_access_token_not_authorized(
     )
 
     assert response.status_code == 401
+    assert response.cookies.get("refresh_token") is None
+    assert "refresh_token=" in response.headers["set-cookie"]
+    assert "Max-Age=0" in response.headers["set-cookie"]
 
 
 async def test_refresh_access_token_invalid_token(
@@ -48,6 +51,9 @@ async def test_refresh_access_token_invalid_token(
     )
 
     assert response.status_code == 401
+    assert response.cookies.get("refresh_token") is None
+    assert "refresh_token=" in response.headers["set-cookie"]
+    assert "Max-Age=0" in response.headers["set-cookie"]
 
 
 async def test_refresh_access_token_invalid_token_payload(
@@ -63,3 +69,6 @@ async def test_refresh_access_token_invalid_token_payload(
     )
 
     assert response.status_code == 401
+    assert response.cookies.get("refresh_token") is None
+    assert "refresh_token=" in response.headers["set-cookie"]
+    assert "Max-Age=0" in response.headers["set-cookie"]

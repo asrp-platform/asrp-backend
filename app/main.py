@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from loguru import logger
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -17,6 +19,7 @@ from app.core.common.exceptions import (
 from app.core.common.rate_limiter import rate_limiter_dependency
 from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
+from app.core.database.setup_db import session_getter
 from app.core.logging import REQUESTS_CHANNEL, configure_logging
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes.auth_api import router as auth_router
@@ -35,6 +38,8 @@ from app.domains.memberships.routes.membership_admin_api import router as member
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.memberships.routes.membership_types_admin_api import router as membership_types_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
+from app.domains.news.routes.webinars_admin_router import router as webinars_admin_router
+from app.domains.news.routes.webinars_router import router as webinars_router
 from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
@@ -147,6 +152,7 @@ app.include_router(job_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 app.include_router(membership_types_router, prefix="/api")
 app.include_router(donations_router, prefix="/api")
+app.include_router(webinars_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
@@ -159,6 +165,7 @@ app.include_router(membership_types_admin_router, prefix="/api/admin")
 app.include_router(membership_admin_router, prefix="/api/admin")
 app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
+app.include_router(webinars_admin_router, prefix="/api/admin")
 app.include_router(email_templates_router, prefix="/api/admin")
 
 
@@ -187,11 +194,25 @@ app.add_middleware(
 )
 
 
-@app.get("")
-async def root():
-    return {"message": f"Hello World DEV_MODE: {DEV_MODE}"}
-
-
-@app.get("/healthcheck")
+@app.get("/health/live", include_in_schema=True)
 async def healthcheck():
-    return "Healthy"
+    return {"status": "Healthy"}
+
+
+@app.get("/health/ready", include_in_schema=True)
+async def readiness(db: AsyncSession = Depends(session_getter)):  # noqa
+    try:
+        await db.execute(text("SELECT 1"))
+    except Exception:  # noqa
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "database": "unavailable",
+            },
+        )
+
+    return {
+        "status": "ok",
+        "database": "ok",
+    }

@@ -26,13 +26,13 @@ async def test_guest_rate_limit_exceeds_capacity(
         TierLimit(capacity=2, refill_rate=0.0),
     )
 
-    response = await client.get("/healthcheck")
+    response = await client.get("/health/ready")
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck")
+    response = await client.get("/health/ready")
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck")
+    response = await client.get("/health/ready")
     assert response.status_code == 429
 
 
@@ -48,13 +48,13 @@ async def test_authenticated_rate_limit_exceeds_capacity(
         TierLimit(capacity=2, refill_rate=0.0),
     )
 
-    response = await client.get("/healthcheck", headers=auth_headers)
+    response = await client.get("/health/ready", headers=auth_headers)
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck", headers=auth_headers)
+    response = await client.get("/health/ready", headers=auth_headers)
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck", headers=auth_headers)
+    response = await client.get("/health/ready", headers=auth_headers)
     assert response.status_code == 429
 
 
@@ -81,13 +81,13 @@ async def test_paid_member_rate_limit_exceeds_capacity(
         TierLimit(capacity=2, refill_rate=0.0),
     )
 
-    response = await client.get("/healthcheck", headers=auth_headers)
+    response = await client.get("/health/ready", headers=auth_headers)
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck", headers=auth_headers)
+    response = await client.get("/health/ready", headers=auth_headers)
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck", headers=auth_headers)
+    response = await client.get("/health/ready", headers=auth_headers)
     assert response.status_code == 429
 
 
@@ -103,13 +103,13 @@ async def test_admin_rate_limit_exceeds_capacity(
         TierLimit(capacity=2, refill_rate=0.0),
     )
 
-    response = await client.get("/healthcheck", headers=admin_auth_headers)
+    response = await client.get("/health/ready", headers=admin_auth_headers)
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck", headers=admin_auth_headers)
+    response = await client.get("/health/ready", headers=admin_auth_headers)
     assert response.status_code == 200
 
-    response = await client.get("/healthcheck", headers=admin_auth_headers)
+    response = await client.get("/health/ready", headers=admin_auth_headers)
     assert response.status_code == 429
 
 
@@ -118,7 +118,7 @@ async def test_test_redis_client_unavailable(
     unavailable_test_redis_client: Redis,
 ):
     with patch("app.core.common.rate_limiter.request_logger") as mock_privileges_logger:
-        response = await client.get("/healthcheck")
+        response = await client.get("/health/ready")
 
         mock_privileges_logger.error.assert_called_once()
 
@@ -143,17 +143,17 @@ async def test_rate_limit_token_refill(
     )
 
     for _ in range(5):
-        await client.get("/healthcheck")
+        await client.get("/health/ready")
 
     keys = await test_redis_client.keys("rl:user:*")
     key = keys[0]
 
     bucket = await test_redis_client.hgetall(key)
-    assert float(bucket['tokens']) < 5.0
+    assert float(bucket["tokens"]) < 5.0
 
     await asyncio.sleep(5)
 
-    await client.get("/healthcheck")
+    await client.get("/health/ready")
 
     bucket = await test_redis_client.hgetall(key)
-    assert float(bucket['tokens']) >= 4.0
+    assert float(bucket["tokens"]) >= 4.0

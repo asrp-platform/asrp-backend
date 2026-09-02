@@ -24,6 +24,7 @@ from app.domains.auth.schemas import (
 from app.domains.auth.services import AuthServiceDep, RegisterResponses
 from app.domains.auth.utils import get_countries
 from app.domains.shared.deps import (
+    REFRESH_COOKIE_KWARGS,
     RefreshTokenDep,
     create_access_token,
     create_refresh_token,
@@ -33,15 +34,6 @@ from app.domains.users.services import UserServiceDep
 
 
 router = APIRouter(tags=["Authentication"], prefix="/auth")
-
-
-REFRESH_COOKIE_KWARGS = {
-    "key": "refresh_token",
-    "path": "/",
-    "httponly": True,
-    "secure": True,
-    "samesite": "none",
-}
 
 
 @router.post(

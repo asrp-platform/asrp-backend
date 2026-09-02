@@ -19,6 +19,7 @@ from app.domains.memberships.repositories import (
     MembershipTypeRepository,
     UserMembershipRepository,
 )
+from app.domains.news.repositories import WebinarRepository
 from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
 from app.domains.users.repositories import (
@@ -115,6 +116,10 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
         return MembershipDowngradeRequestsRepository(self._session)
 
     @property
+    def webinar_repository(self):
+        return WebinarRepository(self._session)
+
+    @property
     def email_templates_repository(self):
         return EmailTemplatesRepository(self._session)
 
@@ -125,4 +130,4 @@ def get_transaction_manager(
     return TransactionManager(session)
 
 
-TransactionManagerDep = Annotated[BaseTransactionManager, Depends(get_transaction_manager)]
+TransactionManagerDep = Annotated[TransactionManager, Depends(get_transaction_manager)]
