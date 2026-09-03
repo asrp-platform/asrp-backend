@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
+from app.domains.emails.models import EmailTemplate
 from app.domains.memberships.models import MembershipRequest, UserMembership
 from app.domains.news.models import News
 
@@ -87,6 +88,15 @@ class User(Base):
         "Webinar",
         back_populates="registered_users",
         secondary="webinars_registered_users",
+    )
+
+    created_email_templates: Mapped[list["EmailTemplate"]] = relationship(
+        back_populates="created_by",
+        foreign_keys="EmailTemplate.created_by_id",
+    )
+    updated_email_templates: Mapped[list["EmailTemplate"]] = relationship(
+        back_populates="updated_by",
+        foreign_keys="EmailTemplate.updated_by_id",
     )
 
     _password: Mapped[str] = mapped_column()
