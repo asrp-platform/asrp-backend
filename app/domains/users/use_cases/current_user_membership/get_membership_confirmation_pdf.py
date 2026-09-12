@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.pdf.renderer import PdfTemplateRendererDep
+from app.core.common.pdf_renderer import PdfTemplateRendererDep
 from app.domains.memberships.utils.membership_confirmation_pdf import render_membership_confirmation_pdf
 from app.domains.users.models import User
 from app.domains.users.use_cases.current_user_membership.get_membership_confirmation_report import (

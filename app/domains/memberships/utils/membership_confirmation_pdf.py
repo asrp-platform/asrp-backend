@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.core.pdf.renderer import PdfTemplateRenderer
+from app.core.common.pdf_renderer import PdfTemplateRenderer
 from app.domains.memberships.schemas.user_memberships import (
     MembershipConfirmationReportSchema,
     MembershipHistoryEventSchema,
