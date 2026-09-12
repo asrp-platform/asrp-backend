@@ -41,5 +41,5 @@ class GetMembershipConfirmationPdfUseCase:
 
 
 GetMembershipConfirmationPdfUseCaseDep = Annotated[
-    GetMembershipConfirmationPdfUseCase, Depends(GetMembershipConfirmationPdfUseCase)
+    GetMembershipConfirmationPdfUseCase, Depends()
 ]

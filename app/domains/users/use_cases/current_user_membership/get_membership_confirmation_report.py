@@ -194,5 +194,5 @@ class GetMembershipConfirmationReportUseCase:
 
 GetMembershipConfirmationReportUseCaseDep = Annotated[
     GetMembershipConfirmationReportUseCase,
-    Depends(GetMembershipConfirmationReportUseCase),
+    Depends(),
 ]

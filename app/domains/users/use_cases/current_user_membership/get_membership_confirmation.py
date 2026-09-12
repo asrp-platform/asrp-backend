@@ -35,5 +35,5 @@ def format_membership_id(membership: UserMembership) -> str:
 
 
 GetMembershipConfirmationUseCaseDep = Annotated[
-    GetMembershipConfirmationUseCase, Depends(GetMembershipConfirmationUseCase)
+    GetMembershipConfirmationUseCase, Depends()
 ]

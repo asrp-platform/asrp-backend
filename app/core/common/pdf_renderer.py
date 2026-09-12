@@ -21,4 +21,4 @@ class PdfTemplateRenderer:
         return HTML(string=html, base_url=str(self.__templates_root)).write_pdf()
 
 
-PdfTemplateRendererDep = Annotated[PdfTemplateRenderer, Depends(PdfTemplateRenderer)]
+PdfTemplateRendererDep = Annotated[PdfTemplateRenderer, Depends()]
