@@ -247,6 +247,45 @@ The service listens for these events:
 
 ## Troubleshooting
 
+### WeasyPrint on Windows and macOS
+
+The following steps are only needed when running the backend directly on the host. The project Docker image and devcontainer install WeasyPrint's Linux system dependencies themselves, so after dependency changes rebuild the corresponding image instead of installing native libraries on Windows or macOS.
+
+#### Windows
+
+If `poetry run python -m weasyprint --info` fails with `cannot load library` or Windows error `0x7e`, install [MSYS2](https://www.msys2.org/) in its default location and run the following command in the **MSYS2 UCRT64** shell:
+
+```shell
+pacman -S mingw-w64-ucrt-x86_64-pango
+```
+
+If WeasyPrint still cannot find the DLLs, set their directory before starting the backend:
+
+```bat
+set WEASYPRINT_DLL_DIRECTORIES=C:\msys64\ucrt64\bin
+poetry run python -m weasyprint --info
+```
+
+Avoid mixing MSYS2 libraries with Conda or an older GTK runtime: conflicting Pango and HarfBuzz DLLs can cause similar import and missing-symbol errors. See the [official Windows installation and troubleshooting guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows).
+
+#### macOS
+
+For a direct macOS installation, install WeasyPrint and its native dependencies with Homebrew, then verify that the Poetry environment can load them:
+
+```shell
+brew install weasyprint
+poetry run python -m weasyprint --info
+```
+
+If loading fails with `cannot load library 'libgobject-2.0-0'` or another `.dylib` lookup error, expose Homebrew's library directory to the dynamic linker and retry:
+
+```shell
+export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:${DYLD_FALLBACK_LIBRARY_PATH:-}"
+poetry run python -m weasyprint --info
+```
+
+Add the export to your shell profile only when direct host runs require it. See the [official macOS installation and troubleshooting guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#macos).
+
 
 ### Get all existing permissions script
 
