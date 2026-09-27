@@ -5,10 +5,16 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.core.utils.permissions import check_permissions
 from app.domains.news.filters import WebinarFilters
 from app.domains.news.schemas import CreateWebinarSchema, UpdateWebinarSchema, WebinarBaseSchema
-from app.domains.news.services import WebinarServiceDep
+from app.domains.news.use_cases import (
+    CreateWebinarUseCaseDep,
+    DeleteWebinarUseCaseDep,
+    GetAdminWebinarsUseCaseDep,
+    GetRegisteredWebinarUsersUseCaseDep,
+    GetWebinarUseCaseDep,
+    UpdateWebinarUseCaseDep,
+)
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 from app.domains.users.schemas import UserPrivateSchema
 
@@ -28,18 +34,17 @@ class AdminWebinarResponses(Responses):
 @router.get("", responses=AdminWebinarResponses.responses)
 async def get_webinars_paginated_counted(
     permissions: AdminPermissionsDep,
-    service: WebinarServiceDep,
+    use_case: GetAdminWebinarsUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[WebinarFilters, Depends()] = None,
 ) -> PaginatedResponse[WebinarBaseSchema]:
-    check_permissions("webinars.view", permissions)
-    data, count = await service.get_all_paginated_counted(
+    data, count = await use_case.execute(
+        permissions,
         order_by=ordering,
         filters=filters.model_dump(exclude_none=True),
         limit=params["limit"],
         offset=params["offset"],
-        open_transaction=True,
     )
     return PaginatedResponse(
         count=count,
@@ -52,14 +57,10 @@ async def get_webinars_paginated_counted(
 @router.post("", responses=AdminWebinarResponses.responses)
 async def create_webinar(
     permissions: AdminPermissionsDep,
-    service: WebinarServiceDep,
+    use_case: CreateWebinarUseCaseDep,
     body: CreateWebinarSchema,
 ) -> WebinarBaseSchema:
-    check_permissions("webinars.create", permissions)
-    return await service.create_webinar(
-        open_transaction=True,
-        **body.model_dump(),
-    )
+    return await use_case.execute(permissions, body.model_dump())
 
 
 class UpdateWebinarResponses(AdminWebinarResponses):
@@ -73,10 +74,9 @@ class UpdateWebinarResponses(AdminWebinarResponses):
 async def get_webinar(
     webinar_id: int,
     permissions: AdminPermissionsDep,
-    service: WebinarServiceDep,
+    use_case: GetWebinarUseCaseDep,
 ) -> WebinarBaseSchema:
-    check_permissions("webinars.view", permissions)
-    return await service.get_webinar_by_id(webinar_id)
+    return await use_case.execute(permissions, webinar_id)
 
 
 @router.patch(
@@ -86,15 +86,10 @@ async def get_webinar(
 async def update_webinar(
     webinar_id: int,
     permissions: AdminPermissionsDep,
-    service: WebinarServiceDep,
+    use_case: UpdateWebinarUseCaseDep,
     body: UpdateWebinarSchema,
 ) -> WebinarBaseSchema:
-    check_permissions("webinars.update", permissions)
-    return await service.update_webinar(
-        webinar_id,
-        open_transaction=True,
-        **body.model_dump(exclude_unset=True),
-    )
+    return await use_case.execute(permissions, webinar_id, body.model_dump(exclude_unset=True))
 
 
 class DeleteWebinarResponses(AdminWebinarResponses):
@@ -109,10 +104,9 @@ class DeleteWebinarResponses(AdminWebinarResponses):
 async def delete_webinar(
     webinar_id: int,
     permissions: AdminPermissionsDep,
-    service: WebinarServiceDep,
+    use_case: DeleteWebinarUseCaseDep,
 ) -> int:
-    check_permissions("webinars.delete", permissions)
-    return await service.delete_webinar(webinar_id, open_transaction=True)
+    return await use_case.execute(permissions, webinar_id)
 
 
 class RegisteredWebinarUsersResponses(AdminWebinarResponses):
@@ -127,12 +121,12 @@ class RegisteredWebinarUsersResponses(AdminWebinarResponses):
 async def get_webinar_registered_users(
     webinar_id: int,
     permissions: AdminPermissionsDep,
-    service: WebinarServiceDep,
+    use_case: GetRegisteredWebinarUsersUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
 ) -> PaginatedResponse[UserPrivateSchema]:
-    check_permissions("webinars.view", permissions)
-    data, count = await service.get_registered_users_paginated_counted(
+    data, count = await use_case.execute(
+        permissions,
         webinar_id,
         limit=params["limit"],
         offset=params["offset"],

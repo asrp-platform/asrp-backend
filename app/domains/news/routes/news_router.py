@@ -8,7 +8,7 @@ from app.core.common.responses import PaginatedResponse
 from app.domains.news.cache import NewsCacheDep, is_first_page
 from app.domains.news.filters import PublicNewsFilter
 from app.domains.news.schemas import NewsSchema
-from app.domains.news.services import NewsServiceDep
+from app.domains.news.use_cases import GetNewsListUseCaseDep, GetPublishedNewsBySlugUseCaseDep
 
 
 router = APIRouter(prefix="/news", tags=["News"])
@@ -29,7 +29,7 @@ class PublicNewsDetailResponses(Responses):
     responses=PublicNewsResponses.responses,
 )
 async def get_published_news_paginated_counted(
-    service: NewsServiceDep,
+    use_case: GetNewsListUseCaseDep,
     params: PaginationParamsDep,
     cache: NewsCacheDep,
     ordering: OrderingParamsDep = None,
@@ -45,12 +45,12 @@ async def get_published_news_paginated_counted(
 
     news_filters["is_published"] = True
 
-    data, count = await service.get_news_paginated_counted(
+    data, count = await use_case.execute(
+        permissions=None,
         order_by=ordering,
         filters=news_filters,
         limit=params["limit"],
         offset=params["offset"],
-        open_transaction=True,
     )
     response = PaginatedResponse[NewsSchema](
         count=count,
@@ -70,6 +70,6 @@ async def get_published_news_paginated_counted(
 )
 async def get_published_news_detail(
     slug: str,
-    service: NewsServiceDep,
+    use_case: GetPublishedNewsBySlugUseCaseDep,
 ) -> NewsSchema:
-    return await service.get_published_news_by_slug(slug)
+    return await use_case.execute(slug)
