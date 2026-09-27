@@ -2,8 +2,10 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 
+from app.core.common.responses import PaginatedResponse
 from app.core.utils.permissions import check_any_permission, check_permissions
 from app.domains.content.cache import NewsCacheDep
+from app.domains.content.schemas import NewsSchema
 from app.domains.content.services import NewsServiceDep
 from app.domains.shared.types import FileData
 
@@ -20,6 +22,30 @@ class GetNewsListUseCase:
         return await self.__service.get_news_paginated_counted(
             order_by=order_by, filters=filters, limit=limit, offset=offset, open_transaction=True
         )
+
+
+class GetPublishedNewsListUseCase:
+    def __init__(self, service: NewsServiceDep, cache: NewsCacheDep):
+        self.__service = service
+        self.__cache = cache
+
+    async def execute(
+        self, *, page: int, page_size: int, limit: int, offset: int, order_by: str | None, filters: dict[str, Any]
+    ):
+        use_cache = page == 1 and page_size == 8 and order_by in (None, "-created_at") and not filters
+        if use_cache:
+            cached_data = await self.__cache.get_first_page_from_cache()
+            if cached_data is not None:
+                return cached_data
+
+        filters = {**filters, "is_published": True}
+        data, count = await self.__service.get_news_paginated_counted(
+            order_by=order_by, filters=filters, limit=limit, offset=offset, open_transaction=True
+        )
+        response = PaginatedResponse[NewsSchema](count=count, data=data, page=page, page_size=page_size)
+        if use_cache:
+            await self.__cache.cache_first_page(response)
+        return response
 
 
 class GetNewsByIdUseCase:
@@ -85,6 +111,7 @@ class UploadNewsImageUseCase:
 
 
 GetNewsListUseCaseDep = Annotated[GetNewsListUseCase, Depends(GetNewsListUseCase)]
+GetPublishedNewsListUseCaseDep = Annotated[GetPublishedNewsListUseCase, Depends(GetPublishedNewsListUseCase)]
 GetNewsByIdUseCaseDep = Annotated[GetNewsByIdUseCase, Depends(GetNewsByIdUseCase)]
 GetPublishedNewsBySlugUseCaseDep = Annotated[GetPublishedNewsBySlugUseCase, Depends(GetPublishedNewsBySlugUseCase)]
 CreateNewsUseCaseDep = Annotated[CreateNewsUseCase, Depends(CreateNewsUseCase)]

@@ -4,6 +4,7 @@ from app.domains.content.use_cases.news import (
     GetNewsByIdUseCaseDep,
     GetNewsListUseCaseDep,
     GetPublishedNewsBySlugUseCaseDep,
+    GetPublishedNewsListUseCaseDep,
     UpdateNewsUseCaseDep,
     UploadNewsImageUseCaseDep,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "DeleteNewsUseCaseDep",
     "GetNewsByIdUseCaseDep",
     "GetNewsListUseCaseDep",
+    "GetPublishedNewsListUseCaseDep",
     "GetPublishedNewsBySlugUseCaseDep",
     "UpdateNewsUseCaseDep",
     "UploadNewsImageUseCaseDep",
