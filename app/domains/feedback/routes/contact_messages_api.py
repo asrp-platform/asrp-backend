@@ -4,7 +4,7 @@ from app.domains.feedback.schemas import (
     ContactMessageResponseSchema,
     CreateContactMessageSchema,
 )
-from app.domains.feedback.services import FeedbackServiceDep
+from app.domains.feedback.use_cases import CreateContactMessageUseCaseDep
 
 
 router = APIRouter(prefix="/contact-messages", tags=["Contact Messages"])
@@ -12,11 +12,11 @@ router = APIRouter(prefix="/contact-messages", tags=["Contact Messages"])
 
 @router.post(
     "",
+    summary="Create a contact message",
     status_code=201,
 )
 async def create_contact_message(
-    contact_message_service: FeedbackServiceDep,
+    use_case: CreateContactMessageUseCaseDep,
     message_data: CreateContactMessageSchema,
 ) -> ContactMessageResponseSchema:
-    contact_message = await contact_message_service.create_contact_message(message_data.model_dump(mode="json"))
-    return contact_message
+    return await use_case.execute(message_data)

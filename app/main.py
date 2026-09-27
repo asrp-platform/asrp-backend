@@ -25,12 +25,12 @@ from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
-from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
-from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
-from app.domains.feedback.routes.feedback_additional_info_admin_api import (
-    router as feedback_additional_info_admin_router,
+from app.domains.feedback.routes import (
+    contact_messages_admin_router,
+    contact_messages_router,
+    feedback_additional_info_admin_router,
+    feedback_additional_info_router,
 )
-from app.domains.feedback.routes.feedback_additional_info_api import router as feedback_additional_info_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_admin_api import router as membership_admin_router

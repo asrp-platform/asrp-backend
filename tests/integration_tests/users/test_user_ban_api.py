@@ -75,7 +75,7 @@ async def test_banned_user_cannot_login(
     data = response.json()
 
     assert response.status_code == 403
-    assert data["detail"] == "User is banned: Violation of Terms"
+    assert data["detail"] == "User is banned"
 
 
 async def test_banned_user_access_token_invalid(
