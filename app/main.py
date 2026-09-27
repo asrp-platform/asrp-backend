@@ -22,7 +22,7 @@ from app.core.database.setup_db import session_getter
 from app.core.logging import configure_logging
 from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
-from app.domains.auth.routes.auth_api import router as auth_router
+from app.domains.auth.routes import router as auth_router
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
 from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router

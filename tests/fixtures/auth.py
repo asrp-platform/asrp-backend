@@ -6,7 +6,7 @@ from faker import Faker
 
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet
-from app.domains.shared.deps import create_access_token, create_refresh_token
+from app.domains.auth.services import AuthJwtService
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 
@@ -52,13 +52,14 @@ async def test_user(user_factory: UserFactory) -> User:
 
 @pytest.fixture
 def auth_headers(test_user: User) -> AuthHeaders:
-    access_token = create_access_token({"email": test_user.email})
+    jwt_service = AuthJwtService()
+    access_token = jwt_service.create_access_token({"email": test_user.email})
     return {"Authorization": f"Bearer {access_token}"}
 
 
 @pytest.fixture
 def refresh_token(test_user: User):
-    refresh_token = create_refresh_token(
+    refresh_token = AuthJwtService().create_refresh_token(
         {"email": test_user.email},
         remember_me=False,
     )
@@ -72,7 +73,7 @@ async def admin_user(user_factory: UserFactory) -> User:
 
 @pytest.fixture
 def admin_auth_headers(admin_user: User):
-    access_token = create_access_token({"email": admin_user.email})
+    access_token = AuthJwtService().create_access_token({"email": admin_user.email})
     return {"Authorization": f"Bearer {access_token}"}
 
 

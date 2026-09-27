@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.shared.deps import create_access_token, create_refresh_token
+from app.domains.auth.services import AuthJwtService
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders, UserFactory
@@ -82,7 +82,7 @@ async def test_banned_user_access_token_invalid(
     client: AsyncClient,
     banned_user: User,
 ) -> None:
-    access_token = create_access_token({"email": banned_user.email})
+    access_token = AuthJwtService().create_access_token({"email": banned_user.email})
     headers = {"Authorization": f"Bearer {access_token}"}
 
     response = await client.get(
@@ -99,7 +99,7 @@ async def test_banned_user_refresh_token_invalid(
     client: AsyncClient,
     banned_user: User,
 ) -> None:
-    token = create_refresh_token({"email": banned_user.email})
+    token = AuthJwtService().create_refresh_token({"email": banned_user.email})
     client.cookies.set("refresh_token", token)
 
     response = await client.post("/api/auth/refresh")

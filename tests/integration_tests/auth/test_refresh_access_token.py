@@ -2,7 +2,7 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
-from app.domains.shared.deps import create_refresh_token
+from app.domains.auth.services import AuthJwtService
 from app.domains.users.models import User
 from tests.integration_tests.auth.utils import decode_jwt
 
@@ -61,7 +61,7 @@ async def test_refresh_access_token_invalid_token_payload(
     faker: Faker,
     auth_headers,
 ) -> None:
-    refresh_token = create_refresh_token({"email": faker.pystr()})
+    refresh_token = AuthJwtService().create_refresh_token({"email": faker.pystr()})
     response = await client.post(
         "api/auth/refresh",
         headers=auth_headers,
@@ -78,7 +78,7 @@ async def test_refresh_access_token_without_email_in_payload(
     client: AsyncClient,
     auth_headers,
 ) -> None:
-    refresh_token = create_refresh_token({})
+    refresh_token = AuthJwtService().create_refresh_token({})
     response = await client.post(
         "api/auth/refresh",
         headers=auth_headers,
