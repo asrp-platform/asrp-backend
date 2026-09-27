@@ -259,6 +259,25 @@ class MembershipDowngradeService:
             pending=True,
         )
 
+    async def get_approved_membership_type_changes(
+        self,
+        user_membership_id: int,
+    ) -> list[MembershipDowngradeRequest]:
+        stmt = select(MembershipDowngradeRequest).options(
+            selectinload(MembershipDowngradeRequest.target_membership_type).load_only(
+                MembershipType.id, MembershipType.name, MembershipType.type
+            )
+        )
+        requests, _ = await self.__tm.membership_downgrade_requests_repository.list(
+            filters={
+                "user_membership_id": user_membership_id,
+                "approved": True,
+                "pending": False,
+            },
+            stmt=stmt,
+        )
+        return requests
+
     async def approve_membership_type_change(self, type_change_request_id: int) -> MembershipDowngradeRequest:
         downgrade_request: MembershipDowngradeRequest = await self.__tm.membership_downgrade_requests_repository.update(
             type_change_request_id, approved=True, pending=False

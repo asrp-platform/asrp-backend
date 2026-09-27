@@ -2,6 +2,7 @@ import uuid
 from typing import Annotated, Any
 
 from fastapi import Depends
+from sqlalchemy import select
 
 from app.domains.payments.models import Payment, PaymentPurposeEnum, PaymentStatusEnum, ProcessedWebhookEvent
 from app.domains.shared.transaction_managers import TransactionManagerDep
@@ -29,6 +30,19 @@ class PaymentService:
         return await self._tm.payment_repository.list(
             limit=limit, offset=offset, order_by=order_by, filters={**filters, "user_id": user_id}
         )
+
+    async def get_succeeded_membership_history_payments(self, user_id: int) -> list[Payment]:
+        stmt = select(Payment).where(
+            Payment.purpose.in_([
+                PaymentPurposeEnum.MEMBERSHIP_RENEWAL,
+                PaymentPurposeEnum.MEMBERSHIP_TYPE_UPGRADE,
+            ])
+        )
+        payments, _ = await self._tm.payment_repository.list(
+            filters={"user_id": user_id, "status": PaymentStatusEnum.SUCCEEDED},
+            stmt=stmt,
+        )
+        return payments
 
     async def get_payments_paginated_counted(
         self,

@@ -191,6 +191,7 @@ app.add_middleware(
     allow_credentials=True,  # Разрешить передачу cookies
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 
