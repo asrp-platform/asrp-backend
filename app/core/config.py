@@ -88,7 +88,7 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
 
     NAME_CHANGE_REQUEST_COOLDOWN_DAYS: int | None = 14
 
-    ACCESS_TOKEN_LIFESPAN_HOURS: int = 1
+    ACCESS_TOKEN_LIFESPAN_MINUTES: int = 1
     REFRESH_TOKEN_LIFETIME_DAYS: int = 1
     REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS: int = 30
 
@@ -114,11 +114,11 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
 
     @property
     def refresh_token_cookie_max_age_seconds(self):
-        return self.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS * 24 * 60 * 60
+        return self.REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60
 
     @property
     def refresh_token_cookie_max_age_seconds_remember(self):
-        return self.REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60
+        return self.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS * 24 * 60 * 60
 
     @property
     def s3_endpoint_url(self) -> str:
