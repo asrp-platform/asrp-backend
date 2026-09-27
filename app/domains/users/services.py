@@ -116,7 +116,10 @@ class UserService:
     async def _get_user_by_kwargs(self, raise_not_found: bool = False, **kwargs) -> User | None:
         """Method closes transaction. Can't be used in transaction manager"""
         async with self.transaction_manager:
-            user = await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
+            if set(kwargs) == {"email"}:
+                user = await self.transaction_manager.user_repository.get_by_email(kwargs["email"])
+            else:
+                user = await self.transaction_manager.user_repository.get_first_by_kwargs(**kwargs)
             if user is None and raise_not_found:
                 raise NotFoundError("User with the provided ID not found")
             return user

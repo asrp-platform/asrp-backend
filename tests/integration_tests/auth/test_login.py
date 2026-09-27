@@ -48,7 +48,7 @@ async def test_access_token_expiry(
 
     exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
     now = datetime.now(timezone.utc)
-    expected_delta = timedelta(hours=settings.ACCESS_TOKEN_LIFESPAN_HOURS)
+    expected_delta = timedelta(minutes=settings.ACCESS_TOKEN_LIFESPAN_MINUTES)
 
     assert response.status_code == 200
     assert now + expected_delta - timedelta(seconds=5) <= exp <= now + expected_delta + timedelta(seconds=5)

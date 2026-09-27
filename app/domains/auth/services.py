@@ -35,7 +35,7 @@ class AuthService:
         email = user_data["email"]
 
         async with self.__tm:
-            existing_user: User = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+            existing_user: User = await self.__tm.user_repository.get_by_email(email)
 
             if existing_user is None:
                 user = await self.__tm.user_repository.create(**user_data, pending=True)
@@ -67,7 +67,7 @@ class AuthService:
 
     async def set_new_password(self, email, password):
         async with self.__tm:
-            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+            user = await self.__tm.user_repository.get_by_email(email)
 
             if user is None:
                 raise NotFoundError("User with provided email not found")
@@ -78,7 +78,7 @@ class AuthService:
 
     async def reset_password(self, email: str):
         async with self.__tm:
-            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+            user = await self.__tm.user_repository.get_by_email(email)
 
         if user is None:
             return
@@ -102,7 +102,7 @@ class AuthService:
 
     async def resend_email_confirmation_link(self, email: str):
         async with self.__tm:
-            existing_user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+            existing_user = await self.__tm.user_repository.get_by_email(email)
 
             if existing_user is None:
                 raise NotFoundError("User with provided email not found")
@@ -120,7 +120,7 @@ class AuthService:
             raise EmailConfirmationExpiredError("Invalid or expired token") from e
 
         async with self.__tm:
-            user = await self.__tm.user_repository.get_first_by_kwargs(email=email)
+            user = await self.__tm.user_repository.get_by_email(email)
 
             if user is None:
                 raise EmailConfirmationExpiredError("Invalid or expired token")

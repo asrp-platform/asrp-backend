@@ -28,7 +28,7 @@ REFRESH_COOKIE_KWARGS = {
     "path": "/",
     "httponly": True,
     "secure": True,
-    "samesite": "none",
+    "samesite": "lax",
 }
 
 
@@ -44,7 +44,7 @@ def invalid_refresh_token_exception(detail: str) -> HTTPException:
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_LIFESPAN_HOURS)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_LIFESPAN_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -83,14 +83,25 @@ async def verify_refresh_token(
 ) -> dict | None:
     if refresh_token is None:
         raise invalid_refresh_token_exception("Not authorized")
+
     try:
         payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user = await user_service._get_user_by_kwargs(email=payload["email"])
-        if user is None or user.banned:
-            raise invalid_refresh_token_exception("Refresh token is invalid")
-        return payload
     except JWTError:
         raise invalid_refresh_token_exception("Refresh token is invalid")
+
+    email = payload.get("email")
+    if not isinstance(email, str) or not email:
+        raise invalid_refresh_token_exception("Refresh token is invalid")
+
+    try:
+        user = await user_service._get_user_by_kwargs(email=email)
+    except NotFoundError:
+        raise invalid_refresh_token_exception("Refresh token is invalid")
+
+    if user is None or user.banned:
+        raise invalid_refresh_token_exception("Refresh token is invalid")
+
+    return payload
 
 
 async def get_current_user(
