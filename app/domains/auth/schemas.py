@@ -7,6 +7,10 @@ from app.domains.shared.types import Password
 US_COUNTRY_VALUES = {"US", "USA", "UNITED STATES"}
 
 
+def normalize_email(value: str) -> str:
+    return value.strip().lower()
+
+
 class RegisterFormData(BaseModel):
     email: EmailStr = Field(min_length=6)
     password: Password
@@ -18,6 +22,8 @@ class RegisterFormData(BaseModel):
     state: str | None = None
     postal_code: str | None = None
     credentials: str | None = None
+
+    _normalize_email = field_validator("email")(normalize_email)
 
     @model_validator(mode="after")
     def check_passwords_match(self):
@@ -42,6 +48,8 @@ class LoginForm(BaseModel):
     password: str
     remember: bool = False
 
+    _normalize_email = field_validator("email")(normalize_email)
+
     class Config:
         json_schema_extra = {"examples": [{"email": "admin@mail.com", "password": "admin", "remember": True}]}
 
@@ -57,6 +65,8 @@ class JWTTokenResponse(AccessToken):
 
 class ResetPasswordSchema(BaseModel):
     email: EmailStr
+
+    _normalize_email = field_validator("email")(normalize_email)
 
 
 class ChangePasswordSchema(BaseModel):
@@ -81,6 +91,8 @@ class ChangePasswordSchema(BaseModel):
 
 class EmailConfirmationRequestForm(BaseModel):
     email: EmailStr
+
+    _normalize_email = field_validator("email")(normalize_email)
 
 
 class MessageResponse(BaseModel):
