@@ -1,5 +1,10 @@
-from app.domains.news.schemas.news_schemas import CreateNewsSchema, NewsSchema, NewsWithAuthorSchema, UpdateNewsSchema
-from app.domains.news.schemas.webinars_schemas import (
+from app.domains.content.schemas.news_schemas import (
+    CreateNewsSchema,
+    NewsSchema,
+    NewsWithAuthorSchema,
+    UpdateNewsSchema,
+)
+from app.domains.content.schemas.webinars_schemas import (
     CreateWebinarSchema,
     UpdateWebinarSchema,
     UserWebinarSchema,

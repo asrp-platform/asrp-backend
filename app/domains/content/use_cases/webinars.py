@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from fastapi import Depends
 
 from app.core.utils.permissions import check_permissions
-from app.domains.news.services import WebinarServiceDep
+from app.domains.content.services import WebinarServiceDep
 
 
 class GetWebinarsUseCase:

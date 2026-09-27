@@ -3,8 +3,8 @@ from typing import Annotated, Any
 from fastapi import Depends
 
 from app.core.utils.permissions import check_any_permission, check_permissions
-from app.domains.news.cache import NewsCacheDep
-from app.domains.news.services import NewsServiceDep
+from app.domains.content.cache import NewsCacheDep
+from app.domains.content.services import NewsServiceDep
 from app.domains.shared.types import FileData
 
 

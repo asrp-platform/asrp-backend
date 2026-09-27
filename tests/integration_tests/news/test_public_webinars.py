@@ -4,8 +4,8 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
+from app.domains.content.models import Webinar
 from app.domains.memberships.models import UserMembership
-from app.domains.news.models import Webinar
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 

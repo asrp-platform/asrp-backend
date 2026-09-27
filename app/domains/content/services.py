@@ -15,10 +15,10 @@ from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, Payl
 from app.core.config import settings
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.save_file import generate_filename
+from app.domains.content.filters import WebinarStartFilterEnum
+from app.domains.content.models import News, Webinar, WebinarRegisteredUsers
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.utils import has_member_access
-from app.domains.news.filters import WebinarStartFilterEnum
-from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.shared.types import FileData, StoredFile
 from app.domains.users.models import User

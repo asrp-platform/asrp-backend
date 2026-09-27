@@ -36,7 +36,7 @@ async def setup_database(test_engine: AsyncEngine) -> AsyncIterator[None]:
     """Setups database"""
     from app.domains.directors_board.models import DirectorBoardMember  # noqa
     from app.domains.permissions.models import Permission  # noqa
-    from app.domains.news.models import News  # noqa raises Mapper initialization errors withot this import because of FK constaraint on User
+    from app.domains.content.models import News  # noqa raises Mapper initialization errors withot this import because of FK constaraint on User
     from app.domains.payments.models import Payment  # noqa raises Mapper initialization errors withot this import because of FK constaraint on User
 
     async with test_engine.begin() as conn:

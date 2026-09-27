@@ -23,6 +23,12 @@ from app.core.logging import configure_logging
 from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes import router as auth_router
+from app.domains.content.routes import (
+    news_admin_router,
+    news_router,
+    webinars_admin_router,
+    webinars_router,
+)
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
 from app.domains.feedback.routes import (
@@ -37,12 +43,6 @@ from app.domains.memberships.routes.membership_admin_api import router as member
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.memberships.routes.membership_types_admin_api import router as membership_types_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
-from app.domains.news.routes import (
-    news_admin_router,
-    news_router,
-    webinars_admin_router,
-    webinars_router,
-)
 from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router

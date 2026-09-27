@@ -1,7 +1,7 @@
 from sqlalchemy import asc, desc, func, select
 
 from app.core.database.base_repository import InvalidOrderAttributeError, SQLAlchemyRepository
-from app.domains.news.models import News, Webinar, WebinarRegisteredUsers
+from app.domains.content.models import News, Webinar, WebinarRegisteredUsers
 from app.domains.users.models import User
 
 

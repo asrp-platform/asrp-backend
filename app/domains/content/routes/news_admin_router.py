@@ -5,9 +5,9 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.domains.news.filters import NewsFilter
-from app.domains.news.schemas import CreateNewsSchema, NewsSchema, UpdateNewsSchema
-from app.domains.news.use_cases import (
+from app.domains.content.filters import NewsFilter
+from app.domains.content.schemas import CreateNewsSchema, NewsSchema, UpdateNewsSchema
+from app.domains.content.use_cases import (
     CreateNewsUseCaseDep,
     DeleteNewsUseCaseDep,
     GetNewsByIdUseCaseDep,

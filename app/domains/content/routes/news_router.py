@@ -5,10 +5,10 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.domains.news.cache import NewsCacheDep, is_first_page
-from app.domains.news.filters import PublicNewsFilter
-from app.domains.news.schemas import NewsSchema
-from app.domains.news.use_cases import GetNewsListUseCaseDep, GetPublishedNewsBySlugUseCaseDep
+from app.domains.content.cache import NewsCacheDep, is_first_page
+from app.domains.content.filters import PublicNewsFilter
+from app.domains.content.schemas import NewsSchema
+from app.domains.content.use_cases import GetNewsListUseCaseDep, GetPublishedNewsBySlugUseCaseDep
 
 
 router = APIRouter(prefix="/news", tags=["News"])

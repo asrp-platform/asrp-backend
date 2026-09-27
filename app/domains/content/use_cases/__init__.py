@@ -1,4 +1,4 @@
-from app.domains.news.use_cases.news import (
+from app.domains.content.use_cases.news import (
     CreateNewsUseCaseDep,
     DeleteNewsUseCaseDep,
     GetNewsByIdUseCaseDep,
@@ -7,7 +7,7 @@ from app.domains.news.use_cases.news import (
     UpdateNewsUseCaseDep,
     UploadNewsImageUseCaseDep,
 )
-from app.domains.news.use_cases.webinars import (
+from app.domains.content.use_cases.webinars import (
     CreateWebinarUseCaseDep,
     DeleteWebinarUseCaseDep,
     GetAdminWebinarsUseCaseDep,

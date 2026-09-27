@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 import pytest
 from faker import Faker
 
-from app.domains.news.cache import NewsCache
-from app.domains.news.models import News, Webinar
+from app.domains.content.cache import NewsCache
+from app.domains.content.models import News, Webinar
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 

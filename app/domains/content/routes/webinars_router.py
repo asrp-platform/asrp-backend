@@ -5,12 +5,16 @@ from fastapi import APIRouter, Depends
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import NotAuthorizedResponses, PaginatedResponse
+from app.domains.content.filters import WebinarFilters
+from app.domains.content.models import Webinar
+from app.domains.content.schemas import UserWebinarSchema, WebinarBaseSchema, WebinarPlaybackSchema
+from app.domains.content.use_cases import (
+    GetWebinarPlaybackUseCaseDep,
+    GetWebinarsUseCaseDep,
+    RegisterForWebinarUseCaseDep,
+)
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.utils import has_member_access
-from app.domains.news.filters import WebinarFilters
-from app.domains.news.models import Webinar
-from app.domains.news.schemas import UserWebinarSchema, WebinarBaseSchema, WebinarPlaybackSchema
-from app.domains.news.use_cases import GetWebinarPlaybackUseCaseDep, GetWebinarsUseCaseDep, RegisterForWebinarUseCaseDep
 from app.domains.shared.deps import CurrentUserDep, OptionalCurrentUserDep
 
 
