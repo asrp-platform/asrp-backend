@@ -1,3 +1,10 @@
+from app.domains.content.use_cases.case_tags import (
+    CreateCaseTagUseCaseDep,
+    DeleteCaseTagUseCaseDep,
+    GetCaseTagsUseCaseDep,
+    GetCaseTagUseCaseDep,
+    UpdateCaseTagUseCaseDep,
+)
 from app.domains.content.use_cases.news import (
     CreateNewsUseCaseDep,
     DeleteNewsUseCaseDep,
@@ -22,6 +29,8 @@ from app.domains.content.use_cases.webinars import (
 
 
 __all__ = [
+    "CreateCaseTagUseCaseDep",
+    "DeleteCaseTagUseCaseDep",
     "CreateNewsUseCaseDep",
     "DeleteNewsUseCaseDep",
     "GetNewsByIdUseCaseDep",
@@ -37,6 +46,9 @@ __all__ = [
     "GetWebinarPlaybackUseCaseDep",
     "GetWebinarUseCaseDep",
     "GetWebinarsUseCaseDep",
+    "GetCaseTagUseCaseDep",
+    "GetCaseTagsUseCaseDep",
     "RegisterForWebinarUseCaseDep",
     "UpdateWebinarUseCaseDep",
+    "UpdateCaseTagUseCaseDep",
 ]

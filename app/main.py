@@ -24,6 +24,8 @@ from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes import router as auth_router
 from app.domains.content.routes import (
+    case_of_the_month_admin_router,
+    case_of_the_month_router,
     news_admin_router,
     news_router,
     webinars_admin_router,
@@ -153,6 +155,7 @@ app.include_router(membership_types_router, prefix="/api")
 app.include_router(donations_router, prefix="/api")
 app.include_router(webinars_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
+app.include_router(case_of_the_month_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
@@ -167,6 +170,7 @@ app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
 app.include_router(webinars_admin_router, prefix="/api/admin")
 app.include_router(news_admin_router, prefix="/api/admin")
+app.include_router(case_of_the_month_admin_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")

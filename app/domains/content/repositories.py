@@ -1,12 +1,16 @@
 from sqlalchemy import asc, desc, func, select
 
 from app.core.database.base_repository import InvalidOrderAttributeError, SQLAlchemyRepository
-from app.domains.content.models import News, Webinar, WebinarRegisteredUsers
+from app.domains.content.models import CaseTag, News, Webinar, WebinarRegisteredUsers
 from app.domains.users.models import User
 
 
 class NewsRepository(SQLAlchemyRepository):
     model = News
+
+
+class CaseTagRepository(SQLAlchemyRepository):
+    model = CaseTag
 
 
 class WebinarRepository(SQLAlchemyRepository):

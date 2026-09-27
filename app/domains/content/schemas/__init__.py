@@ -1,3 +1,4 @@
+from app.domains.content.schemas.case_tags_schemas import CaseTagSchema, CreateCaseTagSchema, UpdateCaseTagSchema
 from app.domains.content.schemas.news_schemas import (
     CreateNewsSchema,
     NewsSchema,
@@ -14,9 +15,12 @@ from app.domains.content.schemas.webinars_schemas import (
 
 
 __all__ = [
+    "CaseTagSchema",
+    "CreateCaseTagSchema",
     "CreateNewsSchema",
     "NewsSchema",
     "NewsWithAuthorSchema",
+    "UpdateCaseTagSchema",
     "UpdateNewsSchema",
     "CreateWebinarSchema",
     "UpdateWebinarSchema",
