@@ -259,12 +259,22 @@ If `poetry run python -m weasyprint --info` fails with `cannot load library` or 
 pacman -S mingw-w64-ucrt-x86_64-pango
 ```
 
-If WeasyPrint still cannot find the DLLs, set their directory before starting the backend:
+If WeasyPrint still cannot find the DLLs, set their directory before starting the backend.
+
+For the current PowerShell session:
 
 ```bat
-set WEASYPRINT_DLL_DIRECTORIES=C:\msys64\ucrt64\bin
+$env:WEASYPRINT_DLL_DIRECTORIES="C:\msys64\ucrt64\bin"
 poetry run python -m weasyprint --info
 ```
+
+If this fixes the issue, set the environment variable permanently for the current Windows user:
+
+```bat
+[System.Environment]::SetEnvironmentVariable("WEASYPRINT_DLL_DIRECTORIES","C:\msys64\ucrt64\bin","User")
+```
+
+Restart the terminal, IDE, or backend process after setting the variable permanently.
 
 Avoid mixing MSYS2 libraries with Conda or an older GTK runtime: conflicting Pango and HarfBuzz DLLs can cause similar import and missing-symbol errors. See the [official Windows installation and troubleshooting guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows).
 
