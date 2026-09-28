@@ -55,19 +55,6 @@ async def get_cases(
 
 
 @router.get(
-    "/cases/{case_id}",
-    summary="Get a case of the month article by ID",
-    status_code=200,
-    responses=CaseOfTheMonthResponses.responses,
-)
-async def get_case(
-    case_id: int,
-    use_case: GetCaseOfTheMonthUseCaseDep,
-) -> CaseOfTheMonthSchema:
-    return await use_case.execute(case_id)
-
-
-@router.get(
     "/tags",
     summary="Get all case of the month tags",
     status_code=200,
@@ -85,3 +72,16 @@ async def get_case_tags(use_case: GetCaseTagsUseCaseDep) -> list[CaseTagSchema]:
 )
 async def get_case_tag(tag_id: int, use_case: GetCaseTagUseCaseDep) -> CaseTagSchema:
     return await use_case.execute(tag_id)
+
+
+@router.get(
+    "/cases/{case_slug}",
+    summary="Get a case of the month article by slug",
+    status_code=200,
+    responses=CaseOfTheMonthResponses.responses,
+)
+async def get_case(
+    case_slug: str,
+    use_case: GetCaseOfTheMonthUseCaseDep,
+) -> CaseOfTheMonthSchema:
+    return await use_case.execute_by_slug(case_slug)

@@ -88,6 +88,16 @@ class GetCaseOfTheMonthUseCase:
                 raise NotFoundError("Case of the month with provided ID not found")
             return await self.__service.to_dto(case)
 
+    async def execute_by_slug(self, case_slug: str) -> CaseOfTheMonthSchema:
+        async with self.__tm:
+            case = await self.__tm.case_of_the_month_repository.get_first_by_kwargs(
+                stmt=_case_with_tags_statement(),
+                slug=case_slug,
+            )
+            if case is None:
+                raise NotFoundError("Case of the month with provided slug not found")
+            return await self.__service.to_dto(case)
+
 
 class CreateCaseOfTheMonthUseCase:
     def __init__(self, transaction_manager: TransactionManagerDep, service: CaseOfTheMonthServiceDep):
