@@ -127,7 +127,7 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
             "path": "/",
             "httponly": True,
             "secure": True,
-            "samesite": "lax",
+            "samesite": "lax" if DEV_MODE else "none",
         }
 
     @property

@@ -13,6 +13,7 @@ from app.domains.content.filters import WebinarStartFilterEnum
 from app.domains.content.models import Webinar, WebinarRegisteredUsers
 from app.domains.memberships.utils import has_member_access
 from app.domains.shared.transaction_managers import TransactionManagerDep
+from app.domains.users.models import User
 
 
 class GetWebinarsUseCase:
@@ -162,8 +163,19 @@ class GetRegisteredWebinarUsersUseCase:
             webinar = await self.__tm.webinar_repository.get_first_by_kwargs(id=webinar_id)
             if webinar is None:
                 raise NotFoundError("Webinar with provided ID not found")
-            return await self.__tm.webinar_repository.list_registered_users(
-                webinar_id, limit=limit, offset=offset, order_by=order_by
+            stmt = (
+                select(User)
+                .join(
+                    WebinarRegisteredUsers,
+                    WebinarRegisteredUsers.user_id == User.id,
+                )
+                .where(WebinarRegisteredUsers.webinar_id == webinar_id)
+            )
+            return await self.__tm.user_repository.list(
+                limit,
+                offset,
+                order_by,
+                stmt=stmt,
             )
 
 

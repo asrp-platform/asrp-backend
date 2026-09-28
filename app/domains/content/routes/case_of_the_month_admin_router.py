@@ -1,14 +1,34 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi_exception_responses import Responses
 
-from app.domains.content.schemas import CaseTagSchema, CreateCaseTagSchema, UpdateCaseTagSchema
+from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
+from app.core.common.responses import PaginatedResponse
+from app.domains.content.filters import CaseOfTheMonthFilter
+from app.domains.content.schemas import (
+    CaseOfTheMonthSchema,
+    CaseTagSchema,
+    CreateCaseOfTheMonthSchema,
+    CreateCaseTagSchema,
+    UpdateCaseOfTheMonthSchema,
+    UpdateCaseTagSchema,
+)
 from app.domains.content.use_cases import (
+    CreateCaseOfTheMonthUseCaseDep,
     CreateCaseTagUseCaseDep,
+    DeleteCaseOfTheMonthUseCaseDep,
     DeleteCaseTagUseCaseDep,
+    GetCaseOfTheMonthListUseCaseDep,
+    GetCaseOfTheMonthUseCaseDep,
     GetCaseTagsUseCaseDep,
     GetCaseTagUseCaseDep,
+    UpdateCaseOfTheMonthUseCaseDep,
     UpdateCaseTagUseCaseDep,
+    UploadCaseOfTheMonthImageUseCaseDep,
 )
+from app.domains.shared.schemas import UploadedImageSchema
+from app.domains.shared.types import FileData
 
 
 router = APIRouter(prefix="/case-of-the-month", tags=["Admin: Case of the Month"])
@@ -17,6 +37,118 @@ router = APIRouter(prefix="/case-of-the-month", tags=["Admin: Case of the Month"
 class CaseTagResponses(Responses):
     CASE_TAG_NOT_FOUND = 404, "Case tag with provided ID not found"
     CASE_TAG_ALREADY_EXISTS = 409, "Case tag with provided name already exists"
+
+
+class CaseOfTheMonthResponses(Responses):
+    CASE_NOT_FOUND = 404, "Case of the month with provided ID not found"
+    CASE_TAG_NOT_FOUND = 404, "One or more case tag IDs were not found"
+    INVALID_SORTER_FIELD = 400, "Invalid sorter field"
+
+
+class CaseOfTheMonthImageResponses(Responses):
+    FILE_TOO_LARGE = 413, "Image must be smaller than 5 MB"
+    INVALID_CONTENT_TYPE = 415, "Invalid image content type"
+
+
+@router.get(
+    "/cases",
+    summary="Get a paginated list of case of the month articles",
+    status_code=200,
+    responses=CaseOfTheMonthResponses.responses,
+)
+async def get_cases(
+    use_case: GetCaseOfTheMonthListUseCaseDep,
+    params: PaginationParamsDep,
+    ordering: OrderingParamsDep = None,
+    filters: Annotated[CaseOfTheMonthFilter, Depends()] = None,
+) -> PaginatedResponse[CaseOfTheMonthSchema]:
+    data, count = await use_case.execute(
+        limit=params["limit"],
+        offset=params["offset"],
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True) if filters else {},
+    )
+    return PaginatedResponse(
+        count=count,
+        data=data,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
+
+
+@router.post(
+    "/cases",
+    status_code=201,
+    summary="Create a case of the month article",
+    responses=CaseOfTheMonthResponses.responses,
+)
+async def create_case(
+    body: CreateCaseOfTheMonthSchema,
+    use_case: CreateCaseOfTheMonthUseCaseDep,
+) -> CaseOfTheMonthSchema:
+    return await use_case.execute(body.model_dump())
+
+
+@router.post(
+    "/images",
+    status_code=201,
+    summary="Upload an image for a case of the month article",
+    responses=CaseOfTheMonthImageResponses.responses,
+)
+async def upload_image(
+    file: Annotated[UploadFile, File(...)],
+    use_case: UploadCaseOfTheMonthImageUseCaseDep,
+) -> UploadedImageSchema:
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
+    stored_file = await use_case.execute(file_data)
+    return UploadedImageSchema(
+        file_url=stored_file.file_url,
+        object_key=stored_file.object_key,
+    )
+
+
+@router.get(
+    "/cases/{case_id}",
+    summary="Get a case of the month article by ID",
+    status_code=200,
+    responses=CaseOfTheMonthResponses.responses,
+)
+async def get_case(
+    case_id: int,
+    use_case: GetCaseOfTheMonthUseCaseDep,
+) -> CaseOfTheMonthSchema:
+    return await use_case.execute(case_id)
+
+
+@router.patch(
+    "/cases/{case_id}",
+    status_code=200,
+    summary="Update a case of the month article",
+    responses=CaseOfTheMonthResponses.responses,
+)
+async def update_case(
+    case_id: int,
+    body: UpdateCaseOfTheMonthSchema,
+    use_case: UpdateCaseOfTheMonthUseCaseDep,
+) -> CaseOfTheMonthSchema:
+    return await use_case.execute(case_id, body.model_dump(exclude_unset=True))
+
+
+@router.delete(
+    "/cases/{case_id}",
+    status_code=204,
+    summary="Delete a case of the month article",
+    responses=CaseOfTheMonthResponses.responses,
+)
+async def delete_case(
+    case_id: int,
+    use_case: DeleteCaseOfTheMonthUseCaseDep,
+) -> None:
+    await use_case.execute(case_id)
 
 
 @router.get(

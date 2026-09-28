@@ -134,17 +134,24 @@ class CaseOfTheMonth(Base, UCIMixin):
         unique=True,
         index=True,
     )
+    cover_key: Mapped[str] = mapped_column(nullable=True)
 
     # clinical presentation and history
     history: Mapped[dict] = mapped_column(JSONB, nullable=False)
     case_findings: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
-    publication_month: Mapped[date] = mapped_column(Date, nullable=False)
+    virtual_slides: Mapped[list[str]] = mapped_column(
+        ARRAY(Text),
+        nullable=False,
+        default=list,
+    )
     questions: Mapped[list[str]] = mapped_column(
         ARRAY(Text),
         nullable=False,
         default=list,
     )
+
+    publication_month: Mapped[date] = mapped_column(Date, nullable=False)
     answer: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     tags: Mapped[list["CaseTag"]] = relationship(

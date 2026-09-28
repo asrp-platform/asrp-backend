@@ -23,6 +23,10 @@ class PublicNewsFilter(BaseModel):
     created_at__lte: Annotated[datetime | None, Query(description="Created_at less filter")] = None
 
 
+class CaseOfTheMonthFilter(BaseModel):
+    tag_id: Annotated[int | None, Query(description="Filter cases by tag ID")] = None
+
+
 class WebinarStartFilterEnum(str, Enum):
     UPCOMING = "UPCOMING"
     PAST = "PAST"

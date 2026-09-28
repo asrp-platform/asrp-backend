@@ -1,3 +1,11 @@
+from app.domains.content.use_cases.case_of_the_month import (
+    CreateCaseOfTheMonthUseCaseDep,
+    DeleteCaseOfTheMonthUseCaseDep,
+    GetCaseOfTheMonthListUseCaseDep,
+    GetCaseOfTheMonthUseCaseDep,
+    UpdateCaseOfTheMonthUseCaseDep,
+    UploadCaseOfTheMonthImageUseCaseDep,
+)
 from app.domains.content.use_cases.case_tags import (
     CreateCaseTagUseCaseDep,
     DeleteCaseTagUseCaseDep,
@@ -30,7 +38,9 @@ from app.domains.content.use_cases.webinars import (
 
 __all__ = [
     "CreateCaseTagUseCaseDep",
+    "CreateCaseOfTheMonthUseCaseDep",
     "DeleteCaseTagUseCaseDep",
+    "DeleteCaseOfTheMonthUseCaseDep",
     "CreateNewsUseCaseDep",
     "DeleteNewsUseCaseDep",
     "GetNewsByIdUseCaseDep",
@@ -48,7 +58,11 @@ __all__ = [
     "GetWebinarsUseCaseDep",
     "GetCaseTagUseCaseDep",
     "GetCaseTagsUseCaseDep",
+    "GetCaseOfTheMonthListUseCaseDep",
+    "GetCaseOfTheMonthUseCaseDep",
     "RegisterForWebinarUseCaseDep",
     "UpdateWebinarUseCaseDep",
     "UpdateCaseTagUseCaseDep",
+    "UpdateCaseOfTheMonthUseCaseDep",
+    "UploadCaseOfTheMonthImageUseCaseDep",
 ]
