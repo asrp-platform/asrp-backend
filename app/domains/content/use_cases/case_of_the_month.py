@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 
 from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, PayloadTooLargeError
 from app.core.storage.storage_factory import FileStorageDep
@@ -21,7 +21,10 @@ _UNSET = object()
 
 
 def _case_with_tags_statement():
-    return select(CaseOfTheMonth).options(selectinload(CaseOfTheMonth.tags))
+    return select(CaseOfTheMonth).options(
+        selectinload(CaseOfTheMonth.tags),
+        with_loader_criteria(CaseTag, CaseTag._deleted.is_(False), include_aliases=True),
+    )
 
 
 async def _get_case_tags(transaction_manager, tag_ids: list[int]):
@@ -63,7 +66,11 @@ class GetCaseOfTheMonthListUseCase:
             tag_id = (filters or {}).get("tag_id")
             stmt = _case_with_tags_statement()
             if tag_id is not None:
-                stmt = stmt.where(CaseOfTheMonth.tags.any(CaseTag.id == tag_id))
+                stmt = stmt.where(
+                    CaseOfTheMonth.tags.any(
+                        (CaseTag.id == tag_id) & CaseTag._deleted.is_(False),
+                    )
+                )
             cases, count = await self.__tm.case_of_the_month_repository.list(
                 limit,
                 offset,

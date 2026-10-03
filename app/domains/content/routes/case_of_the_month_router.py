@@ -24,7 +24,7 @@ class CaseTagResponses(Responses):
 
 
 class CaseOfTheMonthResponses(Responses):
-    CASE_NOT_FOUND = 404, "Case of the month with provided ID not found"
+    CASE_NOT_FOUND = 404, "Case of the month with provided slug not found"
     INVALID_SORTER_FIELD = 400, "Invalid sorter field"
 
 

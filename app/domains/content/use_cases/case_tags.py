@@ -64,6 +64,13 @@ class DeleteCaseTagUseCase:
 
     async def execute(self, tag_id: int) -> None:
         async with self.__tm:
+            tag = await self.__tm.case_tag_repository.get_first_by_kwargs(id=tag_id)
+            if tag is None:
+                raise NotFoundError("Case tag with provided ID not found")
+
+            if await self.__tm.case_tag_repository.has_active_cases(tag_id):
+                raise ResourceAlreadyExistsError("Case tag cannot be deleted because it is used by cases")
+
             await self.__tm.case_tag_repository.mark_as_deleted(tag_id)
 
 

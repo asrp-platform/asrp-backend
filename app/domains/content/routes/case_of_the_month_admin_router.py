@@ -5,6 +5,7 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
+from app.core.utils.permissions import check_any_permission, check_permissions
 from app.domains.content.filters import CaseOfTheMonthFilter
 from app.domains.content.schemas import (
     CaseOfTheMonthSchema,
@@ -27,25 +28,37 @@ from app.domains.content.use_cases import (
     UpdateCaseTagUseCaseDep,
     UploadCaseOfTheMonthImageUseCaseDep,
 )
+from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 from app.domains.shared.schemas import UploadedImageSchema
 from app.domains.shared.types import FileData
 
 
-router = APIRouter(prefix="/case-of-the-month", tags=["Admin: Case of the Month"])
+router = APIRouter(
+    prefix="/case-of-the-month",
+    tags=["Admin: Case of the Month"],
+    dependencies=[Depends(get_admin_user)],
+)
 
 
 class CaseTagResponses(Responses):
+    NOT_AUTHORIZED = 401, "Not authorized"
+    PERMISSION_ERROR = 403, "Not enough permissions"
     CASE_TAG_NOT_FOUND = 404, "Case tag with provided ID not found"
     CASE_TAG_ALREADY_EXISTS = 409, "Case tag with provided name already exists"
+    CASE_TAG_IN_USE = 409, "Case tag cannot be deleted because it is used by cases"
 
 
 class CaseOfTheMonthResponses(Responses):
+    NOT_AUTHORIZED = 401, "Not authorized"
+    PERMISSION_ERROR = 403, "Not enough permissions"
     CASE_NOT_FOUND = 404, "Case of the month with provided ID not found"
     CASE_TAG_NOT_FOUND = 404, "One or more case tag IDs were not found"
     INVALID_SORTER_FIELD = 400, "Invalid sorter field"
 
 
 class CaseOfTheMonthImageResponses(Responses):
+    NOT_AUTHORIZED = 401, "Not authorized"
+    PERMISSION_ERROR = 403, "Not enough permissions"
     FILE_TOO_LARGE = 413, "Image must be smaller than 5 MB"
     INVALID_CONTENT_TYPE = 415, "Invalid image content type"
 
@@ -58,10 +71,12 @@ class CaseOfTheMonthImageResponses(Responses):
 )
 async def get_cases(
     use_case: GetCaseOfTheMonthListUseCaseDep,
+    permissions: AdminPermissionsDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[CaseOfTheMonthFilter, Depends()] = None,
 ) -> PaginatedResponse[CaseOfTheMonthSchema]:
+    check_permissions("case_of_the_month.view", permissions)
     data, count = await use_case.execute(
         limit=params["limit"],
         offset=params["offset"],
@@ -84,8 +99,10 @@ async def get_cases(
 )
 async def create_case(
     body: CreateCaseOfTheMonthSchema,
+    permissions: AdminPermissionsDep,
     use_case: CreateCaseOfTheMonthUseCaseDep,
 ) -> CaseOfTheMonthSchema:
+    check_permissions("case_of_the_month.create", permissions)
     return await use_case.execute(body.model_dump())
 
 
@@ -97,8 +114,10 @@ async def create_case(
 )
 async def upload_image(
     file: Annotated[UploadFile, File(...)],
+    permissions: AdminPermissionsDep,
     use_case: UploadCaseOfTheMonthImageUseCaseDep,
 ) -> UploadedImageSchema:
+    check_any_permission({"case_of_the_month.create", "case_of_the_month.update"}, permissions)
     file_data = FileData(
         content=await file.read(),
         content_type=file.content_type,
@@ -119,8 +138,10 @@ async def upload_image(
 )
 async def get_case(
     case_id: int,
+    permissions: AdminPermissionsDep,
     use_case: GetCaseOfTheMonthUseCaseDep,
 ) -> CaseOfTheMonthSchema:
+    check_permissions("case_of_the_month.view", permissions)
     return await use_case.execute(case_id)
 
 
@@ -133,8 +154,10 @@ async def get_case(
 async def update_case(
     case_id: int,
     body: UpdateCaseOfTheMonthSchema,
+    permissions: AdminPermissionsDep,
     use_case: UpdateCaseOfTheMonthUseCaseDep,
 ) -> CaseOfTheMonthSchema:
+    check_permissions("case_of_the_month.update", permissions)
     return await use_case.execute(case_id, body.model_dump(exclude_unset=True))
 
 
@@ -146,8 +169,10 @@ async def update_case(
 )
 async def delete_case(
     case_id: int,
+    permissions: AdminPermissionsDep,
     use_case: DeleteCaseOfTheMonthUseCaseDep,
 ) -> None:
+    check_permissions("case_of_the_month.delete", permissions)
     await use_case.execute(case_id)
 
 
@@ -157,7 +182,8 @@ async def delete_case(
     status_code=200,
     responses=CaseTagResponses.responses,
 )
-async def get_case_tags(use_case: GetCaseTagsUseCaseDep) -> list[CaseTagSchema]:
+async def get_case_tags(permissions: AdminPermissionsDep, use_case: GetCaseTagsUseCaseDep) -> list[CaseTagSchema]:
+    check_permissions("case_of_the_month.view", permissions)
     return await use_case.execute()
 
 
@@ -167,7 +193,12 @@ async def get_case_tags(use_case: GetCaseTagsUseCaseDep) -> list[CaseTagSchema]:
     status_code=200,
     responses=CaseTagResponses.responses,
 )
-async def get_case_tag(tag_id: int, use_case: GetCaseTagUseCaseDep) -> CaseTagSchema:
+async def get_case_tag(
+    tag_id: int,
+    permissions: AdminPermissionsDep,
+    use_case: GetCaseTagUseCaseDep,
+) -> CaseTagSchema:
+    check_permissions("case_of_the_month.view", permissions)
     return await use_case.execute(tag_id)
 
 
@@ -177,7 +208,12 @@ async def get_case_tag(tag_id: int, use_case: GetCaseTagUseCaseDep) -> CaseTagSc
     status_code=201,
     responses=CaseTagResponses.responses,
 )
-async def create_case_tag(body: CreateCaseTagSchema, use_case: CreateCaseTagUseCaseDep) -> CaseTagSchema:
+async def create_case_tag(
+    body: CreateCaseTagSchema,
+    permissions: AdminPermissionsDep,
+    use_case: CreateCaseTagUseCaseDep,
+) -> CaseTagSchema:
+    check_permissions("case_of_the_month.create", permissions)
     return await use_case.execute(**body.model_dump())
 
 
@@ -190,8 +226,10 @@ async def create_case_tag(body: CreateCaseTagSchema, use_case: CreateCaseTagUseC
 async def update_case_tag(
     tag_id: int,
     body: UpdateCaseTagSchema,
+    permissions: AdminPermissionsDep,
     use_case: UpdateCaseTagUseCaseDep,
 ) -> CaseTagSchema:
+    check_permissions("case_of_the_month.update", permissions)
     return await use_case.execute(tag_id, body.model_dump(exclude_unset=True))
 
 
@@ -201,5 +239,10 @@ async def update_case_tag(
     status_code=204,
     responses=CaseTagResponses.responses,
 )
-async def delete_case_tag(tag_id: int, use_case: DeleteCaseTagUseCaseDep) -> None:
+async def delete_case_tag(
+    tag_id: int,
+    permissions: AdminPermissionsDep,
+    use_case: DeleteCaseTagUseCaseDep,
+) -> None:
+    check_permissions("case_of_the_month.delete", permissions)
     await use_case.execute(tag_id)

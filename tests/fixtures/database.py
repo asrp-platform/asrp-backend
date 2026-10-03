@@ -104,6 +104,10 @@ async def insert_test_data(
             Permission(action="news.view", name="View news"),
             Permission(action="news.delete", name="Delete news"),
             Permission(action="news.update", name="Update news"),
+            Permission(action="case_of_the_month.create", name="Create case of the month"),
+            Permission(action="case_of_the_month.view", name="View case of the month"),
+            Permission(action="case_of_the_month.delete", name="Delete case of the month"),
+            Permission(action="case_of_the_month.update", name="Update case of the month"),
             MembershipType(
                 name="Active Member",
                 type="ACTIVE",
