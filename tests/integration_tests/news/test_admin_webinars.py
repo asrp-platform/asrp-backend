@@ -5,7 +5,7 @@ from faker import Faker
 from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
 
-from app.domains.news.models import Webinar
+from app.domains.content.models import Webinar
 from app.domains.users.models import User
 from tests.fixtures.auth import AuthHeaders
 

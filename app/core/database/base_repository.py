@@ -57,7 +57,6 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
     ) -> [Sequence[T], int]:
         if stmt is None:
             stmt = select(self.model)
-        count_stmt = select(func.count()).select_from(self.model)
 
         if filters:
             try:
@@ -65,7 +64,6 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
             except ValueError as e:
                 raise InvalidFilterError(f"Invalid filter for {self.model.__name__}. Error: {e}")
             stmt = stmt.filter(*conditions)
-            count_stmt = count_stmt.filter(*conditions)
 
         if order_by is not None:
             for param in order_by.split(","):
@@ -76,11 +74,11 @@ class SQLAlchemyRepository(BaseRepository, Generic[T]):
                     raise InvalidOrderAttributeError(f"{self.model.__name__} don't have attribute <{param}>")
                 stmt = stmt.order_by(desc(field_name) if desc_order else asc(field_name))
 
+        stmt = stmt.where(self.model._deleted.is_(False))
+        count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
+
         if limit is not None and offset is not None:
             stmt = stmt.offset(offset).limit(limit)
-
-        stmt = stmt.filter_by(_deleted=False)
-        count_stmt = count_stmt.filter_by(_deleted=False)
 
         data = (await self.session.execute(stmt)).scalars().all()
         count = (await self.session.execute(count_stmt)).scalar_one()

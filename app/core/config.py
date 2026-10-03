@@ -121,6 +121,16 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
         return self.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS * 24 * 60 * 60
 
     @property
+    def refresh_token_cookie_kwargs(self) -> dict:
+        return {
+            "key": "refresh_token",
+            "path": "/",
+            "httponly": True,
+            "secure": True,
+            "samesite": "lax" if DEV_MODE else "none",
+        }
+
+    @property
     def s3_endpoint_url(self) -> str:
         return self.S3_ENDPOINT or ("http://localhost:9000" if DEV_MODE else "http://minio:9000")
 

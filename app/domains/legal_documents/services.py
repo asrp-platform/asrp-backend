@@ -101,6 +101,26 @@ def get_bylaws_service(
 BylawsServiceDep = Annotated[LegalDocumentsService, Depends(get_bylaws_service)]
 
 
+def get_submission_guidelines_document() -> LegalDocument:
+    return LegalDocument(
+        filename="legal_documents/submission_guidelines.pdf",
+        mime_type="application/pdf",
+    )
+
+
+def get_submission_guidelines_service(
+    document: Annotated[LegalDocument, Depends(get_submission_guidelines_document)],
+    file_storage: FileStorageDep,
+) -> LegalDocumentsService:
+    return LegalDocumentsService(document, file_storage)
+
+
+SubmissionGuidelinesServiceDep = Annotated[
+    LegalDocumentsService,
+    Depends(get_submission_guidelines_service),
+]
+
+
 def get_sponsors_service(file_storage: FileStorageDep, transaction_manager: TransactionManagerDep) -> SponsorsService:
     return SponsorsService(transaction_manager, file_storage)
 

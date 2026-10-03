@@ -30,14 +30,15 @@ class GetInterestsUseCase:
     ) -> tuple[Sequence[FeedbackAdditionalInfo], int]:
         check_permissions("feedback.view", permissions)
 
-        data, count = await self.__feedback_service.get_interests_paginated_counted(
-            limit=limit,
-            offset=offset,
-            search=search,
-            has_telegram=has_telegram,
-            date_from=date_from,
-            date_to=date_to,
-        )
+        async with self.__tm:
+            data, count = await self.__feedback_service.get_interests_paginated_counted(
+                limit=limit,
+                offset=offset,
+                search=search,
+                has_telegram=has_telegram,
+                date_from=date_from,
+                date_to=date_to,
+            )
 
         return data, count
 

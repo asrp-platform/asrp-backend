@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.shared.deps import create_access_token
+from app.domains.auth.services import AuthJwtService
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import Fellowship, Job, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
@@ -152,7 +152,7 @@ async def test_create_user_fellowship_forbidden(
     fellowship_data: dict,
 ):
     another_user = await user_factory()
-    access_token = create_access_token({"email": another_user.email})
+    access_token = AuthJwtService().create_access_token({"email": another_user.email})
 
     response = await client.post(
         f"/api/users/{test_user.id}/fellowships",
@@ -258,7 +258,7 @@ async def test_update_user_fellowship_forbidden(
     fellowship_data: dict,
 ):
     another_user = await user_factory()
-    access_token = create_access_token({"email": another_user.email})
+    access_token = AuthJwtService().create_access_token({"email": another_user.email})
 
     response = await client.put(
         f"/api/users/{test_user.id}/fellowships/{fellowship.id}",

@@ -4,8 +4,11 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.utils.permissions import check_permissions
-from app.domains.feedback.constants import HEAR_ABOUT_ASRP_OPTIONS
-from app.domains.feedback.schemas import HearAboutOptionStatsSchema, HearAboutStatsResponseSchema
+from app.domains.feedback.schemas import (
+    HEAR_ABOUT_ASRP_OPTIONS,
+    HearAboutOptionStatsSchema,
+    HearAboutStatsResponseSchema,
+)
 from app.domains.feedback.services import FeedbackAdditionalInfoServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
@@ -27,10 +30,11 @@ class GetHearAboutStatsUseCase:
     ) -> HearAboutStatsResponseSchema:
         check_permissions("feedback.view", permissions)
 
-        raw_stats = await self.__feedback_service.get_hear_about_stats(
-            date_from=date_from,
-            date_to=date_to,
-        )
+        async with self.__tm:
+            raw_stats = await self.__feedback_service.get_hear_about_stats(
+                date_from=date_from,
+                date_to=date_to,
+            )
 
         # Keep stats aligned with Select options and fold unknown legacy values into "other".
         stats_dict = {opt: 0 for opt in HEAR_ABOUT_ASRP_OPTIONS}

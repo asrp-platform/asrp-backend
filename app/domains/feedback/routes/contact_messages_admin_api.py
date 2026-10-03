@@ -1,19 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
-from fastapi_exception_responses import Responses
+from fastapi import APIRouter, Depends, Query
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import InvalidRequestParamsResponses, PaginatedResponse, PermissionsResponses
-from app.core.database.base_repository import InvalidOrderAttributeError
-from app.core.utils.permissions import check_permissions
 from app.domains.feedback.filters import ContactMessagesFilter
 from app.domains.feedback.schemas import (
     AnswerContactMessageSchema,
     ContactMessageReplyResponseSchema,
     ContactMessageResponseSchema,
 )
-from app.domains.feedback.services import FeedbackServiceDep
+from app.domains.feedback.use_cases import AnswerContactMessageUseCaseDep, GetContactMessagesUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 
@@ -24,35 +21,36 @@ class GetContactMessagesResponses(InvalidRequestParamsResponses, PermissionsResp
     pass
 
 
-@router.get("", responses=GetContactMessagesResponses.responses)
+@router.get(
+    "",
+    summary="Get contact messages",
+    responses=GetContactMessagesResponses.responses,
+    status_code=200,
+)
 async def get_contact_messages(
     permissions: AdminPermissionsDep,
-    contact_message_service: FeedbackServiceDep,
+    use_case: GetContactMessagesUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
+    order_by: str | None = Query(None, description="Sorting parameters"),
     filters: Annotated[ContactMessagesFilter, Depends()] = None,
 ) -> PaginatedResponse[ContactMessageResponseSchema]:
-    if "feedback.view" not in permissions:
-        raise GetContactMessagesResponses.PERMISSION_ERROR
-
-    try:
-        contact_messages, messages_count = await contact_message_service.get_all_paginated_counted(
-            order_by=ordering,
-            filters=filters.model_dump(exclude_none=True),
-            limit=params["limit"],
-            offset=params["offset"],
-        )
-        return PaginatedResponse(
-            count=messages_count,
-            data=contact_messages,
-            page=params["page"],
-            page_size=params["page_size"],
-        )
-    except InvalidOrderAttributeError:
-        raise InvalidRequestParamsResponses.INVALID_SORTER_FIELD
+    contact_messages, messages_count = await use_case.execute(
+        permissions=permissions,
+        order_by=ordering or order_by,
+        filters=filters.model_dump(exclude_none=True) if filters else {},
+        limit=params["limit"],
+        offset=params["offset"],
+    )
+    return PaginatedResponse(
+        count=messages_count,
+        data=contact_messages,
+        page=params["page"],
+        page_size=params["page_size"],
+    )
 
 
-class AnswerContactMessageResponses(Responses):
+class AnswerContactMessageResponses(PermissionsResponses):
     CONTACT_MESSAGE_NOT_FOUND = 404, "Contact message with provided id not found"
 
 
@@ -60,15 +58,17 @@ class AnswerContactMessageResponses(Responses):
     "/{message_id}/answers",
     responses=AnswerContactMessageResponses.responses,
     status_code=201,
-    summary="Creates an answer for the contact request",
+    summary="Answer a contact message",
 )
 async def answer_contact_message(
     message_id: int,
     body: AnswerContactMessageSchema,
     permissions: AdminPermissionsDep,
-    contact_message_service: FeedbackServiceDep,
+    use_case: AnswerContactMessageUseCaseDep,
 ) -> ContactMessageReplyResponseSchema:
-    check_permissions("feedback.update", permissions)
-    return await contact_message_service.answer_contact_message(
-        contact_message_id=message_id, subject=body.subject, answer_message=body.answer_message
+    return await use_case.execute(
+        message_id=message_id,
+        subject=body.subject,
+        answer_message=body.answer_message,
+        permissions=permissions,
     )

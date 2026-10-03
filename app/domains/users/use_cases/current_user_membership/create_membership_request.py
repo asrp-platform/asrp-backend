@@ -56,7 +56,7 @@ class CreateUserMembershipRequestUseCase:
             # Need to get membership_request id
             await self.__transaction_manager.flush()
 
-            await self.__feedback_additional_info_service.create_feedback_additional_info(
+            await self.__feedback_additional_info_service.create(
                 current_user.id,
                 **feedback_additional_info_data,
             )

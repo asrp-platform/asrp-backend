@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from app.domains.shared.deps import create_access_token
+from app.domains.auth.services import AuthJwtService
 from app.domains.users.models import ProfessionalInformation, User
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
@@ -76,7 +76,7 @@ async def test_put_professional_information_forbidden(
 ):
     # создаем другого пользователя
     another_user = await user_factory()
-    access_token = create_access_token({"email": another_user.email})
+    access_token = AuthJwtService().create_access_token({"email": another_user.email})
 
     response = await client.put(
         f"/api/users/{test_user.id}/professional-information",

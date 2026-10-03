@@ -5,10 +5,9 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.domains.news.cache import NewsCacheDep, is_first_page
-from app.domains.news.filters import PublicNewsFilter
-from app.domains.news.schemas import NewsSchema
-from app.domains.news.services import NewsServiceDep
+from app.domains.content.filters import PublicNewsFilter
+from app.domains.content.schemas import NewsSchema
+from app.domains.content.use_cases import GetPublishedNewsBySlugUseCaseDep, GetPublishedNewsListUseCaseDep
 
 
 router = APIRouter(prefix="/news", tags=["News"])
@@ -29,38 +28,19 @@ class PublicNewsDetailResponses(Responses):
     responses=PublicNewsResponses.responses,
 )
 async def get_published_news_paginated_counted(
-    service: NewsServiceDep,
+    use_case: GetPublishedNewsListUseCaseDep,
     params: PaginationParamsDep,
-    cache: NewsCacheDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[PublicNewsFilter, Depends()] = None,
 ) -> PaginatedResponse[NewsSchema]:
-    news_filters = filters.model_dump(exclude_none=True)
-    use_cache = is_first_page(params=params, ordering=ordering, filters=news_filters)
-
-    if use_cache:
-        cached_data = await cache.get_first_page_from_cache()
-        if cached_data is not None:
-            return cached_data
-
-    news_filters["is_published"] = True
-
-    data, count = await service.get_news_paginated_counted(
-        order_by=ordering,
-        filters=news_filters,
-        limit=params["limit"],
-        offset=params["offset"],
-        open_transaction=True,
-    )
-    response = PaginatedResponse[NewsSchema](
-        count=count,
-        data=data,
+    return await use_case.execute(
         page=params["page"],
         page_size=params["page_size"],
+        limit=params["limit"],
+        offset=params["offset"],
+        order_by=ordering,
+        filters=filters.model_dump(exclude_none=True) if filters else {},
     )
-    if use_cache:
-        await cache.cache_first_page(response)
-    return response
 
 
 @router.get(
@@ -70,6 +50,6 @@ async def get_published_news_paginated_counted(
 )
 async def get_published_news_detail(
     slug: str,
-    service: NewsServiceDep,
+    use_case: GetPublishedNewsBySlugUseCaseDep,
 ) -> NewsSchema:
-    return await service.get_published_news_by_slug(slug)
+    return await use_case.execute(slug)

@@ -22,27 +22,29 @@ from app.core.database.setup_db import session_getter
 from app.core.logging import configure_logging
 from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
-from app.domains.auth.routes.auth_api import router as auth_router
+from app.domains.auth.routes import router as auth_router
+from app.domains.content.routes import (
+    case_of_the_month_admin_router,
+    case_of_the_month_router,
+    news_admin_router,
+    news_router,
+    webinars_admin_router,
+    webinars_router,
+)
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
-from app.domains.feedback.routes.contact_messages_admin_api import router as contact_messages_admin_router
-from app.domains.feedback.routes.contact_messages_api import router as contact_messages_router
-from app.domains.feedback.routes.feedback_additional_info_admin_api import (
-    router as feedback_additional_info_admin_router,
+from app.domains.feedback.routes import (
+    contact_messages_admin_router,
+    contact_messages_router,
+    feedback_additional_info_admin_router,
+    feedback_additional_info_router,
 )
-from app.domains.feedback.routes.feedback_additional_info_api import router as feedback_additional_info_router
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
 from app.domains.memberships.routes.membership_admin_api import router as membership_admin_router
 from app.domains.memberships.routes.membership_requests_admin_api import router as membership_requests_admin_router
 from app.domains.memberships.routes.membership_types_admin_api import router as membership_types_admin_router
 from app.domains.memberships.routes.membership_types_api import router as membership_types_router
-from app.domains.news.routes import (
-    news_admin_router,
-    news_router,
-    webinars_admin_router,
-    webinars_router,
-)
 from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
@@ -153,6 +155,7 @@ app.include_router(membership_types_router, prefix="/api")
 app.include_router(donations_router, prefix="/api")
 app.include_router(webinars_router, prefix="/api")
 app.include_router(news_router, prefix="/api")
+app.include_router(case_of_the_month_router, prefix="/api")
 
 
 app.include_router(users_admin_router, prefix="/api/admin")
@@ -167,6 +170,7 @@ app.include_router(membership_requests_admin_router, prefix="/api/admin")
 app.include_router(payments_admin_router, prefix="/api/admin")
 app.include_router(webinars_admin_router, prefix="/api/admin")
 app.include_router(news_admin_router, prefix="/api/admin")
+app.include_router(case_of_the_month_admin_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")

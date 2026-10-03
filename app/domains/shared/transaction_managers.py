@@ -5,6 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database.base_transaction_manager import BaseTransactionManager, SQLAlchemyTransactionManagerBase
 from app.core.database.setup_db import session_getter
+from app.domains.content.repositories import (
+    CaseOfTheMonthRepository,
+    CaseTagRepository,
+    NewsRepository,
+    WebinarRepository,
+)
 from app.domains.directors_board.repositories import DirectorBoardMemberRepository
 from app.domains.feedback.repositories import (
     ContactMessageReplyRepository,
@@ -18,7 +24,6 @@ from app.domains.memberships.repositories import (
     MembershipTypeRepository,
     UserMembershipRepository,
 )
-from app.domains.news.repositories import NewsRepository, WebinarRepository
 from app.domains.payments.repositories import PaymentRepository, ProcessedWebhookEventRepository
 from app.domains.permissions.repositories import PermissionRepository, UserPermissionRepository
 from app.domains.users.repositories import (
@@ -121,6 +126,14 @@ class TransactionManager(SQLAlchemyTransactionManagerBase):
     @property
     def news_repository(self):
         return NewsRepository(self._session)
+
+    @property
+    def case_of_the_month_repository(self):
+        return CaseOfTheMonthRepository(self._session)
+
+    @property
+    def case_tag_repository(self):
+        return CaseTagRepository(self._session)
 
 
 def get_transaction_manager(
