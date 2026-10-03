@@ -6,9 +6,9 @@ from httpx import AsyncClient
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from app.core.common.responses import PaginatedResponse
-from app.domains.news.cache import NewsCache
-from app.domains.news.models import News
-from app.domains.news.schemas import NewsSchema
+from app.domains.content.cache import NewsCache
+from app.domains.content.models import News
+from app.domains.content.schemas import NewsSchema
 from app.domains.shared.transaction_managers import TransactionManager
 from app.domains.users.models import User
 

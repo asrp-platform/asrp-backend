@@ -11,3 +11,11 @@ class EmailAlreadyConfirmedError(ResourceAlreadyExistsError):
 
 class EmailConfirmationExpiredError(InvalidOperationError):
     pass
+
+
+class InvalidCredentialsError(InvalidOperationError):
+    pass
+
+
+class UserBannedError(InvalidOperationError):
+    pass

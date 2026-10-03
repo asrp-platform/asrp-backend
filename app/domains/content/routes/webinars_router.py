@@ -5,12 +5,16 @@ from fastapi import APIRouter, Depends
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import NotAuthorizedResponses, PaginatedResponse
+from app.domains.content.filters import WebinarFilters
+from app.domains.content.models import Webinar
+from app.domains.content.schemas import UserWebinarSchema, WebinarBaseSchema, WebinarPlaybackSchema
+from app.domains.content.use_cases import (
+    GetWebinarPlaybackUseCaseDep,
+    GetWebinarsUseCaseDep,
+    RegisterForWebinarUseCaseDep,
+)
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.utils import has_member_access
-from app.domains.news.filters import WebinarFilters
-from app.domains.news.models import Webinar
-from app.domains.news.schemas import UserWebinarSchema, WebinarBaseSchema, WebinarPlaybackSchema
-from app.domains.news.services import WebinarServiceDep
 from app.domains.shared.deps import CurrentUserDep, OptionalCurrentUserDep
 
 
@@ -42,13 +46,13 @@ def serialize_user_webinar(
 
 @router.get("", response_model_exclude_none=True)
 async def get_webinars_paginated_counted(
-    service: WebinarServiceDep,
+    use_case: GetWebinarsUseCaseDep,
     current_user: OptionalCurrentUserDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[WebinarFilters, Depends()] = None,
 ) -> PaginatedResponse[UserWebinarSchema]:
-    webinars, count, membership = await service.get_user_webinars_paginated_counted(
+    webinars, count, membership = await use_case.execute(
         user_id=current_user.id if current_user is not None else None,
         order_by=ordering,
         filters=filters.model_dump(exclude_none=True),
@@ -86,9 +90,9 @@ class RegisterForWebinarResponses(NotAuthorizedResponses):
 async def register_for_webinar(
     webinar_slug: str,
     current_user: CurrentUserDep,
-    service: WebinarServiceDep,
+    use_case: RegisterForWebinarUseCaseDep,
 ) -> dict[str, str]:
-    await service.register_for_webinar(webinar_slug, current_user.id)
+    await use_case.execute(webinar_slug, current_user.id)
     return {"status": "Successfully registered for the webinar"}
 
 
@@ -104,7 +108,7 @@ class WebinarPlaybackResponses(NotAuthorizedResponses):
 async def get_webinar_playback(
     webinar_slug: str,
     current_user: CurrentUserDep,
-    service: WebinarServiceDep,
+    use_case: GetWebinarPlaybackUseCaseDep,
 ) -> WebinarPlaybackSchema:
-    embed_url = await service.generate_webinar_embed_url(webinar_slug, current_user.id)
+    embed_url = await use_case.execute(webinar_slug, current_user.id)
     return WebinarPlaybackSchema(embed_url=embed_url)

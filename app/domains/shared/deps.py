@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import Depends
@@ -11,6 +10,7 @@ from starlette.responses import Response
 
 from app.core.common.exceptions import NotFoundError
 from app.core.config import settings
+from app.domains.auth.cookies import REFRESH_TOKEN_COOKIE_KWARGS
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.services import UserMembershipServiceDep
 from app.domains.permissions.models import Permission
@@ -23,30 +23,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 refresh_token_cookie = APIKeyCookie(name="refresh_token", auto_error=False)
 access_token_header = HTTPBearer(auto_error=False)
 
-REFRESH_COOKIE_KWARGS = {
-    "key": "refresh_token",
-    "path": "/",
-    "httponly": True,
-    "secure": True,
-    "samesite": "lax",
-}
-
 
 def invalid_refresh_token_exception(detail: str) -> HTTPException:
     response = Response()
-    response.delete_cookie(**REFRESH_COOKIE_KWARGS)
+    response.delete_cookie(**REFRESH_TOKEN_COOKIE_KWARGS)
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=detail,
         headers={"Set-Cookie": response.headers["set-cookie"]},
     )
-
-
-def create_access_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_LIFESPAN_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def get_email_by_access_token(access_token: HTTPAuthorizationCredentials):
@@ -64,18 +49,6 @@ def get_email_by_access_token(access_token: HTTPAuthorizationCredentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     return email
-
-
-def create_refresh_token(data: dict, remember_me: bool = False) -> str:
-    data_to_encode = data.copy()
-    if remember_me:
-        lifetime = timedelta(days=settings.REFRESH_TOKEN_REMEMBER_ME_LIFETIME_DAYS)
-    else:
-        lifetime = timedelta(days=settings.REFRESH_TOKEN_LIFETIME_DAYS)
-    expire = datetime.now(tz=timezone.utc) + lifetime
-    data_to_encode.update({"exp": expire})
-    refresh_token = jwt.encode(data_to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return refresh_token
 
 
 async def verify_refresh_token(

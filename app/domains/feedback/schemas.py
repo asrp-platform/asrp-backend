@@ -5,16 +5,24 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, mo
 from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
-from app.domains.feedback.constants import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
+
+
+HEAR_ABOUT_ASRP_OPTIONS: tuple[str, ...] = (
+    "colleague",
+    "friend",
+    "social_media",
+    "telegram",
+    "conference",
+    "web_search",
+    "other",
+)
 
 
 class FeedbackAdditionalInfoCreateSchema(BaseModel):
     hear_about_asrp: str
     tg_username: str | None = None
     interest_description: str | None = None
-
-    model_config = {"from_attributes": True}
 
     @field_validator("hear_about_asrp")
     def hear_about_asrp_validator(cls, value: str) -> str:
@@ -49,7 +57,7 @@ class AnswerContactMessageSchema(BaseModel):
 class GetInvolvedMessage(BaseModel):
     current_role: str | None = None
     institution_location: str | None = None
-    areas: list[str] = []
+    areas: list[str] = Field(default_factory=list)
     ideas: str | None = None
     future_committee_working: bool
     future_leadership_positions: bool

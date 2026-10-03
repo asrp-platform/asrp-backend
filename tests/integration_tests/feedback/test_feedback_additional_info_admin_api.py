@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from httpx import AsyncClient
 
-from app.domains.feedback.constants import HEAR_ABOUT_ASRP_OPTIONS
+from app.domains.feedback.schemas import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders, UserFactory
 

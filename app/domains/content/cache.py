@@ -7,7 +7,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutErr
 
 from app.core.common.redis_client import RedisClientDep
 from app.core.common.responses import PaginatedResponse
-from app.domains.news.schemas import NewsSchema
+from app.domains.content.schemas import NewsSchema
 
 
 FIRST_PAGE_SIZE = 8

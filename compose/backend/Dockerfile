@@ -6,7 +6,16 @@ ENV PYTHONUNBUFFERED=1
 ENV POETRY_VIRTUALENVS_CREATE=false
 ENV PATH="/root/.local/bin:$PATH"
 
-RUN apt-get update && apt-get install -y curl && \
+RUN apt-get update && apt-get install -y \
+    curl \
+    fontconfig \
+    fonts-dejavu-core \
+    libffi-dev \
+    libjpeg62-turbo \
+    libopenjp2-7 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    && \
     curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION && \
     apt-get remove -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 

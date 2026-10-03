@@ -4,8 +4,8 @@ from fastapi.params import Depends, Query
 
 
 def get_pagination_params(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(25, ge=1, le=100, description="Page size"),
+    page: Annotated[int, Query(ge=1, description="Page number")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100, description="Page size")] = 25,
 ) -> dict:
     """returns limit, and offset  page_size, page_size * (page - 1)"""
     return {

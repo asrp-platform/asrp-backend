@@ -118,6 +118,38 @@ async def test_answer_contact_message_queues_email_and_marks_answered(
     )
 
 
+async def test_answer_missing_contact_message_returns_not_found(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+) -> None:
+    response = await client.post(
+        "/api/admin/contact-messages/999999/answers",
+        json={
+            "subject": "Reply from ASRP",
+            "answer_message": "Thank you for contacting ASRP. We will be happy to help.",
+        },
+        headers=admin_auth_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "There is no contact message with provided id"
+
+
+async def test_retrieve_contact_messages_rejects_invalid_ordering(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+) -> None:
+    response = await client.get(
+        "/api/admin/contact-messages",
+        headers=admin_auth_headers,
+        params={"order_by": "unknown_field"},
+    )
+
+    assert response.status_code == 400
+
+
 async def test_create_contact_message_success(
     client: AsyncClient,
     contact_message_data: dict,

@@ -33,6 +33,12 @@ Necessary envs:
 - `STRIPE_WEBHOOK_SECRET` - can be gotten from stripe-cli
 
 
+- `BUNNY_LIBRARY_ID` - ask the team lead for a real Bunny Stream library ID if webinar video playback is needed
+- `BUNNY_STREAM_TOKEN_KEY` - ask the team lead for a real Bunny Stream token key if webinar video playback is needed
+
+For local development without webinar video playback, non-empty placeholders are sufficient. The application validates these settings at startup, but only the webinar embed URL flow uses them.
+
+
 - `FRONTEND_DOMAIN_HTTP=http://localhost:3000`
 - `FRONTEND_DOMAIN=http://localhost:3000`
 
@@ -98,6 +104,16 @@ docker compose -f ./local.yml up --build -d
 
 ```shell
 poetry install
+```
+
+### PDF system dependencies
+
+PDF documents are rendered from HTML templates with WeasyPrint. Docker images install the required system packages automatically.
+
+If you run the backend directly on a host machine, install WeasyPrint runtime dependencies first:
+
+```shell
+apt-get install -y fontconfig fonts-dejavu-core libffi-dev libjpeg62-turbo libopenjp2-7 libpango-1.0-0 libpangoft2-1.0-0
 ```
 
 ### Install pre-commit
@@ -230,6 +246,55 @@ The service listens for these events:
 - `payment_intent.payment_failed`
 
 ## Troubleshooting
+
+### WeasyPrint on Windows and macOS
+
+The following steps are only needed when running the backend directly on the host. The project Docker image and devcontainer install WeasyPrint's Linux system dependencies themselves, so after dependency changes rebuild the corresponding image instead of installing native libraries on Windows or macOS.
+
+#### Windows
+
+If `poetry run python -m weasyprint --info` fails with `cannot load library` or Windows error `0x7e`, install [MSYS2](https://www.msys2.org/) in its default location and run the following command in the **MSYS2 UCRT64** shell:
+
+```shell
+pacman -S mingw-w64-ucrt-x86_64-pango
+```
+
+If WeasyPrint still cannot find the DLLs, set their directory before starting the backend.
+
+For the current PowerShell session:
+
+```bat
+$env:WEASYPRINT_DLL_DIRECTORIES="C:\msys64\ucrt64\bin"
+poetry run python -m weasyprint --info
+```
+
+If this fixes the issue, set the environment variable permanently for the current Windows user:
+
+```bat
+[System.Environment]::SetEnvironmentVariable("WEASYPRINT_DLL_DIRECTORIES","C:\msys64\ucrt64\bin","User")
+```
+
+Restart the terminal, IDE, or backend process after setting the variable permanently.
+
+Avoid mixing MSYS2 libraries with Conda or an older GTK runtime: conflicting Pango and HarfBuzz DLLs can cause similar import and missing-symbol errors. See the [official Windows installation and troubleshooting guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows).
+
+#### macOS
+
+For a direct macOS installation, install WeasyPrint and its native dependencies with Homebrew, then verify that the Poetry environment can load them:
+
+```shell
+brew install weasyprint
+poetry run python -m weasyprint --info
+```
+
+If loading fails with `cannot load library 'libgobject-2.0-0'` or another `.dylib` lookup error, expose Homebrew's library directory to the dynamic linker and retry:
+
+```shell
+export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:${DYLD_FALLBACK_LIBRARY_PATH:-}"
+poetry run python -m weasyprint --info
+```
+
+Add the export to your shell profile only when direct host runs require it. See the [official macOS installation and troubleshooting guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#macos).
 
 
 ### Get all existing permissions script

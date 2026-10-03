@@ -29,6 +29,38 @@ async def test_login(
     assert jwt_decoded["email"] == user_data["email"]
 
 
+async def test_login_normalizes_email_case(
+    client: AsyncClient,
+    confirmed_user_with_data: tuple[User, dict],
+) -> None:
+    _, user_data = confirmed_user_with_data
+
+    response = await client.post(
+        "api/auth/login",
+        json={"email": user_data["email"].upper(), "password": user_data["password"]},
+    )
+
+    assert response.status_code == 200
+    assert (
+        jwt.decode(response.json()["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])["email"]
+        == (user_data["email"])
+    )
+
+
+async def test_login_normalizes_email_whitespace(
+    client: AsyncClient,
+    confirmed_user_with_data: tuple[User, dict],
+) -> None:
+    _, user_data = confirmed_user_with_data
+
+    response = await client.post(
+        "api/auth/login",
+        json={"email": f"  {user_data['email']}  ", "password": user_data["password"]},
+    )
+
+    assert response.status_code == 200
+
+
 async def test_access_token_expiry(
     client,
     confirmed_user_with_data: tuple[User, dict],
@@ -116,6 +148,38 @@ async def test_user_does_not_exist(
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Wrong credentials"
+
+
+async def test_login_rejects_wrong_password(
+    client: AsyncClient,
+    confirmed_user_with_data: tuple[User, dict],
+    faker: Faker,
+) -> None:
+    _, user_data = confirmed_user_with_data
+
+    response = await client.post(
+        "/api/auth/login",
+        json={"email": user_data["email"], "password": faker.password()},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Wrong credentials"
+
+
+async def test_banned_user_cannot_login(
+    client: AsyncClient,
+    user_factory,
+) -> None:
+    password = "valid-password-123"
+    user = await user_factory(pending=False, banned=True, ban_reason="Test ban", password=password)
+
+    response = await client.post(
+        "/api/auth/login",
+        json={"email": user.email, "password": password},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "User is banned"
 
 
 async def test_pending_user_cannot_login(

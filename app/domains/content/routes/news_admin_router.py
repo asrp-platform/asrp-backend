@@ -5,11 +5,16 @@ from fastapi_exception_responses import Responses
 
 from app.core.common.request_params import OrderingParamsDep, PaginationParamsDep
 from app.core.common.responses import PaginatedResponse
-from app.core.utils.permissions import check_any_permission, check_permissions
-from app.domains.news.cache import NewsCacheDep
-from app.domains.news.filters import NewsFilter
-from app.domains.news.schemas import CreateNewsSchema, NewsSchema, UpdateNewsSchema
-from app.domains.news.services import NewsServiceDep
+from app.domains.content.filters import NewsFilter
+from app.domains.content.schemas import CreateNewsSchema, NewsSchema, UpdateNewsSchema
+from app.domains.content.use_cases import (
+    CreateNewsUseCaseDep,
+    DeleteNewsUseCaseDep,
+    GetNewsByIdUseCaseDep,
+    GetNewsListUseCaseDep,
+    UpdateNewsUseCaseDep,
+    UploadNewsImageUseCaseDep,
+)
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep, get_admin_user
 from app.domains.shared.schemas import UploadedImageSchema
 from app.domains.shared.types import FileData
@@ -48,18 +53,17 @@ class UploadNewsImageResponses(AdminNewsResponses):
 )
 async def get_news_paginated_counted(
     permissions: AdminPermissionsDep,
-    service: NewsServiceDep,
+    use_case: GetNewsListUseCaseDep,
     params: PaginationParamsDep,
     ordering: OrderingParamsDep = None,
     filters: Annotated[NewsFilter, Depends()] = None,
 ) -> PaginatedResponse[NewsSchema]:
-    check_permissions("news.view", permissions)
-    data, count = await service.get_news_paginated_counted(
+    data, count = await use_case.execute(
+        permissions,
         order_by=ordering,
         filters=filters.model_dump(exclude_none=True),
         limit=params["limit"],
         offset=params["offset"],
-        open_transaction=True,
     )
     return PaginatedResponse(
         count=count,
@@ -78,14 +82,10 @@ async def get_news_paginated_counted(
 async def create_news(
     permissions: AdminPermissionsDep,
     current_user: AdminUserDep,
-    service: NewsServiceDep,
+    use_case: CreateNewsUseCaseDep,
     body: CreateNewsSchema,
-    cache: NewsCacheDep,
 ) -> NewsSchema:
-    check_permissions("news.create", permissions)
-    news = await service.create_news(**body.model_dump(), author_id=current_user.id)
-    await cache.invalidate_first_page()
-    return news
+    return await use_case.execute(permissions, current_user.id, body.model_dump())
 
 
 @router.post(
@@ -97,15 +97,14 @@ async def create_news(
 async def upload_image(
     file: Annotated[UploadFile, File(...)],
     permissions: AdminPermissionsDep,
-    service: NewsServiceDep,
+    use_case: UploadNewsImageUseCaseDep,
 ) -> UploadedImageSchema:
-    check_any_permission({"news.create", "news.update"}, permissions)
     file_data = FileData(
         content=await file.read(),
         content_type=file.content_type,
         filename=file.filename,
     )
-    stored_file = await service.upload_image(file_data)
+    stored_file = await use_case.execute(permissions, file_data)
     return UploadedImageSchema(
         file_url=stored_file.file_url,
         object_key=stored_file.object_key,
@@ -120,10 +119,9 @@ async def upload_image(
 async def get_news_detail(
     news_id: int,
     permissions: AdminPermissionsDep,
-    service: NewsServiceDep,
+    use_case: GetNewsByIdUseCaseDep,
 ) -> NewsSchema:
-    check_permissions("news.view", permissions)
-    return await service.get_news_by_id(news_id)
+    return await use_case.execute(permissions, news_id)
 
 
 @router.patch(
@@ -134,14 +132,10 @@ async def get_news_detail(
 async def update_news(
     news_id: int,
     permissions: AdminPermissionsDep,
-    service: NewsServiceDep,
-    cache: NewsCacheDep,
+    use_case: UpdateNewsUseCaseDep,
     body: UpdateNewsSchema,
 ) -> NewsSchema:
-    check_permissions("news.update", permissions)
-    news = await service.update_news(news_id, body.model_dump(exclude_unset=True))
-    await cache.invalidate_first_page()
-    return news
+    return await use_case.execute(permissions, news_id, body.model_dump(exclude_unset=True))
 
 
 @router.delete(
@@ -153,9 +147,6 @@ async def update_news(
 async def delete_news(
     news_id: int,
     permissions: AdminPermissionsDep,
-    service: NewsServiceDep,
-    cache: NewsCacheDep,
+    use_case: DeleteNewsUseCaseDep,
 ) -> None:
-    check_permissions("news.delete", permissions)
-    await service.delete_news_by_id(news_id)
-    await cache.invalidate_first_page()
+    await use_case.execute(permissions, news_id)

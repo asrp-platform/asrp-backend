@@ -4,7 +4,7 @@ import pytest
 from faker import Faker
 from httpx import AsyncClient
 
-from app.domains.news.models import News
+from app.domains.content.models import News
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders
 

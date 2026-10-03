@@ -8,13 +8,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.mixins import UCIMixin
 from app.core.database.setup_db import Base
+from app.domains.content.models import News
 from app.domains.memberships.models import MembershipRequest, UserMembership
-from app.domains.news.models import News
 
 
 if TYPE_CHECKING:
+    from app.domains.content.models import Webinar
     from app.domains.feedback.models import FeedbackAdditionalInfo
-    from app.domains.news.models import Webinar
     from app.domains.payments.models import Payment
     from app.domains.permissions.models import Permission
 

@@ -10,13 +10,14 @@ from app.domains.legal_documents.schemas import (
     UpdateSponsorSchema,
     ViewLegalDocumentSchema,
 )
-from app.domains.legal_documents.services import BylawsServiceDep
+from app.domains.legal_documents.services import BylawsServiceDep, SubmissionGuidelinesServiceDep
 from app.domains.legal_documents.use_cases.create_sponsor import CreateSponsorUseCaseDep
 from app.domains.legal_documents.use_cases.delete_sponsor import DeleteSponsorUseCaseDep
 from app.domains.legal_documents.use_cases.get_sponsors import GetSponsorsUseCaseDep
 from app.domains.legal_documents.use_cases.update_sponsor import UpdateSponsorUseCaseDep
 from app.domains.legal_documents.use_cases.upload_sponsor_logo import UploadSponsorLogoUseCaseDep
 from app.domains.legal_documents.use_cases.upsert_bylaws import UpsertBylawsUseCaseDep
+from app.domains.legal_documents.use_cases.upsert_submission_guidelines import UpsertSubmissionGuidelinesUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, AdminUserDep
 from app.domains.shared.types import FileData
 
@@ -25,6 +26,10 @@ router = APIRouter(prefix="/legal-documents", tags=["Admin: Legal Documents"])
 
 
 class BylawsAdminResponses(PermissionsResponses):
+    INVALID_CONTENT_TYPE = 415, "Invalid file type. Only PDF allowed."
+
+
+class SubmissionGuidelinesAdminResponses(PermissionsResponses):
     INVALID_CONTENT_TYPE = 415, "Invalid file type. Only PDF allowed."
 
 
@@ -74,6 +79,29 @@ async def upsert_bylaws(
     return ViewLegalDocumentSchema(url=url)
 
 
+@router.put(
+    "/submission-guidelines",
+    summary="Upload or replace Submission Guidelines document",
+    responses=SubmissionGuidelinesAdminResponses.responses,
+)
+async def upsert_submission_guidelines(
+    use_case: UpsertSubmissionGuidelinesUseCaseDep,
+    admin: AdminUserDep,  # noqa
+    permissions: AdminPermissionsDep,
+    file: Annotated[UploadFile, File(...)],
+) -> ViewLegalDocumentSchema:
+    check_permissions("legal_documents.update", permissions)
+
+    file_data = FileData(
+        content=await file.read(),
+        content_type=file.content_type,
+        filename=file.filename,
+    )
+
+    url = await use_case.execute(file_data)
+    return ViewLegalDocumentSchema(url=url)
+
+
 @router.delete(
     "/bylaws",
     summary="Delete bylaws document",
@@ -82,6 +110,21 @@ async def upsert_bylaws(
 )
 async def delete_bylaws(
     service: BylawsServiceDep,
+    admin: AdminUserDep,  # noqa
+    permissions: AdminPermissionsDep,
+):
+    check_permissions("legal_documents.delete", permissions)
+    await service.delete()
+
+
+@router.delete(
+    "/submission-guidelines",
+    summary="Delete Submission Guidelines document",
+    status_code=204,
+    responses=SubmissionGuidelinesAdminResponses.responses,
+)
+async def delete_submission_guidelines(
+    service: SubmissionGuidelinesServiceDep,
     admin: AdminUserDep,  # noqa
     permissions: AdminPermissionsDep,
 ):
