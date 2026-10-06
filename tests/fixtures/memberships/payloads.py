@@ -1,8 +1,8 @@
 import pytest
 from faker import Faker
 
-from app.domains.feedback.schemas import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.memberships.models import MembershipTypeEnum
+from app.domains.shared.constants import HEAR_ABOUT_ASRP_OPTIONS
 
 
 @pytest.fixture()

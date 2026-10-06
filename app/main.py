@@ -20,7 +20,6 @@ from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.database.setup_db import session_getter
 from app.core.logging import configure_logging
-from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes import router as auth_router
 from app.domains.content.routes import (
@@ -37,7 +36,6 @@ from app.domains.feedback.routes import (
     contact_messages_admin_router,
     contact_messages_router,
     feedback_additional_info_admin_router,
-    feedback_additional_info_router,
 )
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
@@ -49,6 +47,7 @@ from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
+from app.domains.shared.routes.reference_data_router import router as reference_data_router
 from app.domains.users.routes.admin_api.users_admin_api import router as users_admin_router
 from app.domains.users.routes.current_user_api.current_user_api import router as current_user_router
 from app.domains.users.routes.current_user_api.current_user_membership_api import (
@@ -74,12 +73,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    dependencies=[
-        Depends(
-            rate_limiter_dependency,
-            use_cache=False,
-        )
-    ],
+    # Causes a bug with authentication
+    # dependencies=[
+    #     Depends(
+    #         rate_limiter_dependency,
+    #         use_cache=False,
+    #     )
+    # ],
 )
 
 
@@ -143,7 +143,6 @@ app.include_router(current_user_router, prefix="/api")
 app.include_router(current_user_membership_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
-app.include_router(feedback_additional_info_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
 app.include_router(legal_documents_router, prefix="/api")
 app.include_router(professional_info_router, prefix="/api")
@@ -174,6 +173,7 @@ app.include_router(case_of_the_month_admin_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")
+app.include_router(reference_data_router, prefix="/api")
 
 
 if DEV_MODE:

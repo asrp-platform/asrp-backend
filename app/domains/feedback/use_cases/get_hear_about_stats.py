@@ -5,11 +5,11 @@ from fastapi import Depends
 
 from app.core.utils.permissions import check_permissions
 from app.domains.feedback.schemas import (
-    HEAR_ABOUT_ASRP_OPTIONS,
     HearAboutOptionStatsSchema,
     HearAboutStatsResponseSchema,
 )
 from app.domains.feedback.services import FeedbackAdditionalInfoServiceDep
+from app.domains.shared.constants import HEAR_ABOUT_ASRP_OPTIONS
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
 

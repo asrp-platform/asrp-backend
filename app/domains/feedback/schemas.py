@@ -6,17 +6,7 @@ from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
-
-
-HEAR_ABOUT_ASRP_OPTIONS: tuple[str, ...] = (
-    "colleague",
-    "friend",
-    "social_media",
-    "telegram",
-    "conference",
-    "web_search",
-    "other",
-)
+from app.domains.shared.constants import HEAR_ABOUT_ASRP_OPTIONS
 
 
 class FeedbackAdditionalInfoCreateSchema(BaseModel):
