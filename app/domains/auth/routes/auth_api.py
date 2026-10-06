@@ -30,7 +30,6 @@ from app.domains.auth.use_cases.login_user import LoginUserUseCaseDep
 from app.domains.auth.use_cases.register_user import RegisterUserUseCaseDep
 from app.domains.auth.use_cases.request_password_reset import RequestPasswordResetUseCaseDep
 from app.domains.auth.use_cases.resend_email_confirmation import ResendEmailConfirmationUseCaseDep
-from app.domains.auth.utils import get_countries
 from app.domains.shared.deps import (
     RefreshTokenDep,
 )
@@ -226,12 +225,3 @@ async def confirm_email(token: Annotated[str, Query(...)], use_case: CompleteReg
 
     except EmailConfirmationExpiredError:
         raise CompleteRegistrationResponses.EXPIRED
-
-
-@router.get(
-    "/countries",
-    summary="List available countries",
-    status_code=200,
-)
-async def countries_list():
-    return get_countries()

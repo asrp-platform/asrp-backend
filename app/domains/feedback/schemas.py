@@ -6,7 +6,7 @@ from pydantic_core import PydanticCustomError
 
 from app.core.database.mixins import UCIMixinSchema
 from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
-from app.domains.shared.constants import HEAR_ABOUT_ASRP_OPTIONS
+from app.domains.shared.constants import HEAR_ABOUT_ASRP_VALUES
 
 
 class FeedbackAdditionalInfoCreateSchema(BaseModel):
@@ -17,7 +17,7 @@ class FeedbackAdditionalInfoCreateSchema(BaseModel):
     @field_validator("hear_about_asrp")
     def hear_about_asrp_validator(cls, value: str) -> str:
         normalized = value.strip()
-        if normalized not in HEAR_ABOUT_ASRP_OPTIONS:
+        if normalized not in HEAR_ABOUT_ASRP_VALUES:
             raise PydanticCustomError("invalid_hear_about_asrp", "Invalid value for hear_about_asrp")
         return normalized
 

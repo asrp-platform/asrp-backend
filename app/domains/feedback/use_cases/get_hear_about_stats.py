@@ -9,7 +9,7 @@ from app.domains.feedback.schemas import (
     HearAboutStatsResponseSchema,
 )
 from app.domains.feedback.services import FeedbackAdditionalInfoServiceDep
-from app.domains.shared.constants import HEAR_ABOUT_ASRP_OPTIONS
+from app.domains.shared.constants import HEAR_ABOUT_ASRP_VALUES
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
 
@@ -37,7 +37,7 @@ class GetHearAboutStatsUseCase:
             )
 
         # Keep stats aligned with Select options and fold unknown legacy values into "other".
-        stats_dict = {opt: 0 for opt in HEAR_ABOUT_ASRP_OPTIONS}
+        stats_dict = {opt: 0 for opt in HEAR_ABOUT_ASRP_VALUES}
         fallback_option = "other"
         for item in raw_stats:
             option = item["option"]
