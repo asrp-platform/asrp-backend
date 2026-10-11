@@ -1,74 +1,71 @@
 from html import escape
 
 
-def build_email_verification_html(
-    full_name: str,
-    verification_link: str,
-) -> tuple[str, str]:
-    safe_full_name = escape(full_name)
-    safe_verification_link = escape(verification_link, quote=True)
+class MessageBuilder:
+    @classmethod
+    def build_email_verification_html(cls, full_name: str, verification_link: str) -> tuple[str, str]:
+        safe_full_name = escape(full_name)
+        safe_verification_link = escape(verification_link, quote=True)
 
-    return (
-        "ASRP registration - email verification",
-        f"""
-<!DOCTYPE html>
-<html>
-<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
-    <p>Dear {safe_full_name},</p>
+        return (
+            "ASRP registration - email verification",
+            f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+        <p>Dear {safe_full_name},</p>
 
-    <p>
-        Thank you for creating an account with the American Society of
-        Russian-Speaking Pathologists (ASRP).
-    </p>
+        <p>
+            Thank you for creating an account with the American Society of
+            Russian-Speaking Pathologists (ASRP).
+        </p>
 
-    <p>
-        To complete your registration, please verify your email address by
-        clicking the link below:
-    </p>
+        <p>
+            To complete your registration, please verify your email address by
+            clicking the link below:
+        </p>
 
-    <p>
-        <a href="{safe_verification_link}"
-           style="
-               display: inline-block;
-               padding: 12px 20px;
-               background-color: #2563eb;
-               color: #ffffff;
-               text-decoration: none;
-               border-radius: 6px;
-               font-weight: bold;
-           ">
-            Verify Email Address
-        </a>
-    </p>
+        <p>
+            <a href="{safe_verification_link}"
+               style="
+                   display: inline-block;
+                   padding: 12px 20px;
+                   background-color: #2563eb;
+                   color: #ffffff;
+                   text-decoration: none;
+                   border-radius: 6px;
+                   font-weight: bold;
+               ">
+                Verify Email Address
+            </a>
+        </p>
 
-    <p>
-        If you did not create an account with ASRP, you may safely ignore this email.
-    </p>
+        <p>
+            If you did not create an account with ASRP, you may safely ignore this email.
+        </p>
 
-    <p>
-        We look forward to welcoming you to our growing community of
-        Russian-speaking pathologists and pathology trainees.
-    </p>
+        <p>
+            We look forward to welcoming you to our growing community of
+            Russian-speaking pathologists and pathology trainees.
+        </p>
 
-    <p>
-        Best regards,<br>
-        Board of Directors<br>
-        American Society of Russian-Speaking Pathologists
-    </p>
-</body>
-</html>
-""",
-    )
+        <p>
+            Best regards,<br>
+            Board of Directors<br>
+            American Society of Russian-Speaking Pathologists
+        </p>
+    </body>
+    </html>
+    """,
+        )
 
+    @classmethod
+    def build_password_reset_html(cls, reset_link: str) -> tuple[str, str]:
+        safe_reset_link = escape(reset_link, quote=True)
 
-def build_password_reset_html(
-    reset_link: str,
-) -> tuple[str, str]:
-    safe_reset_link = escape(reset_link, quote=True)
-
-    return (
-        "ASRP password reset",
-        f"""
+        return (
+            "ASRP password reset",
+            f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
@@ -115,17 +112,15 @@ def build_password_reset_html(
 </body>
 </html>
 """,
-    )
+        )
 
+    @classmethod
+    def build_membership_application_html(cls, full_name: str) -> tuple[str, str]:
+        safe_full_name = escape(full_name)
 
-def build_membership_application_html(
-    full_name: str,
-) -> tuple[str, str]:
-    safe_full_name = escape(full_name)
-
-    return (
-        "ASRP membership application received",
-        f"""
+        return (
+            "ASRP membership application received",
+            f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
@@ -160,19 +155,20 @@ def build_membership_application_html(
 </body>
 </html>
 """,
-    )
+        )
 
+    @classmethod
+    def build_membership_application_approved_html(
+        cls,
+        full_name: str,
+        login_link: str,
+    ) -> tuple[str, str]:
+        safe_full_name = escape(full_name)
+        safe_login_link = escape(login_link, quote=True)
 
-def build_membership_application_approved_html(
-    full_name: str,
-    login_link: str,
-) -> tuple[str, str]:
-    safe_full_name = escape(full_name)
-    safe_login_link = escape(login_link, quote=True)
-
-    return (
-        "Your ASRP membership application has been approved",
-        f"""
+        return (
+            "Your ASRP membership application has been approved",
+            f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
@@ -227,17 +223,15 @@ def build_membership_application_approved_html(
 </body>
 </html>
 """,
-    )
+        )
 
+    @classmethod
+    def build_membership_application_rejected_html(cls, full_name: str) -> tuple[str, str]:
+        safe_full_name = escape(full_name)
 
-def build_membership_application_rejected_html(
-    full_name: str,
-) -> tuple[str, str]:
-    safe_full_name = escape(full_name)
-
-    return (
-        "Your ASRP membership application status",
-        f"""
+        return (
+            "Your ASRP membership application status",
+            f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
@@ -277,19 +271,16 @@ def build_membership_application_rejected_html(
 </body>
 </html>
 """,
-    )
+        )
 
+    @classmethod
+    def build_membership_suspended_html(cls, full_name: str, reason: str) -> tuple[str, str]:
+        safe_full_name = escape(full_name)
+        safe_reason = escape(reason)
 
-def build_membership_suspended_html(
-    full_name: str,
-    reason: str,
-) -> tuple[str, str]:
-    safe_full_name = escape(full_name)
-    safe_reason = escape(reason)
-
-    return (
-        "Your ASRP membership suspended",
-        f"""
+        return (
+            "Your ASRP membership suspended",
+            f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
@@ -327,19 +318,16 @@ def build_membership_suspended_html(
 </body>
 </html>
 """,
-    )
+        )
 
+    @classmethod
+    def build_membership_terminated_html(cls, full_name: str, reason: str) -> tuple[str, str]:
+        safe_full_name = escape(full_name)
+        safe_reason = escape(reason)
 
-def build_membership_terminated_html(
-    full_name: str,
-    reason: str,
-) -> tuple[str, str]:
-    safe_full_name = escape(full_name)
-    safe_reason = escape(reason)
-
-    return (
-        "Your ASRP membership terminated",
-        f"""
+        return (
+            "Your ASRP membership terminated",
+            f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
@@ -383,4 +371,4 @@ def build_membership_terminated_html(
 </body>
 </html>
 """,
-    )
+        )

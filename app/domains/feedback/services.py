@@ -5,7 +5,7 @@ from fastapi import Depends
 from sqlalchemy import func, select
 
 from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
-from app.domains.emails.email_queue import EmailQueueDep
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
@@ -16,9 +16,8 @@ class ContactMessageService:
     Transaction boundaries belong to the calling use case.
     """
 
-    def __init__(self, transaction_manager: TransactionManager, email_queue: EmailQueueDep):
+    def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
-        self.email_queue = email_queue
 
     async def create(self, data: dict):
         return await self.transaction_manager.contact_message_repository.create(**data)
@@ -43,7 +42,7 @@ class ContactMessageService:
         return reply, contact_message.email
 
     async def send_answer(self, recipient: str, subject: str, answer_message: str) -> None:
-        await self.email_queue.send_email(to=recipient, subject=subject, body=answer_message)
+        EmailQueue.send_email(to=recipient, subject=subject, body=answer_message)
 
 
 class FeedbackAdditionalInfoService:
@@ -138,9 +137,8 @@ class FeedbackAdditionalInfoService:
 
 def get_contact_message_service(
     transaction_manager: TransactionManagerDep,
-    email_queue: EmailQueueDep,
 ) -> ContactMessageService:
-    return ContactMessageService(transaction_manager, email_queue)
+    return ContactMessageService(transaction_manager)
 
 
 def get_feedback_additional_info_service(

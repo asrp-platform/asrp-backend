@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from faker import Faker
@@ -17,7 +17,7 @@ async def test_register(
     test_transaction_manager: TransactionManager,
     user_registration_data,
 ) -> None:
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post("api/auth/register", json=user_registration_data)
 
     async with test_transaction_manager:
@@ -34,7 +34,7 @@ async def test_register(
     assert not communication_preferences.events_meetings
     assert not communication_preferences.committees_leadership
     assert not communication_preferences.volunteer_opportunities
-    mock_send_email.assert_awaited_once()
+    mock_send_email.assert_called_once()
 
 
 async def test_register_updates_existing_pending_user(
@@ -46,11 +46,11 @@ async def test_register_updates_existing_pending_user(
     async with test_transaction_manager:
         await test_transaction_manager.user_repository.create(**user_creation_data)
 
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post("api/auth/register", json={**user_data, "repeat_password": user_data["password"]})
 
     assert response.status_code == 201
-    mock_send_email.assert_awaited_once()
+    mock_send_email.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -76,7 +76,7 @@ async def test_register_requires_state_and_postal_code_for_usa(
         **address_data,
     }
 
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post("api/auth/register", json=payload)
 
     async with test_transaction_manager:
@@ -85,7 +85,7 @@ async def test_register_requires_state_and_postal_code_for_usa(
     assert response.status_code == 422
     assert error_message in response.text
     assert user is None
-    mock_send_email.assert_not_awaited()
+    mock_send_email.assert_not_called()
 
 
 async def test_register_allows_missing_state_and_postal_code_for_non_usa(
@@ -97,7 +97,7 @@ async def test_register_allows_missing_state_and_postal_code_for_non_usa(
     payload.pop("state", None)
     payload.pop("postal_code", None)
 
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post("api/auth/register", json=payload)
 
     async with test_transaction_manager:
@@ -107,7 +107,7 @@ async def test_register_allows_missing_state_and_postal_code_for_non_usa(
     assert user is not None
     assert user.state is None
     assert user.postal_code is None
-    mock_send_email.assert_awaited_once()
+    mock_send_email.assert_called_once()
 
 
 async def test_register_rejects_existing_confirmed_user(

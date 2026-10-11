@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import patch
 
 import pytest
 
@@ -47,6 +47,5 @@ def user_service(test_transaction_manager: TransactionManager, file_storage):
 
 @pytest.fixture()
 def email_queue():
-    queue = EmailQueue()
-    queue.send_email = AsyncMock()
-    return queue
+    with patch.object(EmailQueue, "send_email") as mock_send_email:
+        yield mock_send_email

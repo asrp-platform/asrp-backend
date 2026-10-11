@@ -2,8 +2,8 @@ from datetime import datetime
 
 from app.core.common.exceptions import NotFoundError
 from app.core.utils.permissions import check_permissions
-from app.domains.emails.common.messages import build_membership_suspended_html, build_membership_terminated_html
-from app.domains.emails.email_queue import EmailQueueDep
+from app.domains.emails.common.messages import MessageBuilder
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.memberships.exceptions import MembershipAlreadySuspendedError, MembershipAlreadyTerminatedError
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.services import UserMembershipServiceDep
@@ -18,12 +18,10 @@ class SuspendUserMembershipUseCase:
         transaction_manager: TransactionManagerDep,
         user_membership_service: UserMembershipServiceDep,
         user_service: UserServiceDep,
-        email_queue: EmailQueueDep,
     ):
         self.__tm = transaction_manager
         self.__user_membership_service = user_membership_service
         self.__user_service = user_service
-        self.__email_queue = email_queue
 
     async def execute(
         self,
@@ -58,8 +56,8 @@ class SuspendUserMembershipUseCase:
                 )
 
         if suspended_until is None:
-            subject, body = build_membership_terminated_html(user.full_name, reason)
+            subject, body = MessageBuilder.build_membership_terminated_html(user.full_name, reason)
         else:
-            subject, body = build_membership_suspended_html(user.full_name, reason)
+            subject, body = MessageBuilder.build_membership_suspended_html(user.full_name, reason)
 
-        await self.__email_queue.send_email(to=user.email, subject=subject, body=body)
+        EmailQueue.send_email(to=user.email, subject=subject, body=body)

@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from faker import Faker
@@ -93,7 +93,7 @@ async def test_answer_contact_message_queues_email_and_marks_answered(
     admin_all_permissions,
     test_transaction_manager: TransactionManager,
 ) -> None:
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post(
             f"/api/admin/contact-messages/{contact_message_db.id}/answers",
             json={
@@ -111,7 +111,7 @@ async def test_answer_contact_message_queues_email_and_marks_answered(
     assert response.status_code == 201
     assert updated_message is not None
     assert updated_message.answered is True
-    mock_send_email.assert_awaited_once_with(
+    mock_send_email.assert_called_once_with(
         to=contact_message_db.email,
         subject="Reply from ASRP",
         body="Thank you for contacting ASRP. We will be happy to help.",

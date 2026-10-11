@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -15,19 +15,19 @@ pytestmark = pytest.mark.anyio
 async def test_password_reset_request_sends_email(client: AsyncClient, user_factory) -> None:
     user = await user_factory(pending=False)
 
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as send_email:
         response = await client.post("api/auth/password-reset", json={"email": user.email})
 
     assert response.status_code == 202
-    send_email.assert_awaited_once()
+    send_email.assert_called_once()
 
 
 async def test_password_reset_request_does_not_reveal_unknown_email(client: AsyncClient, faker) -> None:
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as send_email:
         response = await client.post("api/auth/password-reset", json={"email": faker.email()})
 
     assert response.status_code == 202
-    send_email.assert_not_awaited()
+    send_email.assert_not_called()
 
 
 async def test_password_reset_changes_password(

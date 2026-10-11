@@ -30,7 +30,6 @@ def test_review_membership_request_use_case(
     user_membership_service: UserMembershipService,
     payment_service: PaymentService,
     user_service,
-    email_queue,
 ) -> ReviewMembershipRequestUseCase:
     return ReviewMembershipRequestUseCase(
         test_transaction_manager,
@@ -38,7 +37,6 @@ def test_review_membership_request_use_case(
         user_membership_service,
         payment_service,
         user_service,
-        email_queue,
     )
 
 
@@ -97,7 +95,7 @@ async def test_approve_membership_request(
     assert (
         before_review + MEMBERSHIP_DURATION <= created_user_membership.expires_at <= after_review + MEMBERSHIP_DURATION
     )
-    email_queue.send_email.assert_awaited_once()
+    email_queue.assert_called_once()
 
 
 async def test_reject_membership_request_without_payment(
@@ -228,7 +226,7 @@ async def test_reject_membership_request_with_succeeded_payment_creates_refund(
     }
 
     assert created_user_membership is None
-    email_queue.send_email.assert_awaited_once()
+    email_queue.assert_called_once()
 
 
 async def test_reject_unpaid_membership_request(

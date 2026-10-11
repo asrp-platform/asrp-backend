@@ -9,11 +9,8 @@ from loguru import logger
 from app.core.config import settings
 from app.core.logging import PAYMENTS_CHANNEL
 from app.core.utils.permissions import check_permissions
-from app.domains.emails.common.messages import (
-    build_membership_application_approved_html,
-    build_membership_application_rejected_html,
-)
-from app.domains.emails.email_queue import EmailQueueDep
+from app.domains.emails.common.messages import MessageBuilder
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import (
@@ -39,14 +36,12 @@ class ReviewMembershipRequestUseCase:
         user_membership_service: UserMembershipServiceDep,
         payment_service: PaymentServiceDep,
         user_service: UserServiceDep,
-        email_queue: EmailQueueDep,
     ):
         self.__transaction_manager = transaction_manager
         self.__membership_request_service = membership_request_service
         self.__user_membership_service = user_membership_service
         self.__payment_service = payment_service
         self.__user_service = user_service
-        self.__email_queue = email_queue
 
     async def __approve_membership_request(
         self,
@@ -266,19 +261,19 @@ class ReviewMembershipRequestUseCase:
 
             if approval_status == MembershipRequestStatusEnum.APPROVED:
                 await self.__approve_membership_request(membership_request_id, reviewer, **kwargs)
-                subject, body = build_membership_application_approved_html(
+                subject, body = MessageBuilder.build_membership_application_approved_html(
                     full_name=user.full_name, login_link=f"{settings.FRONTEND_DOMAIN}/login"
                 )
                 email_payload = (user.email, subject, body)
 
             elif approval_status == MembershipRequestStatusEnum.REJECTED:
                 await self.__reject_membership_request(membership_request_id, reviewer, **kwargs)
-                subject, body = build_membership_application_rejected_html(user.full_name)
+                subject, body = MessageBuilder.build_membership_application_rejected_html(user.full_name)
                 email_payload = (user.email, subject, body)
 
         if email_payload is not None:
             email_to, subject, body = email_payload
-            await self.__email_queue.send_email(to=email_to, subject=subject, body=body)
+            EmailQueue.send_email(to=email_to, subject=subject, body=body)
 
 
 ReviewMembershipRequestUseCaseDep = Annotated[ReviewMembershipRequestUseCase, Depends(ReviewMembershipRequestUseCase)]
