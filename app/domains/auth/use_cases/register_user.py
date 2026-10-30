@@ -22,7 +22,7 @@ class RegisterUserUseCase:
         email = user_data["email"]
 
         async with self.__tm:
-            existing_user: User = await self.__tm.user_repository.get_by_email(email)
+            existing_user: User = await self.__tm.user_repository.get_by_email(email, deleted=None)
 
             if existing_user is None:
                 user = await self.__tm.user_repository.create(**user_data, pending=True)
@@ -41,6 +41,9 @@ class RegisterUserUseCase:
                 ):
                     setattr(existing_user, field, user_data[field])
                 user = existing_user
+            elif existing_user._deleted:
+                # TODO: сделать статус пользователя, чтобы фронт мог корректно обработать удаленный аккаунт
+                pass
             else:
                 raise ResourceAlreadyExistsError("Provided email is already in use")
 

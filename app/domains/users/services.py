@@ -84,15 +84,6 @@ class UserService:
 
         return upload_result
 
-    async def delete_user_avatar(self, user_id: int) -> None:
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise NotFoundError("User with provided ID not found")
-
-        avatar_path = user.avatar_path
-        await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
-        await self.file_storage.delete_file(avatar_path)
-
     async def change_password(
         self,
         user_id: int,

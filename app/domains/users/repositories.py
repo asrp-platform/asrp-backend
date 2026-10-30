@@ -19,12 +19,13 @@ from app.domains.users.models import (
 class UserRepository(SQLAlchemyRepository):
     model = User
 
-    async def get_by_email(self, email: str) -> User | None:
+    async def get_by_email(self, email: str, deleted: bool | None = False) -> User | None:
         normalized_email = email.strip().lower()
-        stmt = select(User).where(
-            User._deleted.is_(False),
-            func.lower(User.email) == normalized_email,
-        )
+        stmt = select(User).where(func.lower(User.email) == normalized_email)
+
+        if deleted is not None:
+            stmt = stmt.where(User._deleted == deleted)
+
         return (await self.session.execute(stmt)).scalars().first()
 
     async def list_active_members(

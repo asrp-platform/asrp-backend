@@ -41,6 +41,20 @@ class ContactMessageService:
         await self.transaction_manager.contact_message_repository.update(contact_message_id, answered=True)
         return reply, contact_message.email
 
+    async def mark_responded_manually(self, contact_message_id: int) -> None:
+        contact_message = await self.transaction_manager.contact_message_repository.get_first_by_kwargs(
+            id=contact_message_id
+        )
+        if contact_message is None:
+            raise NotFoundError("There is no contact message with provided id")
+        if contact_message.answered:
+            return
+        await self.transaction_manager.contact_message_reply_repository.create(
+            contact_message_id=contact_message.id,
+            answer="Responded manually outside ASRP. No email was sent by the system.",
+        )
+        await self.transaction_manager.contact_message_repository.update(contact_message_id, answered=True)
+
     async def send_answer(self, recipient: str, subject: str, answer_message: str) -> None:
         EmailQueue.send_email(to=recipient, subject=subject, body=answer_message)
 

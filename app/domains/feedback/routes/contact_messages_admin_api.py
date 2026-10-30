@@ -11,6 +11,7 @@ from app.domains.feedback.schemas import (
     ContactMessageResponseSchema,
 )
 from app.domains.feedback.use_cases import AnswerContactMessageUseCaseDep, GetContactMessagesUseCaseDep
+from app.domains.feedback.use_cases.mark_contact_message_responded import MarkContactMessageRespondedUseCaseDep
 from app.domains.shared.deps import AdminPermissionsDep, get_admin_user
 
 
@@ -72,3 +73,17 @@ async def answer_contact_message(
         answer_message=body.answer_message,
         permissions=permissions,
     )
+
+
+@router.post(
+    "/{message_id}/manual-response",
+    responses=AnswerContactMessageResponses.responses,
+    status_code=204,
+    summary="Mark a contact message as responded manually without sending an email",
+)
+async def mark_contact_message_responded_manually(
+    message_id: int,
+    permissions: AdminPermissionsDep,
+    use_case: MarkContactMessageRespondedUseCaseDep,
+) -> None:
+    await use_case.execute(message_id=message_id, permissions=permissions)

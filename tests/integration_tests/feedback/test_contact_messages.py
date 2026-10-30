@@ -216,3 +216,65 @@ async def test_create_donation_sponsorship_message_success(
     assert res_data["email"] == donation_sponsorship_message_data["email"]
     assert res_data["type"] == donation_sponsorship_message_data["type"]
     assert res_data["message_content"] == donation_sponsorship_message_data["message_content"]
+
+
+async def test_manual_response_marks_answered_without_email_and_is_idempotent(
+    client: AsyncClient,
+    contact_message_db: ContactMessage,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+    test_transaction_manager: TransactionManager,
+) -> None:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as send_email:
+        for _ in range(2):
+            response = await client.post(
+                f"/api/admin/contact-messages/{contact_message_db.id}/manual-response",
+                headers=admin_auth_headers,
+            )
+            assert response.status_code == 204
+        send_email.assert_not_called()
+    async with test_transaction_manager:
+        updated = await test_transaction_manager.contact_message_repository.get_first_by_kwargs(
+            id=contact_message_db.id
+        )
+        replies, count = await test_transaction_manager.contact_message_reply_repository.list(
+            filters={"contact_message_id": contact_message_db.id}
+        )
+    assert updated.answered is True
+    assert count == 1
+    assert "Responded manually" in replies[0].answer
+    response = await client.get(
+        "/api/admin/contact-messages",
+        params={"answered": False},
+        headers=admin_auth_headers,
+    )
+    assert response.status_code == 200
+    assert contact_message_db.id not in [row["id"] for row in response.json()["data"]]
+    response = await client.get(
+        "/api/admin/contact-messages",
+        params={"answered": True},
+        headers=admin_auth_headers,
+    )
+    assert response.status_code == 200
+    assert contact_message_db.id in [row["id"] for row in response.json()["data"]]
+
+
+async def test_manual_response_requires_update_permission(
+    client: AsyncClient,
+    contact_message_db: ContactMessage,
+    admin_auth_headers: AuthHeaders,
+) -> None:
+    response = await client.post(
+        f"/api/admin/contact-messages/{contact_message_db.id}/manual-response",
+        headers=admin_auth_headers,
+    )
+    assert response.status_code == 403
+
+
+async def test_manual_response_missing_message(
+    client: AsyncClient,
+    admin_auth_headers: AuthHeaders,
+    admin_all_permissions,
+) -> None:
+    response = await client.post("/api/admin/contact-messages/999999/manual-response", headers=admin_auth_headers)
+    assert response.status_code == 404

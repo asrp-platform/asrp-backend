@@ -24,6 +24,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
+from app.domains.users.use_cases.current_user.delete_current_user import DeleteCurrentUserUseCaseDep
 from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.request_name_change import RequestNageChangeUseCaseDep
 from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
@@ -55,6 +56,18 @@ async def update_user(
     current_user: CurrentUserDep, update_data: UpdateUserSchema, use_case: UpdateCurrentUserUseCaseDep
 ) -> UserPrivateSchema:
     return await use_case.execute(current_user, **update_data.model_dump(exclude_unset=True))
+
+
+@router.delete(
+    "",
+    summary="Delete current authenticated user",
+    status_code=204,
+)
+async def delete_user(
+    current_user: CurrentUserDep,
+    use_case: DeleteCurrentUserUseCaseDep,
+) -> None:
+    await use_case.execute(current_user)
 
 
 @router.get(
