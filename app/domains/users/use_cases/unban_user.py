@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import NotFoundError, PermissionDeniedError
+from app.core.common.base_exceptions import NotFoundError, PermissionDeniedError
 from app.core.utils.permissions import check_permissions
 from app.domains.shared.transaction_managers import TransactionManagerDep
 from app.domains.users.models import User

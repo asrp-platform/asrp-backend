@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.utils.permissions import check_permissions
 from app.domains.emails.common.messages import MessageBuilder
 from app.domains.emails.email_queue import EmailQueue

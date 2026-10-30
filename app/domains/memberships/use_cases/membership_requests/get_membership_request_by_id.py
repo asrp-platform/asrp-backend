@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import PermissionDeniedError
+from app.core.common.base_exceptions import PermissionDeniedError
 from app.core.utils.permissions import check_permissions
 from app.domains.memberships.models import MembershipRequest
 from app.domains.memberships.services import MembershipRequestServiceDep

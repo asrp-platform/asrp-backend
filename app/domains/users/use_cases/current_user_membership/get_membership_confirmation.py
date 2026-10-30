@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.domains.memberships.models import UserMembership
 from app.domains.memberships.schemas.user_memberships import MembershipConfirmationSchema
 from app.domains.memberships.services import UserMembershipServiceDep
@@ -34,6 +34,4 @@ def format_membership_id(membership: UserMembership) -> str:
     return f"ASRP-{membership.created_at.year}-{membership.id:05d}"
 
 
-GetMembershipConfirmationUseCaseDep = Annotated[
-    GetMembershipConfirmationUseCase, Depends()
-]
+GetMembershipConfirmationUseCaseDep = Annotated[GetMembershipConfirmationUseCase, Depends()]

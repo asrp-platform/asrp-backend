@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
-from app.core.common.exceptions import NotFoundError, PermissionDeniedError
+from app.core.common.base_exceptions import NotFoundError, PermissionDeniedError
 from app.core.config import settings
 from app.core.utils.permissions import check_permissions
 from app.domains.content.filters import WebinarStartFilterEnum

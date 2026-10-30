@@ -11,7 +11,6 @@ from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.shared.types import FileData
 from app.domains.users.exceptions import (
-    InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
     PendingNameChangeRequestAlreadyExistsError,
 )
@@ -121,7 +120,7 @@ async def remove_user_avatar(
 
 
 class ChangePasswordResponses(Responses):
-    INVALID_PASSWORD = 403, "Invalid password"
+    WRONG_PASSWORD = 401, "Wrong password"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -136,10 +135,7 @@ async def change_user_password(
     current_user: CurrentUserDep,  # noqa
     data: ChangePasswordSchema,
 ) -> None:
-    try:
-        await use_case.execute(current_user, new_password=data.new_password, old_password=data.old_password)
-    except InvalidPasswordError:
-        raise ChangePasswordResponses.INVALID_PASSWORD
+    await use_case.execute(current_user, new_password=data.new_password, old_password=data.old_password)
 
 
 class NameChangeRequestResponses(Responses):

@@ -6,6 +6,7 @@ from jose import jwt
 
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet, settings
+from app.domains.auth.exceptions import InvalidPasswordResetTokenError
 from app.domains.emails.common.messages import MessageBuilder
 from app.domains.emails.email_queue import EmailQueue
 from app.domains.users.models import User
@@ -19,7 +20,10 @@ class AuthTokenService:
         return self.__cryptographer.create_token(email)
 
     def verify_password_reset_token(self, token: bytes) -> str:
-        return self.__cryptographer.verify_token(token, 3600)
+        try:
+            return self.__cryptographer.verify_token(token, 3600)
+        except ValueError:
+            raise InvalidPasswordResetTokenError("Invalid password reset token")
 
     def create_email_confirmation_token(self, email: str) -> bytes:
         return self.__cryptographer.create_token(email)

@@ -4,7 +4,7 @@ from typing import Annotated, Any, Sequence
 from fastapi import Depends
 from sqlalchemy import func, select
 
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
+from app.core.common.base_exceptions import NotFoundError, ResourceConflictError
 from app.domains.emails.email_queue import EmailQueue
 from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
@@ -74,7 +74,7 @@ class FeedbackAdditionalInfoService:
             user_id=user_id
         )
         if existing is not None:
-            raise ResourceAlreadyExistsError("Additional detail for User with provided ID is already exists")
+            raise ResourceConflictError("Additional detail for User with provided ID is already exists")
         return await self.transaction_manager.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
 
     async def get_hear_about_stats(

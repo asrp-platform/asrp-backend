@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends
 
-from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, PayloadTooLargeError
+from app.core.common.base_exceptions import InvalidMimeTypeError, NotFoundError, PayloadTooLargeError
 from app.core.common.responses import PaginatedResponse
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.permissions import check_any_permission, check_permissions

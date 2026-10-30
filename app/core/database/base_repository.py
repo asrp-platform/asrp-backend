@@ -5,7 +5,7 @@ from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.utils.filters import build_conditions
 
 

@@ -1,11 +1,26 @@
-from app.core.common.exceptions import InvalidOperationError, ResourceAlreadyExistsError
+from app.core.common.base_exceptions import (
+    AuthenticationError,
+    InvalidOperationError,
+    PermissionDeniedError,
+    ResourceConflictError,
+)
 
 
-class RegistrationAlreadyCompletedError(ResourceAlreadyExistsError):
+# Login exceptions
+class WrongCredentialsError(AuthenticationError):
     pass
 
 
-class EmailAlreadyConfirmedError(ResourceAlreadyExistsError):
+class UserBannedError(AuthenticationError):
+    pass
+
+
+class UserDeletedError(AuthenticationError):
+    pass
+
+
+# Email confirmation exceptions
+class EmailAlreadyConfirmedError(ResourceConflictError):
     pass
 
 
@@ -13,9 +28,14 @@ class EmailConfirmationExpiredError(InvalidOperationError):
     pass
 
 
-class InvalidCredentialsError(InvalidOperationError):
+# Registration exceptions
+class RegistrationAlreadyCompletedError(ResourceConflictError):
     pass
 
 
-class UserBannedError(InvalidOperationError):
+class EmailAlreadyInUseError(ResourceConflictError):
+    pass
+
+
+class InvalidPasswordResetTokenError(PermissionDeniedError):
     pass

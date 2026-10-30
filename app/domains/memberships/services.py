@@ -5,7 +5,7 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import aliased, selectinload
 
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
+from app.core.common.base_exceptions import NotFoundError, ResourceConflictError
 from app.domains.memberships.models import (
     MembershipDowngradeRequest,
     MembershipRequest,
@@ -55,7 +55,7 @@ class MembershipRequestService:
     async def create_membership_request(self, user_id: int, membership_type: MembershipTypeEnum, **kwargs):
         membership_request = await self.__tm.membership_requests_repository.get_first_by_kwargs(user_id=user_id)
         if membership_request is not None:
-            raise ResourceAlreadyExistsError("Membership for provided User already exists")
+            raise ResourceConflictError("Membership for provided User already exists")
 
         membership_type = await self.__tm.membership_type_repository.get_first_by_kwargs(type=membership_type.value)
 
@@ -147,7 +147,7 @@ class UserMembershipService:
     async def create_user_membership(self, user_id: int, **kwargs) -> UserMembership:
         user_membership = await self.__tm.user_membership_repository.get_first_by_kwargs(user_id=user_id)
         if user_membership is not None:
-            raise ResourceAlreadyExistsError(f"User membership already exists for the user with ID={user_id}")
+            raise ResourceConflictError(f"User membership already exists for the user with ID={user_id}")
         return await self.__tm.user_membership_repository.create(user_id=user_id, **kwargs)
 
     async def get_user_membership_by_user_id(self, user_id: int) -> UserMembership | None:

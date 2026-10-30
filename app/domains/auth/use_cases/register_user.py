@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import ResourceAlreadyExistsError
+from app.domains.auth.exceptions import EmailAlreadyInUseError
 from app.domains.auth.schemas import RegisterFormData
 from app.domains.auth.services import AuthEmailServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
@@ -45,7 +45,7 @@ class RegisterUserUseCase:
                 # TODO: сделать статус пользователя, чтобы фронт мог корректно обработать удаленный аккаунт
                 pass
             else:
-                raise ResourceAlreadyExistsError("Provided email is already in use")
+                raise EmailAlreadyInUseError("Provided email is already in use")
 
         await self.__email_service.send_email_confirmation(user)
 

@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.core.config import settings
-from app.domains.auth.exceptions import InvalidCredentialsError, UserBannedError
+from app.domains.auth.exceptions import UserBannedError, UserDeletedError, WrongCredentialsError
 from app.domains.auth.schemas import LoginForm
 from app.domains.auth.services import AuthJwtServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep
@@ -27,7 +27,10 @@ class LoginUserUseCase:
             user = await self.__tm.user_repository.get_by_email(login_data.email)
 
             if user is None or user.pending or not user.verify_password(login_data.password):
-                raise InvalidCredentialsError("Wrong credentials")
+                raise WrongCredentialsError("Wrong credentials")
+
+            if user._deleted:
+                raise UserDeletedError("User has been deleted")
 
             if user.banned:
                 raise UserBannedError(f"User is banned: {user.ban_reason}")
@@ -45,4 +48,4 @@ class LoginUserUseCase:
         )
 
 
-LoginUserUseCaseDep = Annotated[LoginUserUseCase, Depends(LoginUserUseCase)]
+LoginUserUseCaseDep = Annotated[LoginUserUseCase, Depends()]

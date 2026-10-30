@@ -8,13 +8,13 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.core.common.exceptions import (
+from app.core.common.base_exceptions import (
+    AuthenticationError,
     InvalidMimeTypeError,
     NotFoundError,
-    NotResourceOwnerError,
     PayloadTooLargeError,
     PermissionDeniedError,
-    ResourceAlreadyExistsError,
+    ResourceConflictError,
 )
 from app.core.config import DEV_MODE, settings
 from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
@@ -84,24 +84,24 @@ app = FastAPI(
 )
 
 
-@app.exception_handler(NotFoundError)
-async def not_found_error_handler(request: Request, exc: NotFoundError):
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
-
-
-@app.exception_handler(NotResourceOwnerError)
-async def not_resource_owner_error_handler(request: Request, exc: NotResourceOwnerError):
-    return JSONResponse(status_code=403, content={"detail": str(exc)})
-
-
-@app.exception_handler(ResourceAlreadyExistsError)
-async def resource_already_exists_error_handler(request: Request, exc: ResourceAlreadyExistsError):
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+@app.exception_handler(AuthenticationError)
+async def authentication_error_handler(request: Request, exc: AuthenticationError):
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 
 @app.exception_handler(PermissionDeniedError)
 async def permission_denied_error_handler(request: Request, exc: PermissionDeniedError):
     return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_error_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(ResourceConflictError)
+async def resource_already_exists_error_handler(request: Request, exc: ResourceConflictError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 @app.exception_handler(InvalidOrderAttributeError)

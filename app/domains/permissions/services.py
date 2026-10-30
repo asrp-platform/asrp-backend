@@ -6,7 +6,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.logging import PRIVILEGES_CHANNEL
 from app.domains.permissions.models import Permission
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep

@@ -8,7 +8,7 @@ from starlette import status
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.config import settings
 from app.domains.auth.cookies import REFRESH_TOKEN_COOKIE_KWARGS
 from app.domains.memberships.models import UserMembership

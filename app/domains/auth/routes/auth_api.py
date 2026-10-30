@@ -4,15 +4,7 @@ from fastapi import APIRouter, Query
 from fastapi_exception_responses import Responses as ApiResponses
 from starlette.responses import Response
 
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
 from app.domains.auth.cookies import REFRESH_TOKEN_COOKIE_KWARGS
-from app.domains.auth.exceptions import (
-    EmailAlreadyConfirmedError,
-    EmailConfirmationExpiredError,
-    InvalidCredentialsError,
-    RegistrationAlreadyCompletedError,
-    UserBannedError,
-)
 from app.domains.auth.schemas import (
     AccessToken,
     ChangePasswordSchema,
@@ -53,10 +45,7 @@ async def register(
     register_form_data: RegisterFormData,
     use_case: RegisterUserUseCaseDep,
 ) -> UserPrivateSchema:
-    try:
-        return await use_case.execute(register_form_data)
-    except ResourceAlreadyExistsError:
-        raise RegisterResponses.EMAIL_ALREADY_IN_USE
+    return await use_case.execute(register_form_data)
 
 
 class LoginResponses(ApiResponses):
@@ -70,12 +59,7 @@ async def login(
     login_data: LoginForm,
     use_case: LoginUserUseCaseDep,
 ) -> JWTTokenResponse:
-    try:
-        result = await use_case.execute(login_data)
-    except InvalidCredentialsError:
-        raise LoginResponses.WRONG_CREDENTIALS
-    except UserBannedError as exc:
-        raise LoginResponses.USER_BANNED from exc
+    result = await use_case.execute(login_data)
 
     # Optional adding access_token into Headers
     response.headers["Authorization"] = f"Bearer {result.access_token}"
@@ -152,10 +136,7 @@ async def verify_reset_token(
     token: Annotated[str, Query(...)],
     token_service: AuthTokenServiceDep,
 ) -> str:
-    try:
-        return token_service.verify_password_reset_token(token.encode())
-    except ValueError:
-        raise VerifyTokenResponses.INVALID_TOKEN
+    return token_service.verify_password_reset_token(token.encode())
 
 
 class ConfirmPasswordResetResponses(ApiResponses):
@@ -173,10 +154,7 @@ async def confirm_password_reset(
     use_case: ConfirmPasswordResetUseCaseDep,
     data: ChangePasswordSchema,
 ):
-    try:
-        await use_case.execute(token.encode(), data.password)
-    except ValueError:
-        raise ConfirmPasswordResetResponses.INVALID_TOKEN
+    await use_case.execute(token.encode(), data.password)
 
 
 class EmailConfirmRequestResponses(ApiResponses):
@@ -194,14 +172,8 @@ class EmailConfirmRequestResponses(ApiResponses):
 async def send_email_confirm_link(
     request_data: EmailConfirmationRequestForm, use_case: ResendEmailConfirmationUseCaseDep
 ) -> MessageResponse:
-    try:
-        await use_case.execute(request_data.email)
-        return MessageResponse(detail="Confirmation email sent")
-
-    except NotFoundError:
-        raise EmailConfirmRequestResponses.USER_NOT_FOUND
-    except EmailAlreadyConfirmedError:
-        raise EmailConfirmRequestResponses.EMAIL_ALREADY_CONFIRMED
+    await use_case.execute(request_data.email)
+    return MessageResponse(detail="Confirmation email sent")
 
 
 class CompleteRegistrationResponses(ApiResponses):
@@ -215,13 +187,9 @@ class CompleteRegistrationResponses(ApiResponses):
     summary="Complete registration by email confirmation",
     responses=CompleteRegistrationResponses.responses,
 )
-async def confirm_email(token: Annotated[str, Query(...)], use_case: CompleteRegistrationUseCaseDep):
-    try:
-        await use_case.execute(token.encode())
-        return {"detail": "Email successfully confirmed"}
-
-    except RegistrationAlreadyCompletedError:
-        raise CompleteRegistrationResponses.ALREADY_REGISTERED
-
-    except EmailConfirmationExpiredError:
-        raise CompleteRegistrationResponses.EXPIRED
+async def confirm_email(
+    token: Annotated[str, Query(...)],
+    use_case: CompleteRegistrationUseCaseDep,
+):
+    await use_case.execute(token.encode())
+    return {"detail": "Email successfully confirmed"}

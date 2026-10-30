@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 import app.domains.memberships.use_cases.membership_requests.review_membership_request as review_membership_request_module
-from app.core.common.exceptions import PermissionDeniedError
+from app.core.common.base_exceptions import PermissionDeniedError
 from app.domains.memberships.exceptions import MissingMembershipRequestPayment, MissingRejectingCommentError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestService, UserMembershipService

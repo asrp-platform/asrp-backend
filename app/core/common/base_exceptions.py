@@ -1,16 +1,20 @@
+# Handled - 404
 class NotFoundError(Exception):
     """Raised when an entity/record was not found in DB"""
 
 
-class NotResourceOwnerError(Exception):
+# Handled - 401
+class AuthenticationError(Exception):
+    """401 status code - wrong credentials == unauthorized"""
+
+
+# Handled - 403
+class PermissionDeniedError(Exception):
     pass
 
 
-class ResourceAlreadyExistsError(Exception):
-    pass
-
-
-class TimeCooldownError(Exception):
+# Handled - 409
+class ResourceConflictError(Exception):
     pass
 
 
@@ -25,10 +29,6 @@ class InvalidMimeTypeError(Exception):
 
 
 class PayloadTooLargeError(Exception):
-    pass
-
-
-class PermissionDeniedError(Exception):
     pass
 
 

@@ -1,4 +1,4 @@
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 
 
 class DirectionBoardMemberNotFoundError(NotFoundError):

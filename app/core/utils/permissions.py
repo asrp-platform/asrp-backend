@@ -1,4 +1,4 @@
-from app.core.common.exceptions import PermissionDeniedError
+from app.core.common.base_exceptions import PermissionDeniedError
 
 
 def check_permissions(permission_to_check: str, permissions: list[str]) -> None:

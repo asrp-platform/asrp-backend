@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.domains.permissions.models import Permission
 from app.domains.permissions.services import PermissionsService
 from app.domains.shared.transaction_managers import TransactionManager

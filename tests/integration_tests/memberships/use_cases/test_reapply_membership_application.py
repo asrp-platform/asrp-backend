@@ -5,7 +5,7 @@ import pytest
 from faker import Faker
 
 import app.domains.users.use_cases.current_user_membership.reapply_membership_application as reapply_module
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.domains.memberships.exceptions import (
     CheckoutSessionCreationError,
     MembershipAlreadyPaidError,

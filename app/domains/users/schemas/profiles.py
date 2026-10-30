@@ -67,6 +67,7 @@ class UserPrivateSchema(UserPublicSchema):
     phone_number: str | None
     pending: bool
     created_at: datetime
+    deleted_at: datetime | None = None
     last_password_change: datetime | None
     postal_code: str | None = None
 
