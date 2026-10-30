@@ -1,6 +1,5 @@
 from typing import Type
 
-from app.core.config import DEV_MODE
 from app.domains.emails.providers.abstract_provider import EmailProvider
 
 
@@ -20,7 +19,7 @@ class MockEmailService(EmailService):
 def get_email_service(provider: Type[EmailProvider]) -> EmailService:
     provider_instance = provider()
 
-    if DEV_MODE:
-        return MockEmailService(provider_instance)
+    # if DEV_MODE:
+    #     return MockEmailService(provider_instance)
 
     return EmailService(provider_instance)

@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings
+from sqlalchemy import URL
 
 
 load_dotenv()
@@ -77,7 +78,7 @@ class S3Config(BaseModel):
 
 class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Config):
     DB_HOST: str = "localhost"
-    DB_PORT: str = "5432"
+    DB_PORT: int = 5432
     DB_PASSWORD: str = "test"
     DB_USER: str = "test"
     DB_NAME: str = "test"
@@ -159,7 +160,19 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
 settings = Settings()
 fernet = Fernet(settings.fernet_key_bytes)
 
-DB_URL: str = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+base_url = URL.create(
+    drivername="postgresql",
+    username=settings.DB_USER,
+    password=settings.DB_PASSWORD,
+    host=settings.DB_HOST,
+    port=settings.DB_PORT,
+    database=settings.DB_NAME,
+)
+
+DB_URL = base_url.set(drivername="postgresql+asyncpg").render_as_string(hide_password=False)
+
+CELERY_RESULT_BACKEND = "db+" + base_url.set(drivername="postgresql+psycopg2").render_as_string(hide_password=False)
+
 TEST_DB_URL: str = (
     f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/test"
 )

@@ -32,6 +32,7 @@ from app.domains.content.routes import (
 )
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
+from app.domains.emails.admin_api import router as emails_admin_router
 from app.domains.feedback.routes import (
     contact_messages_admin_router,
     contact_messages_router,
@@ -157,6 +158,7 @@ app.include_router(news_router, prefix="/api")
 app.include_router(case_of_the_month_router, prefix="/api")
 
 
+app.include_router(emails_admin_router, prefix="/api/admin")
 app.include_router(users_admin_router, prefix="/api/admin")
 app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")

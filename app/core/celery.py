@@ -1,7 +1,7 @@
 from celery import Celery
 from kombu import Queue
 
-from app.core.config import DB_URL, settings
+from app.core.config import CELERY_RESULT_BACKEND, settings
 
 
 celery_app = Celery(
@@ -10,7 +10,7 @@ celery_app = Celery(
     include=[
         "app.domains.emails.tasks",
     ],
-    backend=DB_URL,
+    backend=CELERY_RESULT_BACKEND,
 )
 
 celery_app.conf.task_queues = (Queue("emails", durable=True),)
