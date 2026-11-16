@@ -153,6 +153,7 @@ class CaseOfTheMonthService:
             case_findings=await self.hydrate_content_image_urls(case.case_findings),
             virtual_slides=await self.hydrate_virtual_slides(case.virtual_slides),
             questions=case.questions,
+            authors=case.authors or [],
             publication_month=case.publication_month,
             answer=await self.hydrate_content_image_urls(case.answer),
             tags=[CaseTagSchema.model_validate(tag) for tag in case.tags],

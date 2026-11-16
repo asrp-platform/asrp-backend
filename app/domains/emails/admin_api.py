@@ -18,7 +18,7 @@ class TestMailingSchema(BaseModel):
     summary="Send a test mailing",
 )
 def send_test_mailing(body: TestMailingSchema) -> dict[str, int]:
-    to_emails: list[str] = ["maxevg72@gmail.com", "maxevg12@gmail.com"]
+    to_emails: list[str] = []
     EmailQueue.send_mailing(
         emails_to=to_emails,
         subject=body.subject,
