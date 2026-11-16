@@ -33,7 +33,7 @@ class LoginUserUseCase:
                 raise UserDeletedError("User has been deleted")
 
             if user.banned:
-                raise UserBannedError(f"User is banned: {user.ban_reason}")
+                raise UserBannedError("User is banned")
 
         token_data = {"email": user.email}
         refresh_token = self.__jwt_service.create_refresh_token(token_data, remember_me=login_data.remember)

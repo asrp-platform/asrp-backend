@@ -11,7 +11,7 @@ class WrongCredentialsError(AuthenticationError):
     pass
 
 
-class UserBannedError(AuthenticationError):
+class UserBannedError(PermissionDeniedError):
     pass
 
 
@@ -24,7 +24,7 @@ class EmailAlreadyConfirmedError(ResourceConflictError):
     pass
 
 
-class EmailConfirmationExpiredError(InvalidOperationError):
+class EmailConfirmationExpiredError(AuthenticationError):
     pass
 
 
@@ -37,5 +37,5 @@ class EmailAlreadyInUseError(ResourceConflictError):
     pass
 
 
-class InvalidPasswordResetTokenError(PermissionDeniedError):
+class InvalidPasswordResetTokenError(InvalidOperationError):
     pass

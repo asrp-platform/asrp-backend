@@ -1,3 +1,10 @@
+# STATUS BASE EXCEPTIONS - catching in main.py
+
+# Handler - 400
+class BadRequestError(Exception):
+    pass
+
+
 # Handled - 404
 class NotFoundError(Exception):
     """Raised when an entity/record was not found in DB"""
@@ -18,23 +25,30 @@ class ResourceConflictError(Exception):
     pass
 
 
-class InvalidOperationError(Exception):
-    """Raised when an attempted operation is invalid in the current domain state."""
-
-    pass
-
-
+# 415 Handler
 class InvalidMimeTypeError(Exception):
     pass
 
 
+# Handler - 413
 class PayloadTooLargeError(Exception):
     pass
 
 
+# BASE OPERATIONS EXCEPTION
 class InvalidStorageTypeError(Exception):
     pass
 
 
 class HandlerNotFoundError(Exception):
+    pass
+
+
+class RequestParamsError(BadRequestError):
+    pass
+
+
+class InvalidOperationError(BadRequestError):
+    """Raised when an attempted operation is invalid in the current domain state."""
+
     pass

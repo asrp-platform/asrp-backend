@@ -5,7 +5,7 @@ from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.common.base_exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError, RequestParamsError
 from app.core.utils.filters import build_conditions
 
 
@@ -38,11 +38,11 @@ class BaseRepository(ABC):
 T = TypeVar("T")
 
 
-class InvalidOrderAttributeError(Exception):
+class InvalidOrderAttributeError(RequestParamsError):
     pass
 
 
-class InvalidFilterError(Exception):
+class InvalidFilterError(RequestParamsError):
     pass
 
 

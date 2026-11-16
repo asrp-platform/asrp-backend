@@ -10,14 +10,15 @@ from starlette.responses import JSONResponse
 
 from app.core.common.base_exceptions import (
     AuthenticationError,
+    BadRequestError,
     InvalidMimeTypeError,
+    InvalidOperationError,
     NotFoundError,
     PayloadTooLargeError,
     PermissionDeniedError,
     ResourceConflictError,
 )
 from app.core.config import DEV_MODE, settings
-from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.database.setup_db import session_getter
 from app.core.logging import configure_logging
 from app.core.utils.open_api import get_custom_open_api
@@ -84,6 +85,16 @@ app = FastAPI(
 )
 
 
+@app.exception_handler(InvalidOperationError)
+async def invalid_operation_error_handler(request: Request, exc: InvalidOperationError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(BadRequestError)
+async def invalid_order_attribute_error_handler(request: Request, exc: BadRequestError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
 @app.exception_handler(AuthenticationError)
 async def authentication_error_handler(request: Request, exc: AuthenticationError):
     return JSONResponse(status_code=401, content={"detail": str(exc)})
@@ -102,16 +113,6 @@ async def not_found_error_handler(request: Request, exc: NotFoundError):
 @app.exception_handler(ResourceConflictError)
 async def resource_already_exists_error_handler(request: Request, exc: ResourceConflictError):
     return JSONResponse(status_code=409, content={"detail": str(exc)})
-
-
-@app.exception_handler(InvalidOrderAttributeError)
-async def invalid_order_attribute_error_handler(request: Request, exc: InvalidOrderAttributeError):
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
-
-
-@app.exception_handler(InvalidFilterError)
-async def invalid_filter_error_handler(request: Request, exc: InvalidFilterError):
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 @app.exception_handler(InvalidMimeTypeError)

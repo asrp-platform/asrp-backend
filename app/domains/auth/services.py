@@ -23,7 +23,7 @@ class AuthTokenService:
         try:
             return self.__cryptographer.verify_token(token, 3600)
         except ValueError:
-            raise InvalidPasswordResetTokenError("Invalid password reset token")
+            raise InvalidPasswordResetTokenError("Invalid token")
 
     def create_email_confirmation_token(self, email: str) -> bytes:
         return self.__cryptographer.create_token(email)
