@@ -74,7 +74,7 @@ jobs:
         run: docker compose -f docker-compose.dev.yml build asrp_backend
 
       - name: Start dev-server migration services
-        run: docker compose -f docker-compose.dev.yml up -d asrp_database minio rabbitmq celery_worker
+        run: docker compose -f docker-compose.dev.yml up -d asrp_database rustfs rabbitmq celery_worker
 
       - name: Wait for Postgres
         shell: bash
@@ -127,7 +127,7 @@ jobs:
         run: cp .env.ci .env
 
       - name: Start dev-server test services
-        run: docker compose -f docker-compose.dev.yml up -d asrp_database minio redis
+        run: docker compose -f docker-compose.dev.yml up -d asrp_database rustfs redis
 
       - name: Wait for Postgres
         shell: bash
@@ -183,7 +183,7 @@ jobs:
         run: cp .env.ci .env
 
       - name: Start local-dev services
-        run: docker compose -f local.yml up -d asrp_database minio rabbitmq celery_worker redis
+        run: docker compose -f local.yml up -d asrp_database rustfs rabbitmq celery_worker redis
 
       - name: Wait for Postgres
         shell: bash

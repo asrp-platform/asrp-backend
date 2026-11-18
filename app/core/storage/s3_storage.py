@@ -45,7 +45,7 @@ class S3Storage(BaseFileStorage):
     @asynccontextmanager
     async def get_client(self):
         """
-        Client for internal backend -> MinIO operations:
+        Client for internal backend -> S3-compatible storage operations:
         upload, delete, list, bucket_exists, etc.
         """
         async with self.session.create_client("s3", **self.config) as client:
