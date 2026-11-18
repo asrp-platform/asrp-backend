@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import ResourceAlreadyExistsError
+from app.core.common.base_exceptions import ResourceConflictError
 from app.domains.memberships.exceptions import (
     CantChangeToHonoraryMembershipError,
     InvalidMembershipTypeDowngradeError,
@@ -68,7 +68,7 @@ class RequestMembershipDowngradeUseCase:
             )
         )
         if pending_request is not None:
-            raise ResourceAlreadyExistsError("Pending user membership type change request already exists")
+            raise ResourceConflictError("Pending user membership type change request already exists")
 
     @staticmethod
     def _check_upgrade_is_correct(price_difference: int):

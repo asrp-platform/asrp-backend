@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from loguru import logger
 
-from app.core.common.exceptions import HandlerNotFoundError
+from app.core.common.base_exceptions import HandlerNotFoundError
 from app.domains.payments.models import PaymentPurposeEnum
 from app.domains.payments.purpose_handlers.donation import DonationHandlerDep
 from app.domains.payments.purpose_handlers.membership_application import MembershipApplicationHandlerDep

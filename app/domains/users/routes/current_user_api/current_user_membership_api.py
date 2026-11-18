@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Response
 from fastapi_exception_responses import Responses
 
-from app.core.common.exceptions import ResourceAlreadyExistsError
+from app.core.common.base_exceptions import ResourceConflictError
 from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,
     CantChangeToHonoraryMembershipError,
@@ -96,7 +96,7 @@ async def create_membership_request(
         return PaymentCheckoutSchema(checkout_session_url=checkout_session_url)
     except CantBuyHonoraryMembership:
         raise MembershipCreateResponses.CANT_BUY_HONORARY_MEMBERSHIP
-    except ResourceAlreadyExistsError:
+    except ResourceConflictError:
         raise MembershipCreateResponses.FEEDBACK_ADDITIONAL_INFO_ALREADY_EXISTS
     except CheckoutSessionCreationError:
         raise MembershipCreateResponses.CHECKOUT_SESSION_CREATION_FAILED

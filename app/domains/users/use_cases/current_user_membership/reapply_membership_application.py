@@ -5,7 +5,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import (
     CantBuyHonoraryMembership,

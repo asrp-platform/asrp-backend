@@ -153,6 +153,7 @@ class CaseOfTheMonth(Base, UCIMixin):
 
     publication_month: Mapped[date] = mapped_column(Date, nullable=False)
     answer: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    authors: Mapped[list[str]] = mapped_column(JSONB, nullable=True, default=list)
 
     tags: Mapped[list["CaseTag"]] = relationship(
         "CaseTag",

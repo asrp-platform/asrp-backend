@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.domains.auth.exceptions import EmailAlreadyConfirmedError
 from app.domains.auth.services import AuthEmailServiceDep
 from app.domains.shared.transaction_managers import TransactionManagerDep

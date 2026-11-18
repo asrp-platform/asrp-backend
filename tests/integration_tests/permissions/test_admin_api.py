@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.domains.permissions.services import get_permissions_service
 from app.domains.shared.deps import get_users_permissions
 from app.main import app

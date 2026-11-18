@@ -6,8 +6,9 @@ from jose import jwt
 
 from app.core.common.cryptographer import Cryptographer
 from app.core.config import fernet, settings
-from app.domains.emails.common.messages import build_email_verification_html, build_password_reset_html
-from app.domains.emails.email_queue import EmailQueueDep
+from app.domains.auth.exceptions import InvalidPasswordResetTokenError
+from app.domains.emails.common.messages import MessageBuilder
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.users.models import User
 
 
@@ -19,7 +20,10 @@ class AuthTokenService:
         return self.__cryptographer.create_token(email)
 
     def verify_password_reset_token(self, token: bytes) -> str:
-        return self.__cryptographer.verify_token(token, 3600)
+        try:
+            return self.__cryptographer.verify_token(token, 3600)
+        except ValueError:
+            raise InvalidPasswordResetTokenError("Invalid token")
 
     def create_email_confirmation_token(self, email: str) -> bytes:
         return self.__cryptographer.create_token(email)
@@ -55,16 +59,15 @@ class AuthJwtService:
 
 
 class AuthEmailService:
-    def __init__(self, email_queue: EmailQueueDep, token_service: Annotated[AuthTokenService, Depends()]):
-        self.__email_queue = email_queue
+    def __init__(self, token_service: Annotated[AuthTokenService, Depends()]):
         self.__token_service = token_service
 
     async def send_password_reset(self, email: str):
         token = self.__token_service.create_password_reset_token(email)
         link = f"{settings.FRONTEND_DOMAIN}/password-reset/confirm/?token={token.decode()}"
-        subject, body = build_password_reset_html(reset_link=link)
+        subject, body = MessageBuilder.build_password_reset_html(reset_link=link)
 
-        await self.__email_queue.send_email(
+        EmailQueue.send_email(
             to=email,
             subject=subject,
             body=body,
@@ -74,8 +77,8 @@ class AuthEmailService:
         token = self.__token_service.create_email_confirmation_token(user.email)
         link = f"{settings.FRONTEND_DOMAIN}/registration/complete?token={token.decode()}"
 
-        subject, body = build_email_verification_html(full_name=user.full_name, verification_link=link)
-        await self.__email_queue.send_email(to=user.email, subject=subject, body=body)
+        subject, body = MessageBuilder.build_email_verification_html(full_name=user.full_name, verification_link=link)
+        EmailQueue.send_email(to=user.email, subject=subject, body=body)
 
 
 AuthTokenServiceDep = Annotated[AuthTokenService, Depends(AuthTokenService)]

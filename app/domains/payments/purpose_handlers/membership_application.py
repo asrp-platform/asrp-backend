@@ -5,8 +5,8 @@ from loguru import logger
 from stripe import Event
 
 from app.core.logging import PAYMENTS_CHANNEL
-from app.domains.emails.common.messages import build_membership_application_html
-from app.domains.emails.email_queue import EmailQueueDep
+from app.domains.emails.common.messages import MessageBuilder
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.memberships.models import MembershipRequestStatusEnum
 from app.domains.memberships.services import MembershipRequestServiceDep
 from app.domains.payments.models import Payment, PaymentPurposeEnum, PaymentStatusEnum
@@ -23,12 +23,10 @@ class MembershipApplicationHandler:
         self,
         membership_service: MembershipRequestServiceDep,
         payment_service: PaymentServiceDep,
-        email_queue: EmailQueueDep,
         user_service: UserServiceDep,
     ):
         self.__membership_service = membership_service
         self.__payment_service = payment_service
-        self.__email_queue = email_queue
         self.__user_service = user_service
 
     async def on_succeeded(self, payment: Payment, event: Event) -> None:
@@ -69,8 +67,8 @@ class MembershipApplicationHandler:
             payment.membership_request_id, status=MembershipRequestStatusEnum.PAID
         )
         user: User = await self.__user_service._get_user_by_kwargs(id=payment.user_id)
-        subject, body = build_membership_application_html(user.full_name)
-        await self.__email_queue.send_email(to=user.email, subject=subject, body=body)
+        subject, body = MessageBuilder.build_membership_application_html(user.full_name)
+        EmailQueue.send_email(to=user.email, subject=subject, body=body)
 
 
 MembershipApplicationHandlerDep = Annotated[MembershipApplicationHandler, Depends(MembershipApplicationHandler)]

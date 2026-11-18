@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.permissions import check_permissions
 from app.domains.shared.transaction_managers import TransactionManagerDep

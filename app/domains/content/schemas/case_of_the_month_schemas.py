@@ -13,6 +13,7 @@ class CreateCaseOfTheMonthSchema(BaseModel):
     case_findings: dict
     virtual_slides: list[str] = Field(default_factory=list)
     questions: list[str] = Field(default_factory=list)
+    authors: list[str] = Field(default_factory=list)
     publication_month: date
     answer: dict
     tag_ids: list[int] = Field(default_factory=list)
@@ -25,6 +26,7 @@ class UpdateCaseOfTheMonthSchema(BaseModel):
     case_findings: dict | None = None
     virtual_slides: list[str] | None = None
     questions: list[str] | None = None
+    authors: list[str] | None = None
     publication_month: date | None = None
     answer: dict | None = None
     tag_ids: list[int] | None = None
@@ -39,6 +41,7 @@ class CaseOfTheMonthSchema(UCIMixinSchema):
     case_findings: dict
     virtual_slides: list[str]
     questions: list[str]
+    authors: list[str]
     publication_month: date
     answer: dict
     tags: list[CaseTagSchema]

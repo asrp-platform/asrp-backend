@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from loguru import logger
 
-from app.core.common.exceptions import NotFoundError
+from app.core.common.base_exceptions import NotFoundError
 from app.core.logging import PAYMENTS_CHANNEL
 from app.domains.memberships.exceptions import CheckoutSessionCreationError, MembershipAlreadyPaidError
 from app.domains.memberships.models import MembershipRequest, MembershipRequestStatusEnum

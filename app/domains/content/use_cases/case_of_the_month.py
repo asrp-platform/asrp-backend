@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
-from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, PayloadTooLargeError
+from app.core.common.base_exceptions import InvalidMimeTypeError, NotFoundError, PayloadTooLargeError
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.save_file import generate_filename
 from app.domains.content.models import CaseOfTheMonth, CaseTag

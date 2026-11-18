@@ -2,7 +2,7 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from loguru import logger
 
 from app.core.config import settings
-from app.domains.emails.common.abstract_provider import EmailProvider
+from app.domains.emails.providers.abstract_provider import EmailProvider
 
 
 class GmailProvider(EmailProvider):

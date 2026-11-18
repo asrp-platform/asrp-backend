@@ -1,7 +1,7 @@
 from celery import Celery
 from kombu import Queue
 
-from app.core.config import settings
+from app.core.config import CELERY_RESULT_BACKEND, settings
 
 
 celery_app = Celery(
@@ -10,12 +10,16 @@ celery_app = Celery(
     include=[
         "app.domains.emails.tasks",
     ],
+    backend=CELERY_RESULT_BACKEND,
 )
 
 celery_app.conf.task_queues = (Queue("emails", durable=True),)
-
 celery_app.conf.task_routes = {
     "emails.send_email": {"queue": "emails"},
 }
-
 celery_app.conf.task_default_delivery_mode = "persistent"
+celery_app.conf.update(
+    task_track_started=True,
+    result_extended=True,
+    result_expires=86400,
+)

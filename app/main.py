@@ -8,19 +8,19 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.core.common.exceptions import (
+from app.core.common.base_exceptions import (
+    AuthenticationError,
+    BadRequestError,
     InvalidMimeTypeError,
+    InvalidOperationError,
     NotFoundError,
-    NotResourceOwnerError,
     PayloadTooLargeError,
     PermissionDeniedError,
-    ResourceAlreadyExistsError,
+    ResourceConflictError,
 )
 from app.core.config import DEV_MODE, settings
-from app.core.database.base_repository import InvalidFilterError, InvalidOrderAttributeError
 from app.core.database.setup_db import session_getter
 from app.core.logging import configure_logging
-from app.core.rate_limiter import rate_limiter_dependency
 from app.core.utils.open_api import get_custom_open_api
 from app.domains.auth.routes import router as auth_router
 from app.domains.content.routes import (
@@ -33,11 +33,11 @@ from app.domains.content.routes import (
 )
 from app.domains.directors_board.routes.directors_board_admin_api import router as directors_board_admin_router
 from app.domains.directors_board.routes.directors_board_api import router as directors_board_router
+from app.domains.emails.admin_api import router as emails_admin_router
 from app.domains.feedback.routes import (
     contact_messages_admin_router,
     contact_messages_router,
     feedback_additional_info_admin_router,
-    feedback_additional_info_router,
 )
 from app.domains.legal_documents.routes.admin_api import router as legal_documents_admin_router
 from app.domains.legal_documents.routes.api import router as legal_documents_router
@@ -49,6 +49,7 @@ from app.domains.payments.routes.donations_api import router as donations_router
 from app.domains.payments.routes.payments_admin_api import router as payments_admin_router
 from app.domains.payments.routes.webhooks import router as webhooks_router
 from app.domains.permissions.routes.permissions_admin_api import router as permissions_admin_router
+from app.domains.shared.routes.reference_data_router import router as reference_data_router
 from app.domains.users.routes.admin_api.users_admin_api import router as users_admin_router
 from app.domains.users.routes.current_user_api.current_user_api import router as current_user_router
 from app.domains.users.routes.current_user_api.current_user_membership_api import (
@@ -74,28 +75,29 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    dependencies=[
-        Depends(
-            rate_limiter_dependency,
-            use_cache=False,
-        )
-    ],
+    # Causes a bug with authentication
+    # dependencies=[
+    #     Depends(
+    #         rate_limiter_dependency,
+    #         use_cache=False,
+    #     )
+    # ],
 )
 
 
-@app.exception_handler(NotFoundError)
-async def not_found_error_handler(request: Request, exc: NotFoundError):
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+@app.exception_handler(InvalidOperationError)
+async def invalid_operation_error_handler(request: Request, exc: InvalidOperationError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
-@app.exception_handler(NotResourceOwnerError)
-async def not_resource_owner_error_handler(request: Request, exc: NotResourceOwnerError):
-    return JSONResponse(status_code=403, content={"detail": str(exc)})
+@app.exception_handler(BadRequestError)
+async def invalid_order_attribute_error_handler(request: Request, exc: BadRequestError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
-@app.exception_handler(ResourceAlreadyExistsError)
-async def resource_already_exists_error_handler(request: Request, exc: ResourceAlreadyExistsError):
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+@app.exception_handler(AuthenticationError)
+async def authentication_error_handler(request: Request, exc: AuthenticationError):
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 
 @app.exception_handler(PermissionDeniedError)
@@ -103,14 +105,14 @@ async def permission_denied_error_handler(request: Request, exc: PermissionDenie
     return JSONResponse(status_code=403, content={"detail": str(exc)})
 
 
-@app.exception_handler(InvalidOrderAttributeError)
-async def invalid_order_attribute_error_handler(request: Request, exc: InvalidOrderAttributeError):
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
+@app.exception_handler(NotFoundError)
+async def not_found_error_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
-@app.exception_handler(InvalidFilterError)
-async def invalid_filter_error_handler(request: Request, exc: InvalidFilterError):
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
+@app.exception_handler(ResourceConflictError)
+async def resource_already_exists_error_handler(request: Request, exc: ResourceConflictError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 @app.exception_handler(InvalidMimeTypeError)
@@ -143,7 +145,6 @@ app.include_router(current_user_router, prefix="/api")
 app.include_router(current_user_membership_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(contact_messages_router, prefix="/api")
-app.include_router(feedback_additional_info_router, prefix="/api")
 app.include_router(directors_board_router, prefix="/api")
 app.include_router(legal_documents_router, prefix="/api")
 app.include_router(professional_info_router, prefix="/api")
@@ -158,6 +159,7 @@ app.include_router(news_router, prefix="/api")
 app.include_router(case_of_the_month_router, prefix="/api")
 
 
+app.include_router(emails_admin_router, prefix="/api/admin")
 app.include_router(users_admin_router, prefix="/api/admin")
 app.include_router(directors_board_admin_router, prefix="/api/admin")
 app.include_router(legal_documents_admin_router, prefix="/api/admin")
@@ -174,6 +176,7 @@ app.include_router(case_of_the_month_admin_router, prefix="/api/admin")
 
 
 app.include_router(members_router, prefix="/api")
+app.include_router(reference_data_router, prefix="/api")
 
 
 if DEV_MODE:

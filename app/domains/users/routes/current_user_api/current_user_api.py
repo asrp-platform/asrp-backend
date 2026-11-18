@@ -11,7 +11,6 @@ from app.domains.payments.schemas import PaymentReadSchema
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.shared.types import FileData
 from app.domains.users.exceptions import (
-    InvalidPasswordError,
     NameChangeRequestCooldownNotExpiredError,
     PendingNameChangeRequestAlreadyExistsError,
 )
@@ -24,6 +23,7 @@ from app.domains.users.schemas import (
 )
 from app.domains.users.services import UserServiceDep
 from app.domains.users.use_cases.current_user.change_current_user_password import ChangeCurrentUserPasswordUseCaseDep
+from app.domains.users.use_cases.current_user.delete_current_user import DeleteCurrentUserUseCaseDep
 from app.domains.users.use_cases.current_user.delete_current_user_avatar import DeleteCurrentUserAvatarUseCaseDep
 from app.domains.users.use_cases.current_user.request_name_change import RequestNageChangeUseCaseDep
 from app.domains.users.use_cases.current_user.retrieve_current_user_payments import (
@@ -55,6 +55,18 @@ async def update_user(
     current_user: CurrentUserDep, update_data: UpdateUserSchema, use_case: UpdateCurrentUserUseCaseDep
 ) -> UserPrivateSchema:
     return await use_case.execute(current_user, **update_data.model_dump(exclude_unset=True))
+
+
+@router.delete(
+    "",
+    summary="Delete current authenticated user",
+    status_code=204,
+)
+async def delete_user(
+    current_user: CurrentUserDep,
+    use_case: DeleteCurrentUserUseCaseDep,
+) -> None:
+    await use_case.execute(current_user)
 
 
 @router.get(
@@ -108,7 +120,7 @@ async def remove_user_avatar(
 
 
 class ChangePasswordResponses(Responses):
-    INVALID_PASSWORD = 403, "Invalid password"
+    WRONG_PASSWORD = 401, "Wrong password"
     USER_NOT_FOUND = 404, "User with provided ID not found"
 
 
@@ -123,10 +135,7 @@ async def change_user_password(
     current_user: CurrentUserDep,  # noqa
     data: ChangePasswordSchema,
 ) -> None:
-    try:
-        await use_case.execute(current_user, new_password=data.new_password, old_password=data.old_password)
-    except InvalidPasswordError:
-        raise ChangePasswordResponses.INVALID_PASSWORD
+    await use_case.execute(current_user, new_password=data.new_password, old_password=data.old_password)
 
 
 class NameChangeRequestResponses(Responses):

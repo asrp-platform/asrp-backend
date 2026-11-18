@@ -1,25 +1,25 @@
-from app.core.common.exceptions import (
+from app.core.common.base_exceptions import (
     InvalidOperationError,
-    ResourceAlreadyExistsError,
-    TimeCooldownError,
+    PermissionDeniedError,
+    ResourceConflictError,
 )
 
 
-class InvalidPasswordError(Exception):
+class WrongPasswordError(PermissionDeniedError):
     pass
 
 
-class ProfessionalExperienceCurrentPositionExistsError(ResourceAlreadyExistsError):
+class ProfessionalExperienceCurrentPositionExistsError(ResourceConflictError):
     pass
 
 
-class PendingNameChangeRequestAlreadyExistsError(ResourceAlreadyExistsError):
+class PendingNameChangeRequestAlreadyExistsError(ResourceConflictError):
     pass
 
 
-class NameChangeRequestCooldownNotExpiredError(TimeCooldownError):
+class LastResidencyRemovalError(InvalidOperationError):
     pass
 
 
-class CannotDeleteLastResidencyError(InvalidOperationError):
+class NameChangeRequestCooldownNotExpiredError(Exception):
     pass

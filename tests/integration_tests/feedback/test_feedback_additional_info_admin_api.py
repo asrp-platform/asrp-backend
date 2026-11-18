@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from httpx import AsyncClient
 
-from app.domains.feedback.schemas import HEAR_ABOUT_ASRP_OPTIONS
+from app.domains.shared.constants import HEAR_ABOUT_ASRP_OPTIONS, HEAR_ABOUT_ASRP_VALUES
 from app.domains.shared.transaction_managers import TransactionManager
 from tests.fixtures.auth import AuthHeaders, UserFactory
 
@@ -15,7 +15,7 @@ async def test_get_hear_about_options_public(client: AsyncClient) -> None:
     response = await client.get("/api/feedback-additional-info/hear-about-options")
 
     assert response.status_code == 200
-    assert tuple(response.json()) == HEAR_ABOUT_ASRP_OPTIONS
+    assert response.json() == list(HEAR_ABOUT_ASRP_OPTIONS)
 
 
 async def _create_feedback_additional_info(
@@ -117,7 +117,7 @@ async def test_get_hear_about_stats_date_range_filter(
     assert payload["total_responses"] == 5
     assert payload["stats"][0]["option"] == "telegram"
 
-    for option in HEAR_ABOUT_ASRP_OPTIONS:
+    for option in HEAR_ABOUT_ASRP_VALUES:
         assert option in stats
 
     assert stats["telegram"]["count"] == 2

@@ -45,6 +45,15 @@ target_metadata = Base.metadata
 # ... etc.
 
 
+CELERY_TABLES = {"celery_taskmeta", "celery_tasksetmeta"}
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name in CELERY_TABLES:  # noqa
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -70,7 +79,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -93,7 +93,7 @@ async def test_suspend_membership(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post(
             f"/api/admin/memberships/{active_user_membership.id}/restrictions",
             headers=admin_auth_headers,
@@ -104,7 +104,7 @@ async def test_suspend_membership(
         )
 
     assert response.status_code == 201
-    mock_send_email.assert_awaited_once()
+    mock_send_email.assert_called_once()
 
 
 async def test_terminate_membership(
@@ -113,7 +113,7 @@ async def test_terminate_membership(
     admin_auth_headers: AuthHeaders,
     admin_all_permissions,
 ) -> None:
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post(
             f"/api/admin/memberships/{active_user_membership.id}/restrictions",
             headers=admin_auth_headers,
@@ -124,7 +124,7 @@ async def test_terminate_membership(
         )
 
     assert response.status_code == 201
-    mock_send_email.assert_awaited_once()
+    mock_send_email.assert_called_once()
 
 
 async def test_restrict_membership_not_found(

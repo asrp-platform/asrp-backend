@@ -23,7 +23,7 @@ class CompleteRegistrationUseCase:
             if user is None:
                 raise EmailConfirmationExpiredError("Invalid or expired token")
             if not user.pending:
-                raise RegistrationAlreadyCompletedError("User is already registered")
+                raise RegistrationAlreadyCompletedError("Registration already completed")
 
             user.pending = False
 

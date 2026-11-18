@@ -50,6 +50,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=func.now(), server_default=func.now(), nullable=False
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     pending: Mapped[bool] = mapped_column(default=True, nullable=True, server_default=text("true"))
     last_password_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     last_name_change: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)

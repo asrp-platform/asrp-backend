@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import Depends
 
-from app.core.common.exceptions import InvalidMimeTypeError
+from app.core.common.base_exceptions import InvalidMimeTypeError
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep
 from app.domains.legal_documents.models import Sponsor

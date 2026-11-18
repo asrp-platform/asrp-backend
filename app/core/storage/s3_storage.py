@@ -133,7 +133,9 @@ class S3Storage(BaseFileStorage):
             return url
 
     async def delete_file(self, object_key: str, bucket_name: str | None = None) -> None:
+        # No need to process not existing file, no exception raises
         bucket = bucket_name or self.default_bucket_name
+
         async with self.get_client() as client:
             await client.delete_object(Bucket=bucket, Key=object_key)
 

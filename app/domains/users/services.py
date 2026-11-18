@@ -4,7 +4,7 @@ from typing import Annotated, Any, Generic, Literal, TypeVar
 from fastapi import Depends
 from loguru import logger
 
-from app.core.common.exceptions import InvalidMimeTypeError, NotFoundError, NotResourceOwnerError
+from app.core.common.base_exceptions import InvalidMimeTypeError, NotFoundError, PermissionDeniedError
 from app.core.config import settings
 from app.core.storage.storage_factory import FileStorageDep
 from app.core.utils.permissions import check_permissions
@@ -12,11 +12,11 @@ from app.core.utils.save_file import generate_filename
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 from app.domains.shared.types import FileData
 from app.domains.users.exceptions import (
-    CannotDeleteLastResidencyError,
-    InvalidPasswordError,
+    LastResidencyRemovalError,
     NameChangeRequestCooldownNotExpiredError,
     PendingNameChangeRequestAlreadyExistsError,
     ProfessionalExperienceCurrentPositionExistsError,
+    WrongPasswordError,
 )
 from app.domains.users.models import (
     CommunicationPreferences,
@@ -84,15 +84,6 @@ class UserService:
 
         return upload_result
 
-    async def delete_user_avatar(self, user_id: int) -> None:
-        user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
-        if user is None:
-            raise NotFoundError("User with provided ID not found")
-
-        avatar_path = user.avatar_path
-        await self.transaction_manager.user_repository.update(user_id, avatar_path=None)
-        await self.file_storage.delete_file(avatar_path)
-
     async def change_password(
         self,
         user_id: int,
@@ -105,7 +96,7 @@ class UserService:
             raise NotFoundError("user with provided email not found")
 
         if not user.verify_password(old_password):
-            raise InvalidPasswordError("Invalid password")
+            raise WrongPasswordError("Invalid password")
 
         user.password = new_password
         await self.transaction_manager._session.flush()  # noqa property's setter manual calling
@@ -158,7 +149,7 @@ class ProfessionalInformationService:  # noqa B903
     async def _create_or_update(self, user_id: int, current_user_id: int, **kwargs) -> ProfessionalInformation:
         """Method closes transaction. Can't be used in transaction manager"""
         if user_id != current_user_id:
-            raise NotResourceOwnerError("Not resource owner")
+            raise PermissionDeniedError("Not resource owner")
 
         async with self.transaction_manager:
             user = await self.transaction_manager.user_repository.get_first_by_kwargs(id=user_id)
@@ -211,7 +202,7 @@ class BaseUserOwnedService(Generic[ProfessionalExperienceT]):
             raise NotFoundError("User with provided ID not found")
 
         if current_user_id is not None and user_id != current_user_id:
-            raise NotResourceOwnerError("Not resource owner")
+            raise PermissionDeniedError("Not resource owner")
 
         if resource_id is not None:
             resource = await self._repository.get_first_by_kwargs(id=resource_id, user_id=user_id)
@@ -313,7 +304,7 @@ class ResidencyService(ProfessionalExperienceBaseService[Residency]):
             remaining = await self._repository.get_count(user_id=user_id)
 
             if remaining <= 1:
-                raise CannotDeleteLastResidencyError("Cannot delete last residency for user")
+                raise LastResidencyRemovalError("Cannot delete last residency for user")
 
             await self._repository.mark_as_deleted(resource_id)
             return resource_id
@@ -365,7 +356,7 @@ class NameChangeRequestService:
                 raise NotFoundError("User with provided ID not found")
 
             if current_user_id is not None and user_id != current_user_id:
-                raise NotResourceOwnerError("Not resource owner")
+                raise PermissionDeniedError("Not resource owner")
 
             if name_change_request_id is not None:
                 name_change_request = await self.transaction_manager.name_change_request_repository.get_first_by_kwargs(
@@ -483,7 +474,7 @@ class CommunicationPreferencesService:
             raise NotFoundError("User with provided ID not found")
 
         if current_user_id is not None and user_id != current_user_id:
-            raise NotResourceOwnerError("Not resource owner")
+            raise PermissionDeniedError("Not resource owner")
 
     async def get_communication_preferences(self, user_id: int) -> CommunicationPreferences:
         user = await self.__tm.user_repository.get_first_by_kwargs(id=user_id)

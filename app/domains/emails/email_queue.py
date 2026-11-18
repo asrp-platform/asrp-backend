@@ -1,14 +1,9 @@
-from typing import Annotated
-
-from fastapi import Depends
-
 from app.domains.emails.tasks import send_email_task
 
 
 class EmailQueue:
-    @classmethod
-    async def send_email(
-        cls,
+    @staticmethod
+    def send_email(
         to: str,
         subject: str,
         body: str,
@@ -22,5 +17,14 @@ class EmailQueue:
             queue="emails",
         )
 
-
-EmailQueueDep = Annotated[EmailQueue, Depends(EmailQueue)]
+    @staticmethod
+    def send_mailing(emails_to: list[str], subject, body: str):
+        for email in emails_to:
+            send_email_task.apply_async(
+                kwargs={
+                    "to": email,
+                    "subject": subject,
+                    "body": body,
+                },
+                queue="emails",
+            )

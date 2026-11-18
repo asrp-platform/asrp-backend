@@ -1,10 +1,9 @@
 from fastapi import APIRouter
 from fastapi_exception_responses import Responses
 
-from app.core.common.exceptions import NotResourceOwnerError
 from app.domains.shared.deps import CurrentUserDep
 from app.domains.users.exceptions import (
-    CannotDeleteLastResidencyError,
+    LastResidencyRemovalError,
     ProfessionalExperienceCurrentPositionExistsError,
 )
 from app.domains.users.schemas import ResidencyCreateSchema, ResidencyUpdateSchema, ResidencyViewSchema
@@ -67,9 +66,6 @@ async def create_residency_for_user(
     try:
         return await service.create_for_user(user_id, current_user.id, **residency_creation_data.model_dump())
 
-    except NotResourceOwnerError:
-        raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
-
     except ProfessionalExperienceCurrentPositionExistsError:
         raise CreateUserResidencyResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
 
@@ -93,9 +89,6 @@ async def update_user_residency(
     try:
         return await service.update_for_user(user_id, current_user.id, residency_id, residency_update_data.model_dump())
 
-    except NotResourceOwnerError:
-        raise CreateUserResidencyResponses.NOT_RESOURCE_OWNER
-
     except ProfessionalExperienceCurrentPositionExistsError:
         raise UpdateResidencyResponses.PROFESSIONAL_EXPERIENCE_CURRENT_POSITION_EXISTS
 
@@ -117,5 +110,5 @@ async def delete_user_residency(
 ) -> int:
     try:
         return await service.delete_for_user(user_id, current_user.id, residency_id)
-    except CannotDeleteLastResidencyError:
+    except LastResidencyRemovalError:
         raise DeleteResidencyResponses.CANNOT_DELETE_LAST_RESIDENCY

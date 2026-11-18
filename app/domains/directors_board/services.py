@@ -5,7 +5,7 @@ from fastapi import Depends
 from loguru import logger
 from sqlalchemy import func, select, update
 
-from app.core.common.exceptions import InvalidMimeTypeError
+from app.core.common.base_exceptions import InvalidMimeTypeError
 from app.core.config import settings
 from app.core.storage.base_storage import BaseFileStorage
 from app.core.storage.storage_factory import FileStorageDep

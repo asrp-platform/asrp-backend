@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
+from app.core.common.base_exceptions import NotFoundError, ResourceConflictError
 from app.domains.shared.transaction_managers import TransactionManagerDep
 
 
@@ -36,7 +36,7 @@ class CreateCaseTagUseCase:
         async with self.__tm:
             existing_tag = await self.__tm.case_tag_repository.get_first_by_kwargs(name=name)
             if existing_tag is not None:
-                raise ResourceAlreadyExistsError("Case tag with provided name already exists")
+                raise ResourceConflictError("Case tag with provided name already exists")
             return await self.__tm.case_tag_repository.create(name=name)
 
 
@@ -53,7 +53,7 @@ class UpdateCaseTagUseCase:
             if name := data.get("name"):
                 existing_tag = await self.__tm.case_tag_repository.get_first_by_kwargs(name=name)
                 if existing_tag is not None and existing_tag.id != tag_id:
-                    raise ResourceAlreadyExistsError("Case tag with provided name already exists")
+                    raise ResourceConflictError("Case tag with provided name already exists")
 
             return await self.__tm.case_tag_repository.update(tag_id, **data)
 
@@ -69,7 +69,7 @@ class DeleteCaseTagUseCase:
                 raise NotFoundError("Case tag with provided ID not found")
 
             if await self.__tm.case_tag_repository.has_active_cases(tag_id):
-                raise ResourceAlreadyExistsError("Case tag cannot be deleted because it is used by cases")
+                raise ResourceConflictError("Case tag cannot be deleted because it is used by cases")
 
             await self.__tm.case_tag_repository.mark_as_deleted(tag_id)
 

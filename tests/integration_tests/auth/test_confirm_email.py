@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from faker import Faker
@@ -18,12 +18,12 @@ async def test_send_email_confirmation_link_for_pending_user(
 ) -> None:
     test_user = await user_factory(pending=True)
 
-    with patch.object(EmailQueue, "send_email", new_callable=AsyncMock) as mock_send_email:
+    with patch.object(EmailQueue, "send_email", new_callable=MagicMock) as mock_send_email:
         response = await client.post("api/auth/email-confirmation-requests", json={"email": test_user.email})
 
     assert response.status_code == 201
     assert response.json() == {"detail": "Confirmation email sent"}
-    mock_send_email.assert_awaited_once()
+    mock_send_email.assert_called_once()
 
 
 async def test_send_email_confirmation_link_user_not_found(client: AsyncClient, faker: Faker) -> None:

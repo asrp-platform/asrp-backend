@@ -4,8 +4,8 @@ from typing import Annotated, Any, Sequence
 from fastapi import Depends
 from sqlalchemy import func, select
 
-from app.core.common.exceptions import NotFoundError, ResourceAlreadyExistsError
-from app.domains.emails.email_queue import EmailQueueDep
+from app.core.common.base_exceptions import NotFoundError, ResourceConflictError
+from app.domains.emails.email_queue import EmailQueue
 from app.domains.feedback.models import FeedbackAdditionalInfo
 from app.domains.shared.transaction_managers import TransactionManager, TransactionManagerDep
 
@@ -16,9 +16,8 @@ class ContactMessageService:
     Transaction boundaries belong to the calling use case.
     """
 
-    def __init__(self, transaction_manager: TransactionManager, email_queue: EmailQueueDep):
+    def __init__(self, transaction_manager: TransactionManager):
         self.transaction_manager = transaction_manager
-        self.email_queue = email_queue
 
     async def create(self, data: dict):
         return await self.transaction_manager.contact_message_repository.create(**data)
@@ -42,8 +41,22 @@ class ContactMessageService:
         await self.transaction_manager.contact_message_repository.update(contact_message_id, answered=True)
         return reply, contact_message.email
 
+    async def mark_responded_manually(self, contact_message_id: int) -> None:
+        contact_message = await self.transaction_manager.contact_message_repository.get_first_by_kwargs(
+            id=contact_message_id
+        )
+        if contact_message is None:
+            raise NotFoundError("There is no contact message with provided id")
+        if contact_message.answered:
+            return
+        await self.transaction_manager.contact_message_reply_repository.create(
+            contact_message_id=contact_message.id,
+            answer="Responded manually outside ASRP. No email was sent by the system.",
+        )
+        await self.transaction_manager.contact_message_repository.update(contact_message_id, answered=True)
+
     async def send_answer(self, recipient: str, subject: str, answer_message: str) -> None:
-        await self.email_queue.send_email(to=recipient, subject=subject, body=answer_message)
+        EmailQueue.send_email(to=recipient, subject=subject, body=answer_message)
 
 
 class FeedbackAdditionalInfoService:
@@ -61,7 +74,7 @@ class FeedbackAdditionalInfoService:
             user_id=user_id
         )
         if existing is not None:
-            raise ResourceAlreadyExistsError("Additional detail for User with provided ID is already exists")
+            raise ResourceConflictError("Additional detail for User with provided ID is already exists")
         return await self.transaction_manager.feedback_additional_info_repository.create(user_id=user_id, **kwargs)
 
     async def get_hear_about_stats(
@@ -138,9 +151,8 @@ class FeedbackAdditionalInfoService:
 
 def get_contact_message_service(
     transaction_manager: TransactionManagerDep,
-    email_queue: EmailQueueDep,
 ) -> ContactMessageService:
-    return ContactMessageService(transaction_manager, email_queue)
+    return ContactMessageService(transaction_manager)
 
 
 def get_feedback_additional_info_service(
