@@ -39,3 +39,7 @@ class EmailAlreadyInUseError(ResourceConflictError):
 
 class InvalidPasswordResetTokenError(InvalidOperationError):
     pass
+
+
+class InvalidCredentialsError(InvalidOperationError):
+    pass

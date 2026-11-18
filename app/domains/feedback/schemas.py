@@ -9,6 +9,17 @@ from app.domains.feedback.models import ContactMessageTypeEnum, DonationTypeEnum
 from app.domains.shared.constants import HEAR_ABOUT_ASRP_VALUES
 
 
+HEAR_ABOUT_ASRP_OPTIONS: tuple[str, ...] = (
+    "colleague",
+    "friend",
+    "social_media",
+    "telegram",
+    "conference",
+    "web_search",
+    "other",
+)
+
+
 class FeedbackAdditionalInfoCreateSchema(BaseModel):
     hear_about_asrp: str
     tg_username: str | None = None
