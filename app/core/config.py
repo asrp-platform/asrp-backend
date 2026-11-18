@@ -67,8 +67,8 @@ class GmailConfig(BaseModel):
 
 
 class S3Config(BaseModel):
-    S3_ACCESS_KEY: str = "minioadmin"
-    S3_SECRET_KEY: str = "minioadmin"
+    S3_ACCESS_KEY: str = "rustfsadmin"
+    S3_SECRET_KEY: str = "rustfsadmin"
     S3_DEFAULT_BUCKET: str = Field(default="uploads", validation_alias=AliasChoices("S3_DEFAULT_BUCKET", "S3_BUCKET"))
     S3_REGION: str = "us-east-1"
 
@@ -133,7 +133,7 @@ class Settings(BaseSettings, RateLimiterConfig, RedisConfig, GmailConfig, S3Conf
 
     @property
     def s3_endpoint_url(self) -> str:
-        return self.S3_ENDPOINT or ("http://localhost:9000" if DEV_MODE else "http://minio:9000")
+        return self.S3_ENDPOINT or ("http://localhost:9000" if DEV_MODE else "http://rustfs:9000")
 
     @property
     def s3_public_url(self) -> str:

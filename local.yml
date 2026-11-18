@@ -22,21 +22,22 @@ services:
     networks:
       - internal
 
-  minio:
-    container_name: minio
-    image: minio/minio:latest
-    env_file:
-      - .env
+  rustfs:
+    container_name: rustfs
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    command: [ "/data" ]
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
-    command: server /data --console-address ":9001"
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
     ports:
       - "9000:9000"
       - "9001:9001"
-    restart: unless-stopped
     volumes:
-      - minio_data:/data
+      - rustfs_data:/data
     networks:
       - internal
 
@@ -91,7 +92,7 @@ services:
       DB_PORT: 5432
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://rustfs:9000
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs
@@ -109,17 +110,17 @@ services:
       - REDIS_USER_PASSWORD=${REDIS_USER_PASSWORD}
       - REDIS_USER=${REDIS_USER}
     command: >
-      sh -c '  
+      sh -c '
         mkdir -p /usr/local/etc/redis &&
-        echo "requirepass $REDIS_USER_PASSWORD" >> /usr/local/etc/redis/redis.conf &&  
-        echo "appendonly yes" >> /usr/local/etc/redis/redis.conf &&  
-        echo "appendfsync everysec" >> /usr/local/etc/redis/redis.conf &&  
+        echo "requirepass $REDIS_USER_PASSWORD" >> /usr/local/etc/redis/redis.conf &&
+        echo "appendonly yes" >> /usr/local/etc/redis/redis.conf &&
+        echo "appendfsync everysec" >> /usr/local/etc/redis/redis.conf &&
 
-        # ACL  
-        echo "user default off ~* -@all" > /usr/local/etc/redis/users.acl &&  
-        echo "user $REDIS_USER on >$REDIS_USER_PASSWORD ~* +@all" >> /usr/local/etc/redis/users.acl &&  
+        # ACL
+        echo "user default off ~* -@all" > /usr/local/etc/redis/users.acl &&
+        echo "user $REDIS_USER on >$REDIS_USER_PASSWORD ~* +@all" >> /usr/local/etc/redis/users.acl &&
 
-        redis-server /usr/local/etc/redis/redis.conf --aclfile /usr/local/etc/redis/users.acl  
+        redis-server /usr/local/etc/redis/redis.conf --aclfile /usr/local/etc/redis/users.acl
       '
     healthcheck:
       test: [ "CMD", "redis-cli", "-a", "${REDIS_USER_PASSWORD}", "PING" ]
@@ -132,8 +133,8 @@ services:
 
 volumes:
   postgres_data:
-  minio_data:
   rabbitmq_data:
+  rustfs_data:
 
 networks:
   internal:

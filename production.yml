@@ -56,7 +56,7 @@ services:
       DB_PORT: 5432
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://rustfs:9000
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs

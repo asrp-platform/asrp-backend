@@ -23,8 +23,8 @@ Necessary envs:
 - `ALGORITHM=HS256`
 
 
-- `S3_ACCESS_KEY=minio_admin`
-- `S3_SECRET_KEY=minio_admin`
+- `S3_ACCESS_KEY=rustfsadmin`
+- `S3_SECRET_KEY=rustfsadmin`
 - `S3_BUCKET=uploads`
 - `S3_REGION=us-east-1`
 
@@ -208,7 +208,7 @@ PostgreSQL is used as the main database.
 
 ### File storage
 
-MinIO is used as S3-compatible file storage.
+RustFS is used as S3-compatible file storage.
 
 S3 API endpoint:
 
@@ -216,7 +216,7 @@ S3 API endpoint:
 http://localhost:9000
 ```
 
-MinIO web console:
+Rustfs web console:
 
 ```shell
 http://localhost:9001/login
